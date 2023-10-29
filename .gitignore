@@ -1,0 +1,10 @@
+build/
+/bin/
+/lib/
+/.vscode/
+/.cache/
+
+# Shader build artifacts.
+/Firework.Runtime.GL/shaders/include/
+/Firework.Components.Core2D/shaders/include/
+/Firework.Components.Core3D/shaders/include/

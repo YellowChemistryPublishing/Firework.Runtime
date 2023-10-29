@@ -1,0 +1,11 @@
+if (NOT DEFINED FIREWORK_PACKAGER_EXECUTABLE)
+    message(FATAL_ERROR "[Firework.Packager] [FATAL] PackageFolder.cmake script invoked without passing variable \"FIREWORK_PACKAGER_EXECUTABLE\".")
+endif()
+if (NOT DEFINED PACKAGE_INPUT_FOLDER)
+    message(FATAL_ERROR "[Firework.Packager] [FATAL] PackageFolder.cmake script invoked without passing variable \"PACKAGE_INPUT_FOLDER\".")
+endif()
+if (NOT DEFINED PACKAGE_OUTPUT_FILE)
+    message(FATAL_ERROR "[Firework.Packager] [FATAL] PackageFolder.cmake script invoked without passing variable \"PACKAGE_OUTPUT_FILE\".")
+endif()
+
+execute_process(COMMAND "${FIREWORK_PACKAGER_EXECUTABLE}" "${PACKAGE_INPUT_FOLDER}" --output "${PACKAGE_OUTPUT_FILE}")

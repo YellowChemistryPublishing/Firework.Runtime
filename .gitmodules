@@ -1,0 +1,36 @@
+[submodule "external/SDL"]
+	path = external/SDL
+	url = https://github.com/libsdl-org/SDL.git
+[submodule "bgfx.cmake"]
+	path = external/bgfx.cmake
+	url = https://github.com/bkaradzic/bgfx.cmake.git
+[submodule "dependencies/stb"]
+	path = dependencies/stb
+	url = https://github.com/nothings/stb.git
+[submodule "external/tracy"]
+	path = external/tracy
+	url = https://github.com/wolfpld/tracy.git
+[submodule "cmake/cmake-bin2h"]
+	path = cmake/cmake-bin2h
+	url = https://github.com/sivachandran/cmake-bin2h.git
+[submodule "dependencies/earcut.hpp"]
+	path = dependencies/earcut.hpp
+	url = https://github.com/mapbox/earcut.hpp.git
+[submodule "dependencies/concurrentqueue"]
+	path = dependencies/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue.git
+[submodule "dependencies/std_function"]
+	path = dependencies/std_function
+	url = https://github.com/skarupke/std_function.git
+[submodule "dependencies/robin-hood-hashing"]
+	path = dependencies/robin-hood-hashing
+	url = https://github.com/martinus/robin-hood-hashing.git
+[submodule "external/assimp"]
+	path = external/assimp
+	url = https://github.com/assimp/assimp.git
+[submodule "external/bgfx.cmake"]
+	path = external/bgfx.cmake
+	url = https://github.com/bkaradzic/bgfx.cmake.git
+[submodule "external/cpptrace"]
+	path = external/cpptrace
+	url = https://github.com/jeremy-rifkin/cpptrace.git
