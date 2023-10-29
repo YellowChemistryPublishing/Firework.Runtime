@@ -86,10 +86,6 @@ jobs:
         echo "genclang=Ninja" >> $GITHUB_ENV
       if: matrix.os == 'ubuntu-latest'
 
-    - name: Environment (vs)
-      uses: ilammy/msvc-dev-cmd@v1
-      if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc-22'
-
     - name: Install gcc
       run: |
         ${{env.installninja}}
