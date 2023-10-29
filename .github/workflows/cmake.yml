@@ -122,8 +122,8 @@ jobs:
     - name: Install Linux Dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-dev
         sudo apt-get install libx11-dev${{env.archext}}
+        sudo apt-get install -y libgl1-mesa-dev${{env.archext}}
       if: matrix.os == 'ubuntu-latest'
 
     - name: Configure CMake
