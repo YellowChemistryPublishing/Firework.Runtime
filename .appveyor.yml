@@ -16,7 +16,7 @@ before_build:
 - sh: sudo apt-get install -y g++-12
 - sh: sudo apt-get install -y gcc-12
 - git submodule update --init --recursive
-- cmd: cmake -H. -Bbuild -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DCMAKE_BUILD_TYPE=Release
+- cmd: cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Release
 - sh: cmake -H. -Bbuild -DCMAKE_C_COMPILER=gcc-12 -DCMAKE_CXX_COMPILER=g++-12 -DCMAKE_BUILD_TYPE=Release
 
 build_script:
