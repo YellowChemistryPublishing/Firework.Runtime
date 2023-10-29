@@ -1,8 +1,8 @@
 version: 1.0.{build}
 
 image:
-- Visual Studio 2022
 - Ubuntu2204
+- Visual Studio 2022
 
 configuration:
 - Release
@@ -13,8 +13,8 @@ before_build:
 - sh: sudo apt-get install -y libgl1-mesa-dev
 - sh: sudo apt-get install -y g++-12
 - sh: sudo apt-get install -y gcc-12
-- sh: echo 'export CC=gcc-12' >> ~/.profile
-- sh: echo 'export CXX=g++-12' >> ~/.profile
+- sh: echo 'export CC=gcc-12' >> ~/.bashrc
+- sh: echo 'export CXX=g++-12' >> ~/.bashrc
 - git submodule update --init --recursive
 - cmake -H. -Bbuild -DCMAKE_CONFIGURATION_TYPES=Release -DCMAKE_BUILD_TYPE=Release
 
