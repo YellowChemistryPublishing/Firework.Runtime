@@ -11,6 +11,10 @@ before_build:
 - sh: sudo apt-get update
 - sh: sudo apt-get install -y libx11-dev
 - sh: sudo apt-get install -y libgl1-mesa-dev
+- sh: sudo apt-get install -y g++-12
+- sh: sudo apt-get install -y gcc-12
+- sh: echo 'export CC=gcc-12' >> ~/.profile
+- sh: echo 'export CXX=g++-12' >> ~/.profile
 - git submodule update --init --recursive
 - cmake -H. -Bbuild -DCMAKE_CONFIGURATION_TYPES=Release -DCMAKE_BUILD_TYPE=Release
 
