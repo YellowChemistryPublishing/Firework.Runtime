@@ -13,7 +13,7 @@
 [![Firework.DevKit](https://img.shields.io/github/issues/YellowChemistryPublishing/Firework.DevKit)](https://github.com/YellowChemistryPublishing/Firework.DevKit/issues)
 [![Firework.DevKit](https://img.shields.io/github/issues-pr/YellowChemistryPublishing/Firework.DevKit)](https://github.com/YellowChemistryPublishing/Firework.DevKit/pulls)  
 [![CodeFactor](https://img.shields.io/codefactor/grade/github/YellowChemistryPublishing/Firework.DevKit/main?logo=codefactor)](https://www.codefactor.io/repository/github/yellowchemistrypublishing/firework.devkit)
-[![Codacy](https://img.shields.io/codacy/grade/43790938623c48a3ad6c5a7bcd1d9bbc?logo=Codacy)](https://www.codacy.com/gh/YellowChemistryPublishing/Firework.DevKit/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=YellowChemistryPublishing/Firework.DevKit&amp;utm_campaign=Badge_Grade)  
+[![Codacy](https://img.shields.io/codacy/grade/cfbc015b7a38471c870c3fa6a9e3a3fa?logo=Codacy)](https://app.codacy.com/gh/YellowChemistryPublishing/Firework.DevKit/dashboard?branch=main)  
 [![no really, im not very good at this](https://img.shields.io/badge/my-code-orange?style=flat-square)](https://media.tenor.com/tNfzy9M48V8AAAAd/skull-issues.gif)
 [![no really, im not very good at this](https://img.shields.io/badge/is-bad-orange?style=flat-square)](https://media.tenor.com/tNfzy9M48V8AAAAd/skull-issues.gif)
 [![no really, im not very good at this](https://img.shields.io/badge/dont-ever-orange?style=flat-square)](https://media.tenor.com/tNfzy9M48V8AAAAd/skull-issues.gif)
