@@ -3,6 +3,7 @@
 #include "Firework.Runtime.CoreLib.Exports.h"
 
 #include <atomic>
+#include <concepts>
 #include <list>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_syswm.h>
@@ -18,6 +19,8 @@ namespace Firework
 
 	namespace Internal
 	{
+		/// @internal 
+		/// @brief Internal API [Internal]. what the ~~dog~~ engine doin'
 		enum class EngineState : uint_fast8_t
 		{
 			FirstInit,
@@ -31,6 +34,8 @@ namespace Firework
 			WindowThreadDone
 		};
 
+		/// @internal 
+		/// @brief Static class containing functionality relevant to the backend operations of the runtime.
 		class __firework_corelib_api CoreEngine final
 		{
 			static std::atomic<EngineState> state;
@@ -41,6 +46,9 @@ namespace Firework
 			static SDL_SysWMinfo wmInfo;
 			static SDL_version backendVer;
 
+			/// @internal 
+			/// @brief Internal API [Internal]. Update the display information.
+			/// @note Window thread only.
 			static void resetDisplayData();
 
 			static moodycamel::ConcurrentQueue<func::function<void()>> pendingPreTickQueue;
@@ -48,21 +56,44 @@ namespace Firework
 			static moodycamel::ConcurrentQueue<RenderJob> renderQueue;
 			static std::vector<RenderJob> frameRenderJobs;
 			
+			/// @internal 
+			/// @brief Internal API [Internal]. The main thread loop. Blocks.
+			/// @note Main thread only.
 			static void internalLoop();
+			/// @internal 
+			/// @brief Internal API [Internal]. The window thread loop. Blocks.
+			/// @note Window thread only.
 			static void internalWindowLoop();
+			/// @internal 
+			/// @brief Internal API [Internal]. The render thread loop. Blocks.
+			/// @note Render thread only.
 			static void internalRenderLoop();
 
+			/// @internal 
+			/// @brief Internal API [Internal]. Initialize and start the runtime.
+			/// @param argc Forwarded from int main(...). 
+			/// @param argv Forwarded from int main(...). 
+			/// @return Whether the runtime was able to successfully initialize. 
+			/// @retval - EXIT_SUCCESS: The runtime initialized successfully. 
+			/// @retval - EXIT_FAILIURE: The runtime failed to initialize. 
+			/// @note Thread-safe.
 			static int execute(int argc, char* argv[]);
 		public:
 			CoreEngine() = delete;
 
+			/// @internal 
+			/// @brief Low-level API [Internal]. 
+			/// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>``` 
+			/// @param job Job to queue. 
+			/// @param required Whether this job has to run if the runtime is behind.
+			/// @note Thread-safe.
 			template <typename Func>
+			requires std::constructible_from<func::function<void()>, Func&&>
 			inline static void queueRenderJobForFrame(Func&& job, bool required = true)
 			{
 				CoreEngine::frameRenderJobs.push_back(RenderJob::create(job, required));
 			}
 
-			friend int __handleInitializeAndExit(int argc, char* argv[]);
 			friend class Firework::Application;
 		};
 	}

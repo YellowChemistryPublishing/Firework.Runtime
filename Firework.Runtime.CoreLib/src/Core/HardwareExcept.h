@@ -57,7 +57,7 @@ Here's the situation with HardwareExcept.
 mingw32 (dw2) - Supported. Unwinding works, and dtors are called.
 mingw64 (seh) - Partial. Sometimes it works, sometimes it doesn't. dtors are ignored.
                 TODO: WOOOOOOOO I FOUND SOMETHING longjmp uses RtlUnwind in the mingw crt, if I'm correct, this unwinds the stack unlike regular longjmp!
-                unimplemented lol
+                unimplemented
 clang64 (seh) - Partial. Hardware exceptions are caught, dtors are ignored.
 MSVC (seh) - Supported. With /EHa throwing from filter is fine.
 This was a mistake. Just let it regress so I can huck it into a dumpster fire where it belongs.

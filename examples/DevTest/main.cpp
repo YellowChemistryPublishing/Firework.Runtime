@@ -49,13 +49,13 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         //     volatile int* arr;
         //     __lmao_reserved_for_implmenetation()
         //     {
-        //         Debug::LogInfo("ctor");
+        //         Debug::logInfo("ctor");
         //         arr = new volatile int[1000000];
         //     }
         //     ~__lmao_reserved_for_implmenetation()
         //     {
         //         delete[] arr;
-        //         Debug::LogInfo("dtor");
+        //         Debug::logInfo("dtor");
         //     }
         // } beantest;
         // volatile int i1 = 1;
@@ -70,19 +70,19 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         {
         case Key::LetterW:
             player->transform()->position += Vector3::forward.rotate(player->transform()->rotation()) * Time::deltaTime() * 4.0f;
-            Debug::LogInfo(Vector3::forward.rotate(player->transform()->rotation()));
+            Debug::logInfo(Vector3::forward.rotate(player->transform()->rotation()));
             break;
         case Key::LetterA:
             player->transform()->position -= Vector3::right.rotate(player->transform()->rotation()) * Time::deltaTime() * 4.0f;
-            Debug::LogInfo(-Vector3::forward.rotate(player->transform()->rotation()));
+            Debug::logInfo(-Vector3::forward.rotate(player->transform()->rotation()));
             break;
         case Key::LetterS:
             player->transform()->position -= Vector3::forward.rotate(player->transform()->rotation()) * Time::deltaTime() * 4.0f;
-            Debug::LogInfo(-Vector3::forward.rotate(player->transform()->rotation()));
+            Debug::logInfo(-Vector3::forward.rotate(player->transform()->rotation()));
             break;
         case Key::LetterD:
             player->transform()->position += Vector3::right.rotate(player->transform()->rotation()) * Time::deltaTime() * 4.0f;
-            Debug::LogInfo(-Vector3::forward.rotate(player->transform()->rotation()));
+            Debug::logInfo(-Vector3::forward.rotate(player->transform()->rotation()));
             break;
         case Key::LetterQ:
             player->transform()->position += Vector3(0, 1, 0) * Time::deltaTime() * 4.0f;

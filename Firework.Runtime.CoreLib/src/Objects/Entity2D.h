@@ -42,7 +42,7 @@ namespace Firework
         }
         else
         {
-            Debug::LogError("Entity2D already has this type of component!");
+            Debug::logError("Entity2D already has this type of component!");
             return nullptr;
         }
     }
@@ -59,7 +59,7 @@ namespace Firework
             if (it != EntityManager2D::components.end())
                 return it;
 
-            Debug::LogWarn("No component of type \"", __typeid(T).qualifiedName(), "\" could be found on this Entity2D!");
+            Debug::logWarn("No component of type \"", __typeid(T).qualifiedName(), "\" could be found on this Entity2D!");
             return nullptr;
         }
     }
@@ -75,6 +75,6 @@ namespace Firework
             delete it->second;
             EntityManager2D::components.erase(it);
         }
-        else Debug::LogWarn("No identical component could be found on this Entity2D to be removed!");
+        else Debug::logWarn("No identical component could be found on this Entity2D to be removed!");
     }
 }

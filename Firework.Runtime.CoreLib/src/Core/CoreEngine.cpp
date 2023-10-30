@@ -91,7 +91,7 @@ int CoreEngine::execute(int argc, char* argv[])
         #endif
         ) == 0))
     {
-        Debug::LogError("Runtime failed to initialize! Error: ", SDL_GetError(), '.');
+        Debug::logError("Runtime failed to initialize! Error: ", SDL_GetError(), '.');
         return EXIT_FAILURE;
     }
     #pragma endregion
@@ -115,11 +115,11 @@ int CoreEngine::execute(int argc, char* argv[])
     corePackagePath.append("CorePackage.fwpkg");
     if (fs::exists(corePackagePath))
     {
-        Debug::LogInfo("Loading CorePackage...");
+        Debug::logInfo("Loading CorePackage...");
         PackageManager::loadCorePackageIntoMemory(corePackagePath);
-        Debug::LogInfo("CorePackage loaded!");
+        Debug::logInfo("CorePackage loaded!");
     }
-    else Debug::LogError("The CorePackage could not be found in the Runtime folder. Did you accidentally delete it?");
+    else Debug::logError("The CorePackage could not be found in the Runtime folder. Did you accidentally delete it?");
     #pragma endregion
     #pragma endregion
 
@@ -149,7 +149,7 @@ int CoreEngine::execute(int argc, char* argv[])
 void CoreEngine::resetDisplayData()
 {
     if (!(CoreEngine::displMd = SDL_GetDesktopDisplayMode(1)))
-        Debug::LogError("Failed to get desktop display mode: ", SDL_GetError());
+        Debug::logError("Failed to get desktop display mode: ", SDL_GetError());
     Application::mainThreadQueue.enqueue([w = CoreEngine::displMd->w, h = CoreEngine::displMd->h, rr = CoreEngine::displMd->refresh_rate]
     {
         Screen::width = w;
@@ -198,7 +198,7 @@ void CoreEngine::internalLoop()
             .append(ex.get_message())
             .append("\nUnhandled exception thrown, at:\n")
             .append(fmtTrace(ex.get_raw_trace().resolve()));
-            Debug::LogError(traceback);
+            Debug::logError(traceback);
         }
         catch (const cpptrace::exception& ex)
         {
@@ -209,7 +209,7 @@ void CoreEngine::internalLoop()
             .append(ex.what())
             .append("\nUnhandled exception thrown, at:\n")
             .append(fmtTrace(ex.get_raw_trace().resolve()));
-            Debug::LogError(traceback);
+            Debug::logError(traceback);
         }
         catch (const Exception& ex)
         {
@@ -220,7 +220,7 @@ void CoreEngine::internalLoop()
             .append(ex.what())
             .append("\nUnhandled exception thrown, at:\n")
             .append(fmtTrace(ex.trace));
-            Debug::LogError(traceback);
+            Debug::logError(traceback);
         }
         #endif
         catch (const std::exception& ex)
@@ -243,7 +243,7 @@ void CoreEngine::internalLoop()
             .append("\nUnhandled exception thrown, at:\n")
             .append(fmtTrace(cpptrace::stacktrace::current()));
             #endif
-            Debug::LogError(traceback);
+            Debug::logError(traceback);
         }
         catch(...)
         {
@@ -260,7 +260,7 @@ void CoreEngine::internalLoop()
             .append("\nUnhandled exception thrown, at:\n")
             .append(fmtTrace(cpptrace::stacktrace::current()));
             #endif
-            Debug::LogError(traceback);
+            Debug::logError(traceback);
         }
     };
 
@@ -446,14 +446,14 @@ void CoreEngine::internalWindowLoop()
 
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) [[unlikely]]
     {
-        Debug::LogError("Display initialisation failed! Error: ", SDL_GetError(), ".\n");
+        Debug::logError("Display initialisation failed! Error: ", SDL_GetError(), ".\n");
         throw "unimplemented";
         return;
     }
 
     if (!(CoreEngine::displMd = SDL_GetDesktopDisplayMode(1)))
     {
-        Debug::LogError("Failed to get desktop display details: ", SDL_GetError());
+        Debug::logError("Failed to get desktop display details: ", SDL_GetError());
         throw "unimplemented";
     }
 
@@ -467,7 +467,7 @@ void CoreEngine::internalWindowLoop()
     wind = SDL_CreateWindow("Window", Window::width, Window::height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (wind == nullptr)
     {
-        Debug::LogError("Could not create window: ", SDL_GetError(), ".");
+        Debug::logError("Could not create window: ", SDL_GetError(), ".");
         throw "unimplemented";
         return;
     }
@@ -697,7 +697,7 @@ void CoreEngine::internalRenderLoop()
             Window::width, Window::height, initBackend
         ))
     {
-        Debug::LogError("goddamnit");
+        Debug::logError("goddamnit");
         throw "unimplemented";
     }
     
@@ -714,7 +714,7 @@ void CoreEngine::internalRenderLoop()
         while (renderQueue.try_dequeue(job))
         {
             if (renderQueue.size_approx() > GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required)
-                Debug::LogInfo("Render queue overburdened, skipping render job id ", job.callFunction, ".\n");
+                Debug::logInfo("Render queue overburdened, skipping render job id ", job.callFunction, ".\n");
             else job();
             job.destroy();
         }

@@ -17,6 +17,7 @@ namespace Firework
 		class CoreEngine;
 	}
 
+	/// @brief Mouse buttons.
 	enum class MouseButton : uint_fast8_t
 	{
 		Left = 0,
@@ -26,6 +27,7 @@ namespace Firework
 		Special2,
 		Count
 	};
+	/// @brief Keyboard keys.
 	enum class Key : uint_fast16_t
 	{
 		Unknown = 0,
@@ -139,7 +141,7 @@ namespace Firework
 		Count
 	};
 
-	// NB: Get input functions are all per frame.
+	/// @brief Static class containing functionality relevant to input processing.
 	class __firework_corelib_api Input final
 	{
 		static Mathematics::Vector2Int internalMousePosition;
@@ -148,22 +150,47 @@ namespace Firework
 		static bool heldMouseInputs[(size_t)MouseButton::Count];
 		static bool heldKeyInputs[(size_t)Key::Count];
 
+		/// @internal
+		/// @brief Internal API [Internal]. SDL mouse code to Firework::MouseButton
+		/// @warning This won't return a valid Firework::MouseButton if you don't pass it a valid SDL_BUTTON_*.
+		/// @param code Button to convert. From SDL_BUTTON_*.
+		/// @return Firework::MouseButton representing the mouse button.
+		/// @note Thread-safe.
 		static MouseButton convertFromSDLMouse(uint_fast8_t code);
+		/// @internal
+		/// @brief Internal API [Internal]. SDL key code to Firework::Key.
+		/// @param code SDL_Keycode to convert.
+		/// @return Firework::Key representing the keyboard key.
+		/// @note Thread-safe.
 		static Key convertFromSDLKey(SDL_Keycode code);
 	public:
+		/// @brief Query the mouse position in pixel units, with the centre of the Window as (0, 0).
+		/// @return Mouse position.
+		/// @note Main thread only.
 		inline static Mathematics::Vector2Int mousePosition()
 		{
 			return Input::internalMousePosition;
 		}
+		/// @brief Query the mouse motion this frame in pixel units, with the centre of the Window as (0, 0).
+		/// @return Amount mouse has moved this frame.
+		/// @note Main thread only.
 		inline static Mathematics::Vector2Int mouseMotion()
 		{
 			return Input::internalMouseMotion;
 		}
 
+		/// @brief Query whether mouse button is pressed this frame.
+		/// @param button Mouse button to check.
+		/// @return Whether button is pressed.
+		/// @note Main thread only.
 		inline static bool mouseHeld(MouseButton button)
 		{
 			return Input::heldMouseInputs[(size_t)button];
 		}
+		/// @brief Query whether key is pressed this frame.
+		/// @param key Key to check.
+		/// @return Whether key is pressed.
+		/// @note Main thread only.
 		inline static bool keyHeld(Key key)
 		{
 			return Input::heldKeyInputs[(size_t)key];

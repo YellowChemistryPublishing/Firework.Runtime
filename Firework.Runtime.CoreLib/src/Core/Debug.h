@@ -35,10 +35,14 @@ namespace Firework
 		}
 	}
 
+	/// @internal 
+	/// @brief Internal API [Internal]. Special escape sequences. 
 	enum class EscapeSequence : uint_fast8_t
 	{
 		Reset
 	};
+	/// @brief Specifies the severity level of a log message
+	/// @see Firework::Debug::log
 	enum class LogLevel : uint_fast8_t
 	{
 		Trace,
@@ -47,12 +51,20 @@ namespace Firework
 		Error
 	};
 
+	/// @brief Static class containing functionality relevant to debugging and logging.
 	class __firework_corelib_api Debug final
 	{
 		static Firework::SpinLock outputLock;
 
+		/// @internal 
+		/// @brief Internal API [Internal]. Concatenates args... into a string.
+		/// @tparam ...T ```requires requires { std::declval<std::ostream>() << ... << args; }```
+		/// @param[out] str Output wostringstream.
+		/// @param ...args Values to concatenate.
+		/// @note Thread-safe, given any access to ```str``` across the duration of this function is thread-safe. 
 		template<typename... T>
 		static void variadicToString(std::wostringstream& str, const T&... args)
+		requires requires { std::declval<std::wostream>() << ... << args; }
 		{
 			using namespace Firework::Internal;
 			using expander = int[];
@@ -62,18 +74,35 @@ namespace Firework
 				(void(str << args), 0)...
 			};
 		}
+		/// @internal 
+		/// @brief Internal API [Internal]. Returns the ANSI escape sequence for a certain rgb color. 
+		/// @param r Red, from 0 - 255. 
+		/// @param g Green, from 0 - 255. 
+		/// @param b Blue, from 0 - 255. 
+		/// @return Escape sequence wstring. 
+		/// @note Thread-safe. 
 		inline static std::wstring escapeCodeFromColor(uint8_t r, uint8_t g, uint8_t b)
 		{
 			std::wostringstream out;
 			out << L"\x1b[38;2;" << r << L';' << g << L';' << b << L'm';
 			return std::move(out).str();
 		}
+		/// @internal 
+		/// @brief Internal API [Internal]. Returns the ANSI escape sequence for a color code. 
+		/// @param code Color code value. 
+		/// @return Escape sequence wstring. 
+		/// @note Thread-safe.
 		inline static std::wstring escapeCodeFromColor(uint8_t code)
 		{
 			std::wostringstream out;
 			out << L"\x1b[38;5;" << code << L'm';
 			return std::move(out).str();
 		}
+		/// @internal 
+		/// @brief Internal API [Internal]. Returns the ANSI escape sequence for a special type of escape code.
+		/// @param seq Escape code type.
+		/// @return Escape sequence wstring.
+		/// @note Thread-safe.
 		constexpr static std::wstring escapeCode(EscapeSequence seq)
 		{
 			switch (seq)
@@ -84,8 +113,18 @@ namespace Firework
 			return L"";
 		}
 	public:
+		Debug() = delete;
+
+		/// @brief Log a message to the console. 
+		/// @warning Whilst Debug::log is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @param severity Severity level of message.
+		/// @param ...log Message to concatenate together.
+		/// @see Firework::LogLevel
+		/// @note Thread-safe.
 		template <typename... T>
 		static void log(LogLevel severity, const T&... log)
+		requires requires { std::declval<std::wostream>() << ... << log; }
 		{
 			std::wostringstream logStr;
 			variadicToString(logStr, log...);
@@ -161,29 +200,57 @@ namespace Firework
 			std::wcout << L'\n';
 			Debug::outputLock.unlock();
 		}
+		/// @brief Logs a message at the trace severity. 
+		/// @warning Whilst Debug::logTrace is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @param ...log Message to concatenate together.
+		/// @see Firework::Debug::log
+		/// @note Thread-safe.
 		template <typename... T>
 		inline static void logTrace(const T&... log)
 		{
 			Debug::log(LogLevel::Trace, log...);
 		}
+		/// @brief Logs a message at the info severity. 
+		/// @warning Whilst Debug::logInfo is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @param ...log Message to concatenate together.
+		/// @see Firework::Debug::log
+		/// @note Thread-safe.
 		template <typename... T>
 		inline static void LogInfo(const T&... log)
 		{
 			Debug::log(LogLevel::Info, log...);
 		}
+		/// @brief Logs a message at the warn severity. 
+		/// @warning Whilst Debug::logWarn is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @param ...log Message to concatenate together.
+		/// @see Firework::Debug::log
+		/// @note Thread-safe.
 		template <typename... T>
 		inline static void LogWarn(const T&... log)
 		{
 			Debug::log(LogLevel::Warn, log...);
 		}
+		/// @brief Logs a message at the error severity. 
+		/// @warning Whilst Debug::logError is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @param ...log Message to concatenate together.
+		/// @see Firework::Debug::log
+		/// @note Thread-safe.
 		template <typename... T>
 		inline static void LogError(const T&... log)
 		{
 			Debug::log(LogLevel::Error, log...);
 		}
 
+		/// @brief Logs a message detailing the current hierachy of the world. 
+		/// @note Main thread only. 
 		static void printHierarchy();
 
+		/// @brief Triggers a breakpoint trap. 
+		/// @note Thread-safe. 
 		inline static void breakPoint()
 		{
 			#if _WIN32

@@ -102,7 +102,7 @@ void PackageManager::loadCorePackageIntoMemory(const fs::path& packagePath)
         )
         {
             // TODO: Implement.
-            Debug::LogError("Text file loading has not been implemented. This file handler will not be run.");
+            Debug::logError("Text file loading has not been implemented. This file handler will not be run.");
         }
         else PackageManager::loadedCorePackage.push_back(new BinaryPackageFile(std::move(fileBytes), filePath));
 

@@ -41,7 +41,7 @@ namespace Firework
         }
         else
         {
-            Debug::LogError("Entity already has this type of component!");
+            Debug::logError("Entity already has this type of component!");
             return nullptr;
         }
     }
@@ -58,7 +58,7 @@ namespace Firework
             if (it != EntityManager::components.end())
                 return it;
 
-            Debug::LogWarn("No component of type \"", __typeid(T).qualifiedName(), "\" could be found on this Entity!");
+            Debug::logWarn("No component of type \"", __typeid(T).qualifiedName(), "\" could be found on this Entity!");
             return nullptr;
         }
     }
@@ -74,6 +74,6 @@ namespace Firework
             delete it->second;
             EntityManager::components.erase(it);
         }
-        else Debug::LogWarn("No identical component could be found on this Entity to be removed!");
+        else Debug::logWarn("No identical component could be found on this Entity to be removed!");
     }
 }
