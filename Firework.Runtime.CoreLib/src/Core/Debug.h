@@ -13,6 +13,7 @@
 #include <sstream>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <Library/Lock.h>
 
