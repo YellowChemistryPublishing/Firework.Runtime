@@ -59,13 +59,12 @@ namespace Firework
 
 		/// @internal 
 		/// @brief Internal API [Internal]. Concatenates args... into a string.
-		/// @tparam ...T ```requires requires { [](std::wostringstream& str, const T&... args) { using namespace Firework::Internal; (str << ... << args); } (str, args...); }```
+		/// @tparam ...T
 		/// @param[out] str Output wostringstream.
 		/// @param ...args Values to concatenate.
 		/// @note Thread-safe, given any access to ```str``` across the duration of this function is thread-safe. 
 		template<typename... T>
 		static void variadicToString(std::wostringstream& str, const T&... args)
-		requires requires { [](std::wostringstream& str, const T&... args) { using namespace Firework::Internal; (str << ... << args); } (str, args...); }
 		{
 			using namespace Firework::Internal;
 			using expander = int[];
