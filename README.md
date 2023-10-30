@@ -22,7 +22,7 @@
 
 # Firework.DevKit
 
-A a blazing fast [citation needed], lightweight game and application development library that is intuitive and easy to use, whilst also being performant and efficient.  
+A a blazing fast<sup>[citation needed]</sup>, lightweight game and application development library that is intuitive and easy to use, whilst also being performant and efficient.  
 This dev kit is _very_ in-development right now, and definitely should not be used beyond experimentation. (Some commits might not even build!)
 
 

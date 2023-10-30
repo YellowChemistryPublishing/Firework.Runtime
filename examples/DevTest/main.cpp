@@ -33,6 +33,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         mesh->mesh = &sceneAsset->children().front().meshes().front();
 
         Debug::printHierarchy();
+        Debug::logError_final_final_actual_v2_final3("cow is unsure about this");
     };
     EngineEvent::OnMouseHeld += [](MouseButton button)
     {

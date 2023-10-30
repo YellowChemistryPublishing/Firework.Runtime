@@ -164,14 +164,14 @@ namespace Firework
 		/// @note Thread-safe.
 		static Key convertFromSDLKey(SDL_Keycode code);
 	public:
-		/// @brief Query the mouse position in pixel units, with the centre of the Window as (0, 0).
+		/// @brief Retrieve the mouse position in pixel units, with the centre of the Window as (0, 0).
 		/// @return Mouse position.
 		/// @note Main thread only.
 		inline static Mathematics::Vector2Int mousePosition()
 		{
 			return Input::internalMousePosition;
 		}
-		/// @brief Query the mouse motion this frame in pixel units, with the centre of the Window as (0, 0).
+		/// @brief Retrieve the mouse motion this frame in pixel units, with the centre of the Window as (0, 0).
 		/// @return Amount mouse has moved this frame.
 		/// @note Main thread only.
 		inline static Mathematics::Vector2Int mouseMotion()
@@ -179,7 +179,7 @@ namespace Firework
 			return Input::internalMouseMotion;
 		}
 
-		/// @brief Query whether mouse button is pressed this frame.
+		/// @brief Retrieve whether mouse button is pressed this frame.
 		/// @param button Mouse button to check.
 		/// @return Whether button is pressed.
 		/// @note Main thread only.
@@ -187,7 +187,7 @@ namespace Firework
 		{
 			return Input::heldMouseInputs[(size_t)button];
 		}
-		/// @brief Query whether key is pressed this frame.
+		/// @brief Retrieve whether key is pressed this frame.
 		/// @param key Key to check.
 		/// @return Whether key is pressed.
 		/// @note Main thread only.

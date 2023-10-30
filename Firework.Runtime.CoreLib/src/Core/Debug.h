@@ -58,13 +58,13 @@ namespace Firework
 
 		/// @internal 
 		/// @brief Internal API [Internal]. Concatenates args... into a string.
-		/// @tparam ...T ```requires requires { std::declval<std::ostream>() << ... << args; }```
+		/// @tparam ...T ```requires requires { [](std::wostringstream& str, const T&... args) { using namespace Firework::Internal; (str << ... << args); } (str, args...); }```
 		/// @param[out] str Output wostringstream.
 		/// @param ...args Values to concatenate.
 		/// @note Thread-safe, given any access to ```str``` across the duration of this function is thread-safe. 
 		template<typename... T>
 		static void variadicToString(std::wostringstream& str, const T&... args)
-		requires requires { std::declval<std::wostream>() << ... << args; }
+		requires requires { [](std::wostringstream& str, const T&... args) { using namespace Firework::Internal; (str << ... << args); } (str, args...); }
 		{
 			using namespace Firework::Internal;
 			using expander = int[];
@@ -117,14 +117,13 @@ namespace Firework
 
 		/// @brief Log a message to the console. 
 		/// @warning Whilst Debug::log is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
-		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @tparam ...T
 		/// @param severity Severity level of message.
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::LogLevel
 		/// @note Thread-safe.
 		template <typename... T>
 		static void log(LogLevel severity, const T&... log)
-		requires requires { std::declval<std::wostream>() << ... << log; }
 		{
 			std::wostringstream logStr;
 			variadicToString(logStr, log...);
@@ -202,7 +201,7 @@ namespace Firework
 		}
 		/// @brief Logs a message at the trace severity. 
 		/// @warning Whilst Debug::logTrace is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
-		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @tparam ...T
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::Debug::log
 		/// @note Thread-safe.
@@ -213,36 +212,104 @@ namespace Firework
 		}
 		/// @brief Logs a message at the info severity. 
 		/// @warning Whilst Debug::logInfo is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
-		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @tparam ...T
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::Debug::log
 		/// @note Thread-safe.
 		template <typename... T>
-		inline static void LogInfo(const T&... log)
+		inline static void logInfo(const T&... log)
 		{
 			Debug::log(LogLevel::Info, log...);
 		}
 		/// @brief Logs a message at the warn severity. 
 		/// @warning Whilst Debug::logWarn is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
-		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @tparam ...T
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::Debug::log
 		/// @note Thread-safe.
 		template <typename... T>
-		inline static void LogWarn(const T&... log)
+		inline static void logWarn(const T&... log)
 		{
 			Debug::log(LogLevel::Warn, log...);
 		}
 		/// @brief Logs a message at the error severity. 
 		/// @warning Whilst Debug::logError is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
-		/// @tparam ...T ```requires requires { std::declval<std::wostream>() << ... << log; }```
+		/// @tparam ...T
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::Debug::log
 		/// @note Thread-safe.
 		template <typename... T>
-		inline static void LogError(const T&... log)
+		inline static void logError(const T&... log)
 		{
 			Debug::log(LogLevel::Error, log...);
+		}
+		/// @brief cowsay
+		/// @tparam ...T 🐄
+		/// @param ...log cow is say
+		/// @note Thread-safe.
+		template <typename... T>
+		inline static void logError_final_final_actual_v2_final3(const T&... log)
+		{
+			std::wostringstream logStr;
+			Debug::variadicToString(logStr, log...);
+
+			std::vector<std::wstring> lines;
+			std::wistringstream readStr(std::move(logStr).str());
+			std::wstring line;
+			size_t width = 16;
+			while (std::getline(readStr, line))
+			{
+				width = std::max(width, line.size());
+				lines.push_back(line);
+			}
+
+			std::wstring out;
+			if (!lines.empty())
+			{
+				out.push_back(' ');
+				for (size_t i = width + 2; i--;)
+					out.push_back('_');
+				out.push_back('\n');
+			}
+			switch (lines.size())
+			{
+			case 0:
+				break;
+			case 1:
+				out.append(L"< ").append(lines.front());
+				for (size_t i = width - lines.front().size(); i--;)
+					out.push_back(L' ');
+				out.append(L" >\n");
+				break;
+			default:
+				out.append(L"/ ").append(lines.front());
+				for (size_t i = width - lines.front().size(); i--;)
+					out.push_back(L' ');
+				out.append(L" \\\n");
+				for (auto it = ++lines.begin(); it != --lines.end(); ++it)
+				{
+					out.append(L"| ").append(*it);
+					for (size_t i = width - it->size(); i--;)
+						out.push_back(L' ');
+					out.append(L" |\n");
+				}
+				out.append(L"\\ ").append(lines.back());
+				for (size_t i = width - lines.back().size(); i--;)
+					out.push_back(L' ');
+				out.append(L" /\n");
+			}
+			out.push_back(' ');
+			for (size_t i = width + 2; i--;)
+				out.push_back('-');
+
+			out.append(LR"(
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||)");
+
+			Debug::log(LogLevel::Error, out);
 		}
 
 		/// @brief Logs a message detailing the current hierachy of the world. 
