@@ -15,6 +15,11 @@ namespace Firework
     {
         class CoreEngine;
 
+        /// @internal
+        /// @brief Low-level API [Internal]. Converts a RectTransform to a RenderTransform for rendering.
+        /// @param transform RectTransform to convert.
+        /// @return RenderTransform representing the same transform to supply to renderer.
+        /// @note Thread-safe.
         __firework_corelib_api extern GL::RenderTransform renderTransformFromRectTransform(RectTransform* const transform);
     }
 

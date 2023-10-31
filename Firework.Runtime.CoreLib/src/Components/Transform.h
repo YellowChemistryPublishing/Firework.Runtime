@@ -11,9 +11,15 @@ namespace Firework
 {
     namespace Internal
     {
+        /// @internal
+        /// @brief Low-level API [Internal]. Converts a 3D Transform to a RenderTransform for rendering.
+        /// @param transform Transform to convert.
+        /// @return RenderTransform representing the same transform to supply to renderer.
+        /// @note Thread-safe.
         __firework_corelib_api extern GL::RenderTransform renderTransformFromTransform(Transform* const transform);
     }
 
+    /// @brief The transform component of a 3D entity.
     class __firework_corelib_api Transform final : public Internal::Component
     {
         Mathematics::Vector3 _position { 0.0f, 0.0f, 0.0f };
