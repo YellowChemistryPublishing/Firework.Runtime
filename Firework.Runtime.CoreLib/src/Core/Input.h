@@ -151,14 +151,14 @@ namespace Firework
 		static bool heldKeyInputs[(size_t)Key::Count];
 
 		/// @internal
-		/// @brief Internal API [Internal]. SDL mouse code to Firework::MouseButton
+		/// @brief Internal API. SDL mouse code to Firework::MouseButton
 		/// @warning This won't return a valid Firework::MouseButton if you don't pass it a valid SDL_BUTTON_*.
 		/// @param code Button to convert. From SDL_BUTTON_*.
 		/// @return Firework::MouseButton representing the mouse button.
 		/// @note Thread-safe.
 		static MouseButton convertFromSDLMouse(uint_fast8_t code);
 		/// @internal
-		/// @brief Internal API [Internal]. SDL key code to Firework::Key.
+		/// @brief Internal API. SDL key code to Firework::Key.
 		/// @param code SDL_Keycode to convert.
 		/// @return Firework::Key representing the keyboard key.
 		/// @note Thread-safe.

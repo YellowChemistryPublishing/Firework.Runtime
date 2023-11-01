@@ -8,9 +8,12 @@
 
 namespace Firework
 {
+    /// @brief Static class containing functionality relevant to runtime-dispatched events. You may add as many callbacks as you wish.
     class __firework_corelib_api EngineEvent final
     {
     public:
+        EngineEvent() = delete;
+        
         static FuncPtrEvent<> OnInitialize;
         static FuncPtrEvent<> OnTick;
         static FuncPtrEvent<> OnPhysicsTick;

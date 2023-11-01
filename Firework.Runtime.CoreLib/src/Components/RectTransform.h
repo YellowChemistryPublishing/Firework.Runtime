@@ -16,7 +16,7 @@ namespace Firework
         class CoreEngine;
 
         /// @internal
-        /// @brief Low-level API [Internal]. Converts a RectTransform to a RenderTransform for rendering.
+        /// @brief Low-level API. Converts a RectTransform to a RenderTransform for rendering.
         /// @param transform RectTransform to convert.
         /// @return RenderTransform representing the same transform to supply to renderer.
         /// @note Thread-safe.
@@ -70,47 +70,57 @@ namespace Firework
         Mathematics::Vector2 _scale { 1, 1 };
 
         /// @internal
-        /// @brief Internal API [Internal]. Set the position of this transform.
+        /// @brief Internal API. Set the position of this transform.
         /// @param value Position to set.
+        /// @note Main thread only.
         void setPosition(Mathematics::Vector2 value);
         /// @internal
-        /// @brief Internal API [Internal]. Set the rotation of this transform.
+        /// @brief Internal API. Set the rotation of this transform.
         /// @param value Rotation to set.
+        /// @note Main thread only.
         void setRotation(float value);
         /// @internal
-        /// @brief Internal API [Internal]. Set the scale of this transform.
+        /// @brief Internal API. Set the scale of this transform.
         /// @param value Scale to set.
+        /// @note Main thread only.
         void setScale(Mathematics::Vector2 value);
 
         /// @internal
-        /// @brief Internal API [Internal]. Retrieve the local position of this transform.
+        /// @brief Internal API. Retrieve the local position of this transform.
         /// @return Local position of this transform.
+        /// @note Main thread only.
         Mathematics::Vector2 getLocalPosition() const;
         /// @internal
-        /// @brief Internal API [Internal]. Set the local position of this transform.
+        /// @brief Internal API. Set the local position of this transform.
         /// @param value Local position to set.
+        /// @note Main thread only.
         void setLocalPosition(Mathematics::Vector2 value);
         /// @internal
-        /// @brief Internal API [Internal]. Retrieve the local rotation of this transform.
+        /// @brief Internal API. Retrieve the local rotation of this transform.
         /// @return Local rotation of this transform.
+        /// @note Main thread only.
         float getLocalRotation() const;
         /// @internal
-        /// @brief Internal API [Internal]. Set the local rotation of this transform.
+        /// @brief Internal API. Set the local rotation of this transform.
         /// @param value Local rotation to set.
+        /// @note Main thread only.
         void setLocalRotation(float value);
         /// @internal
-        /// @brief Internal API [Internal]. Retrieves the local scale of this transform.
+        /// @brief Internal API. Retrieves the local scale of this transform.
         /// @return Local scale of this transform.
+        /// @note Main thread only.
         Mathematics::Vector2 getLocalScale() const;
         /// @internal
-        /// @brief Internal API [Internal]. Set the local scale of this transform.
+        /// @brief Internal API. Set the local scale of this transform.
         /// @param scale Local scale to set.
+        /// @note Main thread only.
         void setLocalScale(Mathematics::Vector2 scale);
     public:
         /// @property
         /// @brief [Property] The rectangle bounds of this transform.
         /// @param value ```const Firework::RectFloat&```
         /// @return ```const Firework::RectFloat&```
+        /// @note Main thread only.
         const Property<const RectFloat&, const RectFloat&> rect
         {{
             [this]() -> const RectFloat& { return this->_rect; },
@@ -120,6 +130,7 @@ namespace Firework
         /// @brief [Property] The anchor for the rectangle bounds of this transform.
         /// @param value ```const Firework::RectFloat&```
         /// @return ```const Firework::RectFloat&```
+        /// @note Main thread only.
         const Property<const RectFloat&, const RectFloat&> rectAnchor
         {{
             [this]() -> const RectFloat& { return this->_anchor; },
@@ -128,8 +139,9 @@ namespace Firework
 
         /// @property
         /// @brief [Property] The position of this transform.
-        /// @param value ```Mathematics::Vector2```
-        /// @return ```Mathematics::Vector2```
+        /// @param value ```Firework::Mathematics::Vector2```
+        /// @return ```Firework::Mathematics::Vector2```
+        /// @note Main thread only.
         const Property<Mathematics::Vector2, Mathematics::Vector2> position
         {{
             [this]() -> Mathematics::Vector2 { return this->_position; },
@@ -139,6 +151,7 @@ namespace Firework
         /// @brief [Property] The rotation of this transform in radians.
         /// @param value ```float```
         /// @return ```float```
+        /// @note Main thread only.
         const Property<float, float> rotation
         {{
             [this]() -> float { return this->_rotation; },
@@ -146,8 +159,9 @@ namespace Firework
         }};
         /// @property
         /// @brief [Property] The scale of this transform.
-        /// @param value ```Mathematics::Vector2```
-        /// @return ```Mathematics::Vector2```
+        /// @param value ```Firework::Mathematics::Vector2```
+        /// @return ```Firework::Mathematics::Vector2```
+        /// @note Main thread only.
         const Property<Mathematics::Vector2, Mathematics::Vector2> scale
         {{
             [this]() -> Mathematics::Vector2 { return this->_scale; },
@@ -156,8 +170,9 @@ namespace Firework
         
         /// @property
         /// @brief [Property] The local position of this transform.
-        /// @param value ```Mathematics::Vector2```
-        /// @return ```Mathematics::Vector2```
+        /// @param value ```Firework::Mathematics::Vector2```
+        /// @return ```Firework::Mathematics::Vector2```
+        /// @note Main thread only.
         const Property<Mathematics::Vector2, Mathematics::Vector2> localPosition
         {{
             [this]() -> Mathematics::Vector2 { return this->getLocalPosition(); },
@@ -167,6 +182,7 @@ namespace Firework
         /// @brief [Property] The local rotation of this transform in radians.
         /// @param value ```float```
         /// @return ```float```
+        /// @note Main thread only.
         const Property<float, float> localRotation
         {{
             [this]() -> float { return this->getLocalRotation(); },
@@ -174,8 +190,9 @@ namespace Firework
         }};
         /// @property
         /// @brief [Property] The local scale of this transform.
-        /// @param value ```Mathematics::Vector2```
-        /// @return ```Mathematics::Vector2```
+        /// @param value ```Firework::Mathematics::Vector2```
+        /// @return ```Firework::Mathematics::Vector2```
+        /// @note Main thread only.
         const Property<Mathematics::Vector2, Mathematics::Vector2> localScale
         {{
             [this]() -> Mathematics::Vector2 { return this->getLocalScale(); },
@@ -185,6 +202,7 @@ namespace Firework
         /// @brief Check whether a point is within the rectangle of this transform.
         /// @param point Point to query.
         /// @return Whether point is within the rectangle of this transform.
+        /// @note Main thread only.
         bool queryPointIn(const Mathematics::Vector2& point);
 
         friend class Firework::Entity2D;

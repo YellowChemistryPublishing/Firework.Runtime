@@ -37,7 +37,7 @@ namespace Firework
 	}
 
 	/// @internal 
-	/// @brief Internal API [Internal]. Special escape sequences. 
+	/// @brief Internal API. Special escape sequences. 
 	enum class EscapeSequence : uint_fast8_t
 	{
 		Reset
@@ -58,7 +58,7 @@ namespace Firework
 		static Firework::SpinLock outputLock;
 
 		/// @internal 
-		/// @brief Internal API [Internal]. Concatenates args... into a string.
+		/// @brief Internal API. Concatenates args... into a string.
 		/// @tparam ...T
 		/// @param[out] str Output wostringstream.
 		/// @param ...args Values to concatenate.
@@ -75,7 +75,7 @@ namespace Firework
 			};
 		}
 		/// @internal 
-		/// @brief Internal API [Internal]. Returns the ANSI escape sequence for a certain rgb color. 
+		/// @brief Internal API. Returns the ANSI escape sequence for a certain rgb color. 
 		/// @param r Red, from 0 - 255. 
 		/// @param g Green, from 0 - 255. 
 		/// @param b Blue, from 0 - 255. 
@@ -88,7 +88,7 @@ namespace Firework
 			return std::move(out).str();
 		}
 		/// @internal 
-		/// @brief Internal API [Internal]. Returns the ANSI escape sequence for a color code. 
+		/// @brief Internal API. Returns the ANSI escape sequence for a color code. 
 		/// @param code Color code value. 
 		/// @return Escape sequence wstring. 
 		/// @note Thread-safe.
@@ -99,7 +99,7 @@ namespace Firework
 			return std::move(out).str();
 		}
 		/// @internal 
-		/// @brief Internal API [Internal]. Returns the ANSI escape sequence for a special type of escape code.
+		/// @brief Internal API. Returns the ANSI escape sequence for a special type of escape code.
 		/// @param seq Escape code type.
 		/// @return Escape sequence wstring.
 		/// @note Thread-safe.

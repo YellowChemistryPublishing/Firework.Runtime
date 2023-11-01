@@ -20,7 +20,7 @@ namespace Firework
 	namespace Internal
 	{
 		/// @internal 
-		/// @brief Internal API [Internal]. what the ~~dog~~ engine doin'
+		/// @brief Internal API. what the ~~dog~~ engine doin'
 		enum class EngineState : uint_fast8_t
 		{
 			FirstInit,
@@ -47,7 +47,7 @@ namespace Firework
 			static SDL_version backendVer;
 
 			/// @internal 
-			/// @brief Internal API [Internal]. Update the display information.
+			/// @brief Internal API. Update the display information.
 			/// @note Window thread only.
 			static void resetDisplayData();
 
@@ -57,20 +57,20 @@ namespace Firework
 			static std::vector<RenderJob> frameRenderJobs;
 			
 			/// @internal 
-			/// @brief Internal API [Internal]. The main thread loop. Blocks.
+			/// @brief Internal API. The main thread loop. Blocks.
 			/// @note Main thread only.
 			static void internalLoop();
 			/// @internal 
-			/// @brief Internal API [Internal]. The window thread loop. Blocks.
+			/// @brief Internal API. The window thread loop. Blocks.
 			/// @note Window thread only.
 			static void internalWindowLoop();
 			/// @internal 
-			/// @brief Internal API [Internal]. The render thread loop. Blocks.
+			/// @brief Internal API. The render thread loop. Blocks.
 			/// @note Render thread only.
 			static void internalRenderLoop();
 
 			/// @internal 
-			/// @brief Internal API [Internal]. Initialize and start the runtime.
+			/// @brief Internal API. Initialize and start the runtime.
 			/// @param argc Forwarded from int main(...). 
 			/// @param argv Forwarded from int main(...). 
 			/// @return Whether the runtime was able to successfully initialize. 
@@ -82,7 +82,7 @@ namespace Firework
 			CoreEngine() = delete;
 
 			/// @internal 
-			/// @brief Low-level API [Internal]. 
+			/// @brief Low-level API. 
 			/// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>``` 
 			/// @param job Job to queue. 
 			/// @param required Whether this job has to run if the runtime is behind.
