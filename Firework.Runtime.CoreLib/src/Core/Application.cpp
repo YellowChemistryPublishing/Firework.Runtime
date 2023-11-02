@@ -4,10 +4,9 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-namespace fs = std::filesystem;
 
 moodycamel::ConcurrentQueue<func::function<void()>> Application::mainThreadQueue;
-float Application::secondsPerFrame = 0.0f;// 1.0f / 60.0f;
+float Application::secondsPerFrame = 1.0f / 60.0f;
 
 int Application::run(int argc, char* argv[])
 {

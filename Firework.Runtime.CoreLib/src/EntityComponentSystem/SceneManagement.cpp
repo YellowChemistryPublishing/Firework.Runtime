@@ -46,6 +46,6 @@ size_t Scene::index()
             return i;
         ++i;
     }
-    Debug::logError("Could not determine the index of the scene! Is the scene active?");
+    Debug::logError("Could not determine the index of the scene! fixme: what? how?");
     return SIZE_MAX;
 }

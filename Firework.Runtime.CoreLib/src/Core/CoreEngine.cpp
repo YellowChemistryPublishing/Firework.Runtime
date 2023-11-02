@@ -23,6 +23,9 @@
 #include <SDL_video.h>
 #include <SDL_pixels.h>
 #include <span>
+#if _WIN32
+#include <VersionHelpers.h>
+#endif
 
 #include <Mathematics.h>
 #include <Core/Application.h>
@@ -68,9 +71,8 @@ int CoreEngine::execute(int argc, char* argv[])
     (void)argc;
     (void)argv;
 
-    #pragma region Initialization
-    #pragma region Color Coding Code Support Modifications
     #if _WIN32
+    if (IsWindowsVistaOrGreater())
     {
         HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
         DWORD dwMode = 0;
@@ -79,9 +81,7 @@ int CoreEngine::execute(int argc, char* argv[])
         SetConsoleMode(hOut, dwMode);
     }
     #endif
-    #pragma endregion
 
-    #pragma region SDL Initialisation
     if (!(SDL_Init(
         SDL_INIT_EVENTS |
         SDL_INIT_HAPTIC
@@ -94,17 +94,13 @@ int CoreEngine::execute(int argc, char* argv[])
         Debug::logError("Runtime failed to initialize! Error: ", SDL_GetError(), '.');
         return EXIT_FAILURE;
     }
-    #pragma endregion
-
-    #pragma region Other
+    
     fs::path p = fs::current_path();
     p.append("RuntimeInternal");
     std::wstring dir = p.wstring();
     if (!fs::exists(dir))
         fs::create_directory(dir);
-    #pragma endregion
 
-    #pragma region Package Loading
     uint16_t word = 0x0001;
     if (((uint8_t*)&word)[0])
         PackageManager::endianness = Endianness::Little;
@@ -120,8 +116,6 @@ int CoreEngine::execute(int argc, char* argv[])
         Debug::logInfo("CorePackage loaded!");
     }
     else Debug::logError("The CorePackage could not be found in the Runtime folder. Did you accidentally delete it?");
-    #pragma endregion
-    #pragma endregion
 
     std::thread windowThread(internalWindowLoop);
     std::thread mainThread(internalLoop);
@@ -247,7 +241,7 @@ void CoreEngine::internalLoop()
         }
         catch(...)
         {
-            #ifdef _GLIBCXX_RELEASE
+            #if defined(_GLIBCXX_RELEASE) && __has_include(<cpptrace/cpptrace.hpp>)
             std::string traceback = cpptrace::demangle(std::current_exception().__cxa_exception_type()->name());
             traceback.append(": ");
             #else

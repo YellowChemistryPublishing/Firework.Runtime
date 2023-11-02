@@ -266,10 +266,10 @@ namespace Firework
 			std::wstring out;
 			if (!lines.empty())
 			{
-				out.push_back(' ');
+				out.push_back(L' ');
 				for (size_t i = width + 2; i--;)
-					out.push_back('_');
-				out.push_back('\n');
+					out.push_back(L'_');
+				out.push_back(L'\n');
 			}
 			switch (lines.size())
 			{
@@ -298,9 +298,9 @@ namespace Firework
 					out.push_back(L' ');
 				out.append(L" /\n");
 			}
-			out.push_back(' ');
+			out.push_back(L' ');
 			for (size_t i = width + 2; i--;)
-				out.push_back('-');
+				out.push_back(L'-');
 
 			out.append(LR"(
         \   ^__^

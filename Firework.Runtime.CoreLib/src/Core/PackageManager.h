@@ -68,7 +68,7 @@ namespace Firework
         /// @tparam T ```requires std::is_base_of<PackageFile, T>::value```
         /// @param file Package file to cast.
         /// @return Downcasted package file.
-        /// @retval - nullptr: The package file is not of type ```T```.
+        /// @retval - ```nullptr```: The package file is not of type ```T```.
         /// @retval - Otherwise, a pointer to a package file of type ```T```.
         /// @note Thread-safe, returned value is not.
         template <typename T>
@@ -151,7 +151,7 @@ namespace Firework
             /// @brief Retrieve a file from the core package.
             /// @param filePath The path of the file within the package filesystem.
             /// @return Package file.
-            /// @retval nullptr: Package file could not be found.
+            /// @retval ```nullptr```: Package file could not be found.
             /// @retval Otherwise, pointer to loaded package file.
             /// @note Main thread only.
             static PackageFile* getCorePackageFileByPath(std::wstring filePath);

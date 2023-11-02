@@ -3,6 +3,10 @@
 #include <exception>
 #include <iostream>
 
+/// @brief This is idiotic.
+/// @param error who cares
+/// @param file this function
+/// @param line is useless
 inline void __internal_fatal(const char* error, const char* file, int line)
 {
     std::cerr << error << " (at line " << line << " of " << file << ".)\n";

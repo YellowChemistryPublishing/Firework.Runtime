@@ -34,3 +34,9 @@
 [submodule "external/cpptrace"]
 	path = external/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git
+[submodule "external/uni-algo"]
+	path = external/uni-algo
+	url = https://github.com/uni-algo/uni-algo.git
+[submodule "external/zlib"]
+	path = external/zlib
+	url = https://github.com/madler/zlib.git

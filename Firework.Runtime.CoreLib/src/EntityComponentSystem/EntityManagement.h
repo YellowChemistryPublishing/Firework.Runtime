@@ -24,6 +24,10 @@ namespace Firework
         class Component2D;
         class CoreEngine;
         
+        /// @internal
+        /// @brief Internal API. Hashes an entity-component pair.
+        /// @tparam EntityType Either ```Firework::Entity2D``` or ```Firework::Entity```.
+        /// @note Thread-safe.
         template <typename EntityType>
         requires std::same_as<EntityType, Entity2D> || std::same_as<EntityType, Entity>
         struct EntityComponentHash // Specialization appears before first use.
@@ -37,6 +41,7 @@ namespace Firework
         };
     }
 
+    /// @brief Static class containing functionality relevant to 2D entities.
     class __firework_corelib_api EntityManager2D final
     {
         static robin_hood::unordered_map<uint64_t, uint64_t> existingComponents;
@@ -44,8 +49,13 @@ namespace Firework
     public:
         EntityManager2D() = delete;
 
+        /// @brief Iterate over all existing entities, first scene first, first entity first.
+        /// @tparam Func ```requires requires { func::function<void(Entity2D*)>(func); }```
+        /// @param func Function to call with each entity.
+        /// @note Main thread only.
         template <typename Func>
-        inline static void foreachEntity(const Func&& func)
+        inline static void foreachEntity(Func&& func)
+        requires requires { func::function<void(Entity2D*)>(func); }
         {
             for
             (
@@ -68,8 +78,15 @@ namespace Firework
             }
         }
 
+        /// @brief
+        /// Iterate over all existing components, first scene first, first entity first.
+        /// There is no guarantee for any particular ordering of components for any given entity.
+        /// @tparam Func ```requires requires { func::function<void(Component2D*)>(func); }```
+        /// @param func Function to call with each component.
+        /// @note Main thread only.
         template <typename Func>
-        inline static void foreachComponent(const Func&& func)
+        inline static void foreachComponent(Func&& func)
+        requires requires { func::function<void(Internal::Component2D*)>(func); }
         {
             EntityManager2D::foreachEntity([&](Entity2D* entity)
             {
@@ -87,8 +104,14 @@ namespace Firework
             });
         }
 
+        /// @brief Iterate over all entities with a particular set of components, first scene first, first entity first.
+        /// @tparam ...Ts ```requires (std::derived_from<Ts, Internal::Component2D> && ...)```. Component types to query on an entity.
+        /// @tparam Func ```requires { func::function<void(Entity2D*, Ts*...)>(func); }```
+        /// @param func Function to call with each entity that has all of the queried components.
+        /// @note Main thread only.
         template <typename... Ts, typename Func>
         inline static void foreachEntityWithAll(const Func&& func)
+        requires (std::derived_from<Ts, Internal::Component2D> && ...) && requires { func::function<void(Entity2D*, Ts*...)>(func); }
         {
             EntityManager2D::foreachEntity([&](Entity2D* entity)
             {
@@ -100,7 +123,7 @@ namespace Firework
 
                 size_t i = 0;
                 if (pred)
-                    func(entity, (Ts*)arr[i++] ...);
+                    func(entity, (Ts*)arr[i++]...);
             });
         }
 
@@ -109,6 +132,8 @@ namespace Firework
         friend class Firework::Internal::CoreEngine;
     };
 
+    /// @brief Static class containing functionality relevant to 3D entities.
+    /// @warning Unimplemented.
     class __firework_corelib_api EntityManager final
     {
         static robin_hood::unordered_map<uint64_t, uint64_t> existingComponents;
