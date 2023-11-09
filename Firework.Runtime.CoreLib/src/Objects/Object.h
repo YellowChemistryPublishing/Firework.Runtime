@@ -12,8 +12,6 @@ namespace Firework
             inline virtual ~Object() = 0;
         };
 
-        Object::~Object()
-        {
-        }
+        Object::~Object() = default;
     }
 }

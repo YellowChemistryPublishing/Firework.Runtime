@@ -6,6 +6,8 @@
 #include <Components/Transform.h>
 
 #include <Mesh.vfAll.h>
+#include <cstdint>
+#include <format>
 
 using namespace Firework;
 using namespace Firework::Internal;
@@ -63,7 +65,7 @@ void Mesh::setMesh(const GL::SceneMesh* value)
                 data->meshData = &Mesh::meshes.insert(std::make_pair(std::move(meshData), data)).first->first;
                 data->staticMesh = StaticMeshHandle::create
                 (
-                    value->vertices().data(), value->vertices().size(),
+                    value->vertices().data(), value->vertices().size() * sizeof(MeshVertex),
                     VertexLayout::create
                     ({
                         VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 },
@@ -71,7 +73,7 @@ void Mesh::setMesh(const GL::SceneMesh* value)
                         VertexDescriptor { .attribute = bgfx::Attrib::Color0, .type = bgfx::AttribType::Float, .count = 4 },
                         VertexDescriptor { .attribute = bgfx::Attrib::TexCoord0, .type = bgfx::AttribType::Float, .count = 3 }
                     }),
-                    value->indices().data(), value->indices().size()
+                    value->indices().data(), value->indices().size() * sizeof(uint16_t)
                 );
                 this->data = data;
             }
