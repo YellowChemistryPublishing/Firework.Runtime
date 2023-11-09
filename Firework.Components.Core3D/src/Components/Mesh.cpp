@@ -7,7 +7,6 @@
 
 #include <Mesh.vfAll.h>
 #include <cstdint>
-#include <format>
 
 using namespace Firework;
 using namespace Firework::Internal;
