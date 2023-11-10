@@ -37,6 +37,5 @@ __firework_corelib_api void __fw_rt_hw_excpt_handler(int sig, siginfo_t*, void*)
     case SIGFPE:
         __fw_rt_hw_sigh(sig);
         throw ArithmeticException();
-        break;
     }
 }

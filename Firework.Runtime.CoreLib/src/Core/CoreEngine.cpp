@@ -40,7 +40,6 @@
 #include <Firework/Config.h>
 #include <GL/Renderer.h>
 #include <Library/Hash.h>
-#include <Library/Task.h>
 #include <Objects/Entity2D.h>
 
 namespace fs = std::filesystem;
@@ -640,11 +639,11 @@ void CoreEngine::internalRenderLoop()
     RendererBackend backendPriorityOrder[]
     {
         #if _WIN32
+        RendererBackend::OpenGL,
         RendererBackend::Vulkan,
         RendererBackend::Direct3D12,
         RendererBackend::Direct3D11,
-        RendererBackend::Direct3D9,
-        RendererBackend::OpenGL,
+        RendererBackend::Direct3D9
         #else
         RendererBackend::OpenGL,
         RendererBackend::Vulkan

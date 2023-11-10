@@ -1,8 +1,10 @@
+#include "Mathematics.h"
 #include <Firework.Core.hpp>
 
 #include <Components/Camera.h>
 #include <Components/Mesh.h>
 #include <GL/ModelLoader.h>
+#include <GL/Renderer.h>
 
 using namespace Firework;
 using namespace Firework::Mathematics;
@@ -25,10 +27,12 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         (player = new Entity)->addComponent<Camera>();
         Debug::logTrace("pos: ", Camera::active()->transform()->position(), ", rot: ", Camera::active()->transform()->rotation(), ", scl: ", Camera::active()->transform()->scale());
 
-        BinaryPackageFile* file = file_cast<BinaryPackageFile>(PackageManager::getCorePackageFileByPath(L"Assets/Glock18.fbx"));
+        BinaryPackageFile* file = file_cast<BinaryPackageFile>(PackageManager::getCorePackageFileByPath(L"Assets/untitled.fbx"));
         sceneAsset = ModelLoader::loadModel(file->binaryData().data(), file->binaryData().size());
 
         mesh = (meshObject = new Entity)->addComponent<Mesh>();
+        meshObject->transform()->scale = Vector3(2.5f);
+
         mesh->meshType = MeshType::Static;
         mesh->mesh = &sceneAsset->children().front().meshes().front();
 
