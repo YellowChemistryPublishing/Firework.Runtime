@@ -30,17 +30,29 @@ namespace Firework
         protected:
             ~Component2D() override;
         public:
+            /// @brief Whether this component is active.
+            /// @warning Do we use this?
+            /// @note Main thread only.
             bool active = true;
 
+            /// @brief The type hash of this component.
+            /// @return Value of __typeid(T).qualifiedNameHash(), where T is the type of the component.
+            /// @note Main thread only.
             inline uint64_t typeIndex()
             {
                 return this->reflection.typeID;
             }
 
+            /// @brief Retrieve the 2D entity associated with this component.
+            /// @return Entity associated with this component.
+            /// @note Main thread only.
             inline Entity2D* entity()
             {
                 return this->attachedEntity;
             }
+            /// @brief Retrieve the 2D transform component associated with the attached entity of this component.
+            /// @return Transform component.
+            /// @note Main thread only.
             inline RectTransform* rectTransform()
             {
                 return this->attachedRectTransform;

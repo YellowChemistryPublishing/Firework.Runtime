@@ -15,6 +15,11 @@
 #include <Library/Hash.h>
 #include <Library/TypeInfo.h>
 
+///
+/// The documentation in this file is incomplete, because the API is work-in-progress.
+/// FIXME: Please fix.
+///
+
 namespace Firework
 {
     class Scene;
@@ -57,6 +62,8 @@ namespace Firework
         Entity2D(const Mathematics::Vector2& localPosition, float localRotation, const Mathematics::Vector2& scale, Entity2D* parent = nullptr);
         ~Entity2D() override;
 
+        /// @brief Retrieves the 2D transform component associated with this entity.
+        /// @return RectTransform component.
         inline RectTransform* rectTransform()
         {
             return this->attachedRectTransform;

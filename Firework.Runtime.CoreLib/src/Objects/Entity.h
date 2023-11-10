@@ -21,9 +21,6 @@ namespace Firework
     template <typename T>
     T* Entity::addComponent()
     {
-        static_assert(!std::is_same<T, Transform>::value, "Cannot add component to Entity. You cannot add Transform to an Entity, it is a default component.");
-        static_assert(std::is_base_of<Internal::Component, T>::value, "Cannot add component to Entity. Typename \"T\" is not derived from type \"Component\"");
-
         if (!EntityManager::components.contains(std::make_pair(this, __typeid(T).qualifiedNameHash())))
         {
             auto it = EntityManager::existingComponents.find(__typeid(T).qualifiedNameHash());
@@ -52,8 +49,6 @@ namespace Firework
             return this->attachedTransform;
         else
         {
-            static_assert(std::is_base_of<Internal::Component, T>::value, "Cannot get component from Entity. Typename \"T\" is not derived from type \"Component\"");
-
             auto it = EntityManager::components.find({ this->attachedScene, this, __typeid(T).qualifiedNameHash() });
             if (it != EntityManager::components.end())
                 return it;
@@ -65,9 +60,6 @@ namespace Firework
     template <typename T>
     void Entity::removeComponent()
     {
-        static_assert(!std::is_same<T, Transform>::value, "Cannot remove component from Entity. You cannot remove Transform from an Entity, it is a default component.");
-        static_assert(std::is_base_of<Internal::Component, T>::value, "Cannot get component from Entity. Typename \"T\" is not derived from type \"Component\"");
-        
         auto it = EntityManager::components.find({ this->attachedScene, this, __typeid(T).qualifiedNameHash() });
         if (it != EntityManager::components.end())
         {

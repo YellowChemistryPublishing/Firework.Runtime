@@ -87,7 +87,7 @@ namespace Firework
         /// @brief [Property] The rotation of this transform in radians.
         /// @param value ```Firework::Mathematics::Quaternion```
         /// @return ```Firework::Mathematics::Quaternion```
-        /// @see Firework::Firework::Mathematics::Quaternion::fromEuler when using euler angles for rotations.
+        /// @see Firework::Mathematics::Quaternion::fromEuler when using euler angles for rotations.
         /// @note Main thread only.
         const Property<Mathematics::Quaternion, Mathematics::Quaternion> rotation
         {{
@@ -119,7 +119,7 @@ namespace Firework
         /// @brief [Property] The local rotation of this transform in radians.
         /// @param value ```Firework::Mathematics::Quaternion```
         /// @return ```Firework::Mathematics::Quaternion```
-        /// @see Firework::Firework::Mathematics::Quaternion::fromEuler when using euler angles for rotations.
+        /// @see Firework::Mathematics::Quaternion::fromEuler when using euler angles for rotations.
         /// @note Main thread only.
         const Property<Mathematics::Quaternion, Mathematics::Quaternion> localRotation
         {{

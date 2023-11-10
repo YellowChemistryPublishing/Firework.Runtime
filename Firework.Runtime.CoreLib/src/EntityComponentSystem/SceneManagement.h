@@ -70,6 +70,7 @@ namespace Firework
         };
     }
     
+    /// @brief Static class containing functionality relevant to scene management.
     class __firework_corelib_api SceneManager final
     {
         static std::list<Internal::SceneMemoryChunk> existingScenes;

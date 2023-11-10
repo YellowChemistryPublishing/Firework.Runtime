@@ -25,8 +25,14 @@ namespace Firework
                 stbi_image_free(this->loadedImage);
             }
         public:
+            /// @brief Retrieve the width of the image.
+            /// @return The width of the image, in pixels.
             inline int imageWidth() { return this->width; };
+            /// @brief Retrieve the height of the image.
+            /// @return The height of the image, in pixels.
             inline int imageHeight() { return this->height; };
+            /// @brief Retrieve the byte data of the image.
+            /// @return Contiguous byte array of color data. Indexed (row? column? who knows FIXME:) major.
             inline const uint8_t* imageRGBAData() { return this->loadedImage; };
 
             friend class Firework::PackageSystem::PackageManager;
