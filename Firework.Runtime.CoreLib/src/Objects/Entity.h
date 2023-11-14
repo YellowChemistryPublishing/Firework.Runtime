@@ -19,6 +19,7 @@
 namespace Firework
 {
     template <typename T>
+    requires (!std::same_as<T, Transform> && std::derived_from<T, Internal::Component>)
     T* Entity::addComponent()
     {
         if (!EntityManager::components.contains(std::make_pair(this, __typeid(T).qualifiedNameHash())))
@@ -43,6 +44,7 @@ namespace Firework
         }
     }
     template <typename T>
+    requires std::derived_from<T, Internal::Component>
     T* Entity::getComponent()
     {
         if constexpr (std::is_same<T, Transform>::value)
@@ -58,6 +60,7 @@ namespace Firework
         }
     }
     template <typename T>
+    requires (!std::same_as<T, Transform> && std::derived_from<T, Internal::Component>)
     void Entity::removeComponent()
     {
         auto it = EntityManager::components.find({ this->attachedScene, this, __typeid(T).qualifiedNameHash() });

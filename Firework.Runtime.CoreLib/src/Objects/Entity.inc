@@ -98,7 +98,7 @@ namespace Firework
         /// @retval - Otherwise, pointer to the added component.
         /// @note Main thread only.
         template <typename T>
-        requires !std::same_as<T, Transform> && std::derived_from<T, Internal::Component>
+        requires (!std::same_as<T, Transform> && std::derived_from<T, Internal::Component>)
         inline T* addComponent();
         /// @brief Retrieve a component from this entity.
         /// @tparam T Any 3D component type.
@@ -113,7 +113,7 @@ namespace Firework
         /// @tparam T Any 3D component type, with the exception of Transform. (Transform is a default component, 3D entities must _always_ have one.)
         /// @note Main thread only.
         template <typename T>
-        requires !std::same_as<T, Transform> && std::derived_from<T, Internal::Component>
+        requires (!std::same_as<T, Transform> && std::derived_from<T, Internal::Component>)
         inline void removeComponent();
 
         friend class Firework::SceneManager;
