@@ -27,14 +27,14 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         (player = new Entity)->addComponent<Camera>();
         Debug::logTrace("pos: ", Camera::active()->transform()->position(), ", rot: ", Camera::active()->transform()->rotation(), ", scl: ", Camera::active()->transform()->scale());
 
-        BinaryPackageFile* file = file_cast<BinaryPackageFile>(PackageManager::getCorePackageFileByPath(L"Assets/untitled.fbx"));
+        BinaryPackageFile* file = file_cast<BinaryPackageFile>(PackageManager::getCorePackageFileByPath(L"Assets/untitled.blend"));
         sceneAsset = ModelLoader::loadModel(file->binaryData().data(), file->binaryData().size());
 
         mesh = (meshObject = new Entity)->addComponent<Mesh>();
         meshObject->transform()->scale = Vector3(2.5f);
 
         mesh->meshType = MeshType::Static;
-        mesh->mesh = &sceneAsset->children().front().meshes().front();
+        mesh->mesh = &sceneAsset->children().front().children().front().meshes().front();
 
         Debug::printHierarchy();
         Debug::logError_final_final_actual_v2_final3("cow is unsure about this");
@@ -71,6 +71,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     };
     EngineEvent::OnKeyHeld += [](Key key)
     {
+        vec3 v = Vector3::forward;
+        v.rotate(Quaternion::identity);
         switch (key)
         {
         case Key::LetterW:

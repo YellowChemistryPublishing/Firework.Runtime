@@ -146,11 +146,8 @@ void Renderer::setViewOrthographic(bgfx::ViewId id, float width, float height, V
 }
 void Renderer::setViewPerspective(bgfx::ViewId id, float width, float height, float yFieldOfView, Vector3 position, Quaternion rotation, float near, float far)
 {
-    float proj[16];
+    float proj[16] { 0 };
     bx::mtxProj(proj, yFieldOfView, width / height, near, far, bgfx::getCaps()->homogeneousDepth);
-    // I have no idea what this does. I do know the transformation isn't T_p\cdot T_r.
-    position.x = -position.x;
-    position.z = -position.z;
     bgfx::setViewTransform(id, (Matrix4x4::rotate(rotation) * Matrix4x4::translate(position)).data, proj);
 }
 void Renderer::setViewClear(bgfx::ViewId id, uint32_t rgbaColor, uint16_t flags, float depth, uint8_t stencil)
@@ -196,7 +193,7 @@ void Renderer::debugDrawCube(Vector3 position, float sideLength)
     transform.scale(Vector3(sideLength));
     transform.translate(position);
     Renderer::setDrawTransform(transform);
-    Renderer::submitDraw(0, cubeMesh, cubeProgram, BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_LEQUAL | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z);
+    Renderer::submitDraw(0, cubeMesh, cubeProgram, BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z);
 }
 #endif
 

@@ -451,7 +451,8 @@ namespace Firework
 
 		constexpr Vector3 Vector3::rotate(const Quaternion& rot) const noexcept
 		{
-			return (rot * Quaternion(0.0f, *this) * rot.conjugate()).vector();
+			/// FIXME: Is this a hack? Why do we need operator- in front?
+			return -(rot * Quaternion(0.0f, *this) * rot.conjugate()).vector();
 		}
 
 		struct Matrix4x4
@@ -685,7 +686,7 @@ namespace Firework
 			{
 				return lhs.x * rhs.x + lhs.y * rhs.y;
 			}
-			constexpr static float dot(const Vector2Int& lhs, const Vector2Int& rhs) noexcept
+			constexpr static int32_t dot(const Vector2Int& lhs, const Vector2Int& rhs) noexcept
 			{
 				return lhs.x * rhs.x + lhs.y * rhs.y;
 			}

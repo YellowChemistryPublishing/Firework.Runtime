@@ -4,7 +4,9 @@
 
 #include <robin_hood.h>
 #include <span>
+#include <unordered_map>
 #include <variant>
+#include <vector>
 
 #include <GL/Shader.h>
 #include <GL/ModelLoader.h>

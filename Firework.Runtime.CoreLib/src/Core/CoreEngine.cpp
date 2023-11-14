@@ -316,13 +316,13 @@ void CoreEngine::internalLoop()
                     Renderer::resetBackbuffer((uint32_t)w, (uint32_t)h);
                     Renderer::setViewArea(0, 0, 0, (uint16_t)w, (uint16_t)h);
                     Renderer::setViewArea(1, 0, 0, (uint16_t)w, (uint16_t)h);
-                    Renderer::setViewOrthographic(1, w, h, Vector3(0, 0, 0), Renderer::fromEuler(Vector3(0, 0, 0)), -16777216.0f, 16777216.0f);
+                    Renderer::setViewOrthographic(1, w, h, Vector3(0, 0, 0), Renderer::fromEuler(Vector3(0, 0, 0)), 0.0f, 16777216.0f);
                 }));
                 prevw = Window::width; prevh = Window::height;
             }
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([]
             {
-                Renderer::setViewClear(0, 0x000000ff, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH);
+                Renderer::setViewClear(0, 0x000000ff, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL);
             }, false));
 
             for (auto _it1 = SceneManager::existingScenes.rbegin(); _it1 != SceneManager::existingScenes.rend(); ++_it1)
@@ -696,7 +696,7 @@ void CoreEngine::internalRenderLoop()
     
     Renderer::setViewArea(0, 0, 0, (uint16_t)Window::width, (uint16_t)Window::height);
     Renderer::setViewArea(1, 0, 0, (uint16_t)Window::width, (uint16_t)Window::height);
-    Renderer::setViewOrthographic(1, float(Window::width), float(Window::height), Vector3(0, 0, 0), Renderer::fromEuler(Vector3(0, 0, 0)), -16777216.0f, 16777216.0f);
+    Renderer::setViewOrthographic(1, float(Window::width), float(Window::height), Vector3(0, 0, 0), Renderer::fromEuler(Vector3(0, 0, 0)), 0.0f, 16777216.0f);
     Renderer::setViewClear(0, 0xffffffff, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH);
     
     CoreEngine::state.store(EngineState::RenderThreadReady, std::memory_order_relaxed); // Signal main thread.

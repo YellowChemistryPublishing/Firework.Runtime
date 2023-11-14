@@ -2,13 +2,16 @@ cmake_minimum_required(VERSION 3.22)
 
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 cmake_policy(SET CMP0077 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0092 NEW)
+cmake_policy(SET CMP0092 NEW)
 
 project(Firework.DevKit)
 
 # Configuration options...
-option(WINDOWS_COMPATIBILITY_SUPPORT "Enable compatibility with Windows versions up to Windows XP." ON)
+option(FIREWORK_WINDOWS_COMPATIBILITY "Enable compatibility with Windows versions up to Windows XP. This option only has effect when compiling with MinGW." ON)
 option(FIREWORK_BUILD_EXAMPLES "Build various examples." ON)
 option(FIREWORK_SANITIZE "Enable supported sanitizers." OFF)
+option(FIREWORK_LTO "Enable link-time optimization on release builds." OFF)
 
 include(GenerateExportHeader)
 
@@ -29,7 +32,6 @@ if (EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 elseif (WIN32 OR WIN64)
     set(FIREWORK_BUILD_PLATFORM "Win32")
-    add_definitions(-D_WIN32_WINNT=0x0502 -DWINVER=0x0502)
 elseif (UNIX AND NOT APPLE)
     set(FIREWORK_BUILD_PLATFORM "Linux")
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -58,8 +60,7 @@ elseif (FIREWORK_COMPILER_ID STREQUAL "GNU")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_TYPE}-${FIREWORK_BUILD_PLATFORM}")
     add_compile_options(-fnon-call-exceptions)
     add_link_options(-static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic)
-    remove_definitions(-D_WIN32_WINNT -DWINVER)
-    if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
+    if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" AND FIREWORK_WINDOWS_COMPATIBILITY)
         add_definitions(-D_WIN32_WINNT=0x0501 -DWINVER=0x0501 -D__REQUIRED_RPCNDR_H_VERSION__=475)
     endif()
 
@@ -97,6 +98,8 @@ elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" OR FIREWORK_COMPILER
     set(FIREWORK_COMPILER "MSVC")
     set(FIREWORK_BUILD_TYPE "Any")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_PLATFORM}")
+    string(REPLACE " /EHs" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    string(REPLACE " /EHs" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     add_compile_options(/Zc:__cplusplus /utf-8 /EHa)
 
     if (FIREWORK_SANITIZE)
@@ -112,6 +115,31 @@ else()
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_PLATFORM}")
 endif()
 
+macro(firework_push_nowarn)
+    if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc" OR FIREWORK_COMPILER STREQUAL "Clang")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
+    elseif (FIREWORK_COMPILER STREQUAL "MSVC")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /w")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
+    endif()
+endmacro()
+macro(firework_pop_nowarn)
+    if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc" OR FIREWORK_COMPILER STREQUAL "Clang")
+        string(REPLACE " -w" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+        string(REPLACE " -w" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    elseif (FIREWORK_COMPILER STREQUAL "MSVC")
+        string(REPLACE " /w" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+        string(REPLACE " /w" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+    endif()
+endmacro()
+
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ${FIREWORK_LTO})
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ${FIREWORK_LTO})
+set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ${FIREWORK_LTO})
+
+firework_push_nowarn()
+
 # concurrentqueue
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/concurrentqueue")
 
@@ -122,6 +150,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/robin-hood-hashing")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/uni-algo")
 
 # cpptrace
+firework_pop_nowarn()
 if (CMAKE_SYSTEM_NAME STREQUAL Windows OR CMAKE_SYSTEM_NAME STREQUAL Darwin OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(CPPTRACE_STATIC ON CACHE INTERNAL "" FORCE)
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/cpptrace")
@@ -130,6 +159,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL Windows OR CMAKE_SYSTEM_NAME STREQUAL Darwin OR C
     endif()
     set_target_properties(cpptrace PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+firework_push_nowarn()
 
 # SDL3
 set(SDL_STATIC_PIC ON CACHE INTERNAL "" FORCE)
@@ -143,18 +173,18 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/SDL")
 # target_compile_definitions(SDL3-static PRIVATE HAVE_LIBC=1) i don't know if we still need this
 
 # assimp
+firework_pop_nowarn()
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/assimp")
 unset(BUILD_SHARED_LIBS)
+firework_push_nowarn()
 
 # bgfx
 
 if (FIREWORK_COMPILER STREQUAL MinGW)
     add_definitions(-DMINGW_HAS_SECURE_API=0)
-elseif (FIREWORK_COMPILER STREQUAL "MSVC")
-    add_definitions(-DBX_COMPILER_MSVC=1)
 endif()
 
 set(BGFX_LIBRARY_TYPE "STATIC" CACHE INTERNAL "" FORCE)
@@ -164,8 +194,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 
 if (FIREWORK_COMPILER STREQUAL "MinGW")
     remove_definitions(-DMINGW_HAS_SECURE_API)
-elseif (FIREWORK_COMPILER STREQUAL "MSVC")
-    add_definitions(-DBX_COMPILER_MSVC)
 endif()
 
 # Firework.Runtime
@@ -175,13 +203,17 @@ set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 set(CMAKE_DEBUG_POSTFIX "" CACHE INTERNAL "")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
-
+firework_pop_nowarn()
 if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc")
-    add_compile_options(-Wall -Wextra)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 elseif (FIREWORK_COMPILER STREQUAL "Clang")
-    add_compile_options(-Wmost -Wno-c++98-compat -Wno-c++0x-compat -Wno-c++11-compat -Wno-c++14-compat -Wno-c++17-compat -Wno-c++20-compat)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmost -Wno-c++98-compat -Wno-c++0x-compat -Wno-c++11-compat -Wno-c++14-compat -Wno-c++17-compat -Wno-c++20-compat")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmost -Wno-c++98-compat -Wno-c++0x-compat -Wno-c++11-compat -Wno-c++14-compat -Wno-c++17-compat -Wno-c++20-compat")
 elseif (FIREWORK_COMPILER STREQUAL "MSVC")
-    add_compile_options(/Zc:preprocessor /Wall)
+    add_compile_options(/Zc:preprocessor)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
 
 message(STATUS "[FireworkConfigure] [INFO]  Compilation target ${FIREWORK_TARGET_NAME}.")

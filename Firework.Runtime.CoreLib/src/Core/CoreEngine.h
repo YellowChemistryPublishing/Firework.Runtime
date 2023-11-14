@@ -9,6 +9,7 @@
 #include <SDL3/SDL_syswm.h>
 #include <concurrentqueue.h>
 #include <function.h>
+#include <vector>
 
 #include <Core/RenderJob.h>
 #include <Library/Lock.h>

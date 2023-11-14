@@ -60,7 +60,7 @@ void Mesh::setMesh(const GL::SceneMesh* value)
             }
             else
             {
-                RenderData* data = new RenderData { 1, nullptr, { } };
+                RenderData* data = new RenderData { 1, nullptr, { }, MeshType::Static };
                 data->meshData = &Mesh::meshes.insert(std::make_pair(std::move(meshData), data)).first->first;
                 data->staticMesh = StaticMeshHandle::create
                 (
@@ -142,16 +142,17 @@ void Mesh::renderOffload()
 {
     if (this->data) [[likely]]
     {
-        CoreEngine::queueRenderJobForFrame([data = this->data, t = renderTransformFromTransform(this->transform())]
+        CoreEngine::queueRenderJobForFrame([data = this->data, t = renderTransformFromTransform(this->transform()), pos = this->transform()->position()]
         {
             Renderer::setDrawTransform(t);
             switch (data->type)
             {
             case MeshType::Static:
-                Renderer::submitDraw(1, data->staticMesh, Mesh::program);
+                Renderer::submitDraw(0, data->staticMesh, Mesh::program);
+                Renderer::debugDrawCube(pos, 2.5f);
                 break;
             case MeshType::Dynamic:
-                Renderer::submitDraw(1, data->dynMesh, Mesh::program);
+                Renderer::submitDraw(0, data->dynMesh, Mesh::program);
                 break;
             case MeshType::Transient:
                 throw "unimplemented";
