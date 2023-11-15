@@ -646,7 +646,7 @@ void CoreEngine::internalRenderLoop()
         RendererBackend::Direct3D9
         #else
         RendererBackend::Vulkan,
-        RendererBackend::OpenGL,
+        RendererBackend::OpenGL
         #endif
     };
     std::vector<RendererBackend> backends = Renderer::platformBackends();
@@ -665,20 +665,20 @@ void CoreEngine::internalRenderLoop()
 
     if (!Renderer::initialize
         (
-            #if defined(SDL_ENABLE_SYSWM_X11)
-            (void*)wmInfo.info.x11.display,
-            #elif defined(SDL_ENABLE_SYSWM_WAYLAND)
+            #if defined(SDL_ENABLE_SYSWM_WAYLAND)
             (void*)wmInfo.info.wl.display,
+            #elif defined(SDL_ENABLE_SYSWM_X11)
+            (void*)wmInfo.info.x11.display,
             #else
             nullptr,
             #endif
 
             #if __EMSCRIPTEN__
             (void*)"#canvas",
-            #elif defined(SDL_ENABLE_SYSWM_X11)
-            (void*)wmInfo.info.x11.window,
             #elif defined(SDL_ENABLE_SYSWM_WAYLAND)
             (void*)wmInfo.info.wl.egl_window,
+            #elif defined(SDL_ENABLE_SYSWM_X11)
+            (void*)wmInfo.info.x11.window,
             #elif defined(SDL_ENABLE_SYSWM_COCOA)
             (void*)wmInfo.info.cocoa.window,
             #elif defined(SDL_ENABLE_SYSWM_WINDOWS)
