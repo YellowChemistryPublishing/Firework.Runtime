@@ -5,7 +5,7 @@ cmake_policy(SET CMP0077 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0092 NEW)
 cmake_policy(SET CMP0092 NEW)
 
-project(Firework.DevKit)
+project(Firework.Runtime)
 
 # Configuration options...
 option(FIREWORK_WINDOWS_COMPATIBILITY "Enable compatibility with Windows versions up to Windows XP. This option only has effect when compiling with MinGW." ON)

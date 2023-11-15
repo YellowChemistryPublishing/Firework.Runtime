@@ -30,7 +30,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
         titleText = title->addComponent<Text>();
         titleText->fontFile = file_cast<TrueTypeFontPackageFile>(PackageManager::getCorePackageFileByPath(L"Assets/Fonts/Red Hat Mono/static/RedHatMono-SemiBold.ttf"));
-        titleText->text = U"Hello Firework.DevKit!";
+        titleText->text = U"Hello Firework.Runtime!";
         titleText->horizontalAlign = TextAlign::Minor;
         titleText->verticalAlign = TextAlign::Minor;
         titleText->fontSize = titleText->calculateBestFitFontSize();

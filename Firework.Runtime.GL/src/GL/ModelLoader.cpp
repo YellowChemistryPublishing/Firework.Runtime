@@ -65,7 +65,7 @@ std::string SceneAsset::generateSceneStructureDescription()
 
 SceneAsset* ModelLoader::loadModel(const uint8_t* data, size_t size, bool flipYZ)
 {
-    const aiScene* scene = ModelLoader::importer.ReadFileFromMemory(data, size * sizeof(uint8_t), aiProcess_Triangulate | aiProcess_ConvertToLeftHanded);
+    const aiScene* scene = ModelLoader::importer.ReadFileFromMemory(data, size * sizeof(uint8_t), aiProcess_Triangulate | aiProcess_MakeLeftHanded);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
         std::cerr << ModelLoader::importer.GetErrorString() << '\n';

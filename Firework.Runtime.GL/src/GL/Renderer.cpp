@@ -193,7 +193,7 @@ void Renderer::debugDrawCube(Vector3 position, float sideLength)
     transform.scale(Vector3(sideLength));
     transform.translate(position);
     Renderer::setDrawTransform(transform);
-    Renderer::submitDraw(0, cubeMesh, cubeProgram, BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z);
+    Renderer::submitDraw(0, cubeMesh, cubeProgram);
 }
 #endif
 

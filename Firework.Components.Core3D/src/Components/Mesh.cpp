@@ -148,7 +148,7 @@ void Mesh::renderOffload()
             switch (data->type)
             {
             case MeshType::Static:
-                Renderer::submitDraw(0, data->staticMesh, Mesh::program);
+                Renderer::submitDraw(0, data->staticMesh, Mesh::program, BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_Z);
                 Renderer::debugDrawCube(pos, 2.5f);
                 break;
             case MeshType::Dynamic:

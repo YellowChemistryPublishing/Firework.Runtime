@@ -21,8 +21,8 @@ StaticMeshHandle StaticMeshHandle::create(const void* vertexData, uint32_t verte
     memcpy(vertData, vertexData, vertexDataSize);
     char* indData = new char[indexDataSize];
     memcpy(indData, indexData, indexDataSize);
-    ret.internalVertexBuffer = bgfx::createVertexBuffer(bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] (char*)data; }), vl.internalLayout);
-    ret.internalIndexBuffer = bgfx::createIndexBuffer(bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] (char*)data; }));
+    ret.internalVertexBuffer = bgfx::createVertexBuffer(bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }), vl.internalLayout);
+    ret.internalIndexBuffer = bgfx::createIndexBuffer(bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }));
     return ret;
 }
 void StaticMeshHandle::destroy()
@@ -38,8 +38,8 @@ DynamicMeshHandle DynamicMeshHandle::create(const void* vertexData, uint32_t ver
     memcpy(vertData, vertexData, vertexDataSize);
     char* indData = new char[indexDataSize];
     memcpy(indData, indexData, indexDataSize);
-    ret.internalVertexBuffer = bgfx::createDynamicVertexBuffer(bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] (char*)data; }), vl.internalLayout, BGFX_BUFFER_ALLOW_RESIZE);
-    ret.internalIndexBuffer = bgfx::createDynamicIndexBuffer(bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] (char*)data; }), BGFX_BUFFER_ALLOW_RESIZE);
+    ret.internalVertexBuffer = bgfx::createDynamicVertexBuffer(bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }), vl.internalLayout, BGFX_BUFFER_ALLOW_RESIZE);
+    ret.internalIndexBuffer = bgfx::createDynamicIndexBuffer(bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }), BGFX_BUFFER_ALLOW_RESIZE);
     return ret;
 }
 void DynamicMeshHandle::update(const void* vertexData, uint32_t vertexDataSize, const uint16_t* indexData, uint32_t indexDataSize, uint32_t fromVertex, uint32_t fromIndex)
@@ -48,8 +48,8 @@ void DynamicMeshHandle::update(const void* vertexData, uint32_t vertexDataSize, 
     memcpy(vertData, vertexData, vertexDataSize);
     char* indData = new char[indexDataSize];
     memcpy(indData, indexData, indexDataSize);
-    bgfx::update(this->internalVertexBuffer, fromVertex, bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] (char*)data; }));
-    bgfx::update(this->internalIndexBuffer, fromIndex, bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] (char*)data; }));
+    bgfx::update(this->internalVertexBuffer, fromVertex, bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }));
+    bgfx::update(this->internalIndexBuffer, fromIndex, bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }));
 }
 void DynamicMeshHandle::destroy()
 {

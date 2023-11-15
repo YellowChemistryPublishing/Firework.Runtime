@@ -1,2 +1,12 @@
-# Auto detect text files and perform LF normalization
+# Auto detect text files and perform LF normalization.
 * text=auto
+
+# Ignore dependencies in language statistics.
+dependencies/** linguist-vendored
+external/** linguist-vendored
+
+# Specify obscure languages for linguist.
+*.sc linguist-language=GLSL
+*.sh linguist-language=GLSL
+*.h linguist-language=C++
+*.inc linguist-language=C++

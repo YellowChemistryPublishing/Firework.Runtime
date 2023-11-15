@@ -20,8 +20,8 @@ GeometryProgramHandle GeometryProgramHandle::create
     memcpy(fragData, fragmentShaderData, fragmentShaderDataSize);
     ret.internalHandle = bgfx::createProgram
     (
-        bgfx::createShader(bgfx::makeRef(vertData, vertexShaderDataSize, [](void* data, void*) { delete[] (char*)data; })),
-        bgfx::createShader(bgfx::makeRef(fragData, fragmentShaderDataSize, [](void* data, void*) { delete[] (char*)data; })),
+        bgfx::createShader(bgfx::makeRef(vertData, vertexShaderDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); })),
+        bgfx::createShader(bgfx::makeRef(fragData, fragmentShaderDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); })),
         true
     );
     for (size_t i = 0; i < uniformsLength; i++)

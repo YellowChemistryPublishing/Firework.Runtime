@@ -29,7 +29,7 @@ Texture2DHandle Texture2DHandle::create
     ret.internalHandle = bgfx::createTexture2D
     (
         width, height, hasMipMaps, layerCount, format, flags,
-        bgfx::makeRef(texData, textureDataSize, [](void* data, void*) { delete[] (char*)data; })
+        bgfx::makeRef(texData, textureDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); })
     );
     return ret;
 }

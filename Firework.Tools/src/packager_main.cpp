@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 {
     {
         uint16_t word = 0x0001;
-        if (((uint8_t*)&word)[0])
+        if (reinterpret_cast<uint8_t*>(&word)[0])
             Packager::endianness = Packager::Endianness::Little;
         else Packager::endianness = Packager::Endianness::Big;
     }

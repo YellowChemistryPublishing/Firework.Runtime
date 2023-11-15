@@ -118,7 +118,7 @@ void Transform::setLocalPosition(Vector3 value)
 Quaternion Transform::getLocalRotation() const
 {
     Entity* parent = this->attachedEntity->_parent;
-    assert(parent->attachedTransform->_rotation.norm2() == 1.0f && "Rotation quaterions are required to be normalized!");
+    assert((parent || parent->attachedTransform->_rotation.norm2() == 1.0f) && "Rotation quaterions are required to be normalized!");
     return parent ? this->_rotation * parent->attachedTransform->_rotation.conjugate() : this->_rotation;
 }
 void Transform::setLocalRotation(Quaternion value)

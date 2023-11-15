@@ -101,7 +101,7 @@ int CoreEngine::execute(int argc, char* argv[])
         fs::create_directory(dir);
 
     uint16_t word = 0x0001;
-    if (((uint8_t*)&word)[0])
+    if (reinterpret_cast<uint8_t*>(&word)[0])
         PackageManager::endianness = Endianness::Little;
     else PackageManager::endianness = Endianness::Big;
         
@@ -639,14 +639,14 @@ void CoreEngine::internalRenderLoop()
     RendererBackend backendPriorityOrder[]
     {
         #if _WIN32
-        RendererBackend::OpenGL,
         RendererBackend::Vulkan,
         RendererBackend::Direct3D12,
         RendererBackend::Direct3D11,
+        RendererBackend::OpenGL,
         RendererBackend::Direct3D9
         #else
+        RendererBackend::Vulkan,
         RendererBackend::OpenGL,
-        RendererBackend::Vulkan
         #endif
     };
     std::vector<RendererBackend> backends = Renderer::platformBackends();
