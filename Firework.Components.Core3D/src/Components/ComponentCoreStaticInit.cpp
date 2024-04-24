@@ -30,6 +30,6 @@ namespace Firework::Internal
                 if (Camera::mainCamera)
                     Camera::mainCamera->project();
             };
-        };
+        }
     } init;
 }

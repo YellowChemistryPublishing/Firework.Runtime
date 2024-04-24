@@ -1,9 +1,10 @@
 #include "Mesh.h"
 
+#include <Components/Transform.h>
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <GL/Renderer.h>
-#include <Components/Transform.h>
+#include <GL/RenderPipeline.h>
 
 #include <Mesh.vfAll.h>
 #include <cstdint>
@@ -12,7 +13,6 @@ using namespace Firework;
 using namespace Firework::Internal;
 using namespace Firework::GL;
 
-GeometryProgramHandle Mesh::program;
 std::unordered_map<std::pair<std::vector<MeshVertex>, std::vector<uint16_t>>, Mesh::RenderData*, Mesh::MeshHash> Mesh::meshes;
 robin_hood::unordered_map<Mesh::RenderData*, std::vector<Mesh*>> Mesh::meshInstances;
 
@@ -93,28 +93,7 @@ void Mesh::renderInitialize()
 {
     CoreEngine::queueRenderJobForFrame([]
     {
-        switch (Renderer::rendererBackend())
-        {
-        #if _WIN32
-        case RendererBackend::Direct3D9:
-            Mesh::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Mesh, d3d9));
-            break;
-        case RendererBackend::Direct3D11:
-            Mesh::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Mesh, d3d11));
-            break;
-        case RendererBackend::Direct3D12:
-            Mesh::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Mesh, d3d12));
-            break;
-        #endif
-        case RendererBackend::OpenGL:
-            Mesh::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Mesh, opengl));
-            break;
-        case RendererBackend::Vulkan:
-            Mesh::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Mesh, vulkan));
-            break;
-        default:
-            throw "unimplemented";
-        }
+        RenderPipeline::init();
     });
     InternalEngineEvent::OnRenderShutdown += []
     {
@@ -135,7 +114,7 @@ void Mesh::renderInitialize()
             delete it->second;
         }
         Mesh::meshInstances.clear();
-        Mesh::program.destroy();
+        RenderPipeline::deinit();
     };
 }
 void Mesh::renderOffload()
@@ -148,11 +127,11 @@ void Mesh::renderOffload()
             switch (data->type)
             {
             case MeshType::Static:
-                Renderer::submitDraw(0, data->staticMesh, Mesh::program, BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_Z);
-                Renderer::debugDrawCube(pos, 2.5f);
+                RenderPipeline::drawMesh(data->staticMesh);
                 break;
             case MeshType::Dynamic:
-                Renderer::submitDraw(0, data->dynMesh, Mesh::program);
+                throw "unimplemented";
+                // Renderer::submitDraw(0, data->dynMesh, Mesh::program);
                 break;
             case MeshType::Transient:
                 throw "unimplemented";

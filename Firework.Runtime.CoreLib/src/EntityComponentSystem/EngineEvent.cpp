@@ -6,6 +6,7 @@ using namespace Firework::Mathematics;
 
 FuncPtrEvent<> EngineEvent::OnInitialize;
 FuncPtrEvent<> EngineEvent::OnTick;
+FuncPtrEvent<> EngineEvent::OnLateTick;
 FuncPtrEvent<> EngineEvent::OnPhysicsTick;
 
 FuncPtrEvent<Key> EngineEvent::OnKeyDown;
@@ -16,6 +17,7 @@ FuncPtrEvent<MouseButton> EngineEvent::OnMouseDown;
 FuncPtrEvent<MouseButton> EngineEvent::OnMouseHeld;
 FuncPtrEvent<MouseButton> EngineEvent::OnMouseUp;
 FuncPtrEvent<Vector2Int> EngineEvent::OnMouseMove;
+FuncPtrEvent<Vector2> EngineEvent::OnMouseScroll;
 
 FuncPtrEvent<Vector2Int> EngineEvent::OnWindowResize;
 

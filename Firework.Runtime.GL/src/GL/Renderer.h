@@ -18,7 +18,6 @@ namespace Firework
         {
 			NoOp = bgfx::RendererType::Noop,
 			AGC = bgfx::RendererType::Agc,
-			Direct3D9 = bgfx::RendererType::Direct3D9,
 			Direct3D11 = bgfx::RendererType::Direct3D11,
 			Direct3D12 = bgfx::RendererType::Direct3D12,
 			GNM = bgfx::RendererType::Gnm,
@@ -27,7 +26,6 @@ namespace Firework
 			OpenGLES = bgfx::RendererType::OpenGLES,
 			OpenGL = bgfx::RendererType::OpenGL,
 			Vulkan = bgfx::RendererType::Vulkan,
-			WebGPU = bgfx::RendererType::WebGPU,
             Default = bgfx::RendererType::Count
         };
 
@@ -38,6 +36,9 @@ namespace Firework
 
             static bool initialize(void* ndt, void* nwh, uint32_t width, uint32_t height, RendererBackend backend = RendererBackend::Default, uint32_t initFlags = BGFX_RESET_NONE);
             static void shutdown();
+
+            static void showDebugInformation();
+            static void hideDebugInformation();
 
             static RendererBackend rendererBackend();
             static std::vector<RendererBackend> platformBackends();

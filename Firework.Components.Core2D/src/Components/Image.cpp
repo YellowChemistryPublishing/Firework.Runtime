@@ -268,9 +268,6 @@ void Image::renderInitialize()
         switch (Renderer::rendererBackend())
         {
         #if _WIN32
-        case RendererBackend::Direct3D9:
-            Image::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Image, d3d9), { ShaderUniform { .name = "u_tint", .type = UniformType::Vec4 } });
-            break;
         case RendererBackend::Direct3D11:
             Image::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Image, d3d11), { ShaderUniform { .name = "u_tint", .type = UniformType::Vec4 } });
             break;

@@ -4,6 +4,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <iostream>
+#include <span>
 #include <utility>
 
 #include <GL/Geometry.h>
@@ -65,7 +66,7 @@ std::string SceneAsset::generateSceneStructureDescription()
 
 SceneAsset* ModelLoader::loadModel(const uint8_t* data, size_t size, bool flipYZ)
 {
-    const aiScene* scene = ModelLoader::importer.ReadFileFromMemory(data, size * sizeof(uint8_t), aiProcess_Triangulate | aiProcess_MakeLeftHanded);
+    const aiScene* scene = ModelLoader::importer.ReadFileFromMemory(data, size * sizeof(uint8_t), aiProcess_Triangulate | aiProcess_MakeLeftHanded | aiProcess_GenNormals | aiProcess_ForceGenNormals);
     if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
     {
         std::cerr << ModelLoader::importer.GetErrorString() << '\n';
@@ -80,6 +81,16 @@ SceneAsset* ModelLoader::loadModel(const uint8_t* data, size_t size, bool flipYZ
         {
             SceneMesh mesh(scene->mMeshes[node->mMeshes[i]]->mName.data);
             mesh._vertices.reserve(scene->mMeshes[node->mMeshes[i]]->mNumVertices);
+
+            aiMaterial* mat = scene->mMaterials[scene->mMeshes[node->mMeshes[i]]->mMaterialIndex];
+            ai_real col[3];
+            if (aiGetMaterialFloatArray(mat, AI_MATKEY_COLOR_DIFFUSE, col, nullptr) != AI_SUCCESS)
+            {
+                col[0] = 0.0f;
+                col[1] = 1.0f;
+                col[2] = 1.0f;
+            }
+
             for (unsigned int j = 0; j < scene->mMeshes[node->mMeshes[i]]->mNumVertices; j++)
             {
                 static_assert(AI_MAX_NUMBER_OF_TEXTURECOORDS == 8, "Assimp texture coordinate count must be exactly 8.");
@@ -100,17 +111,21 @@ SceneAsset* ModelLoader::loadModel(const uint8_t* data, size_t size, bool flipYZ
                 }
                 if (scene->mMeshes[node->mMeshes[i]]->HasNormals())
                 {
-                    v.xNorm = scene->mMeshes[node->mMeshes[i]]->mNormals[j].x;
-                    v.yNorm = scene->mMeshes[node->mMeshes[i]]->mNormals[j].y;
-                    v.zNorm = scene->mMeshes[node->mMeshes[i]]->mNormals[j].z;
+                    v.nx = scene->mMeshes[node->mMeshes[i]]->mNormals[j].x;
+                    v.ny = scene->mMeshes[node->mMeshes[i]]->mNormals[j].y;
+                    v.nz = scene->mMeshes[node->mMeshes[i]]->mNormals[j].z;
                 }
-                if (scene->mMeshes[node->mMeshes[i]]->HasVertexColors(0))
-                {
-                    v.r = scene->mMeshes[node->mMeshes[i]]->mColors[0][j].r;
-                    v.g = scene->mMeshes[node->mMeshes[i]]->mColors[0][j].g;
-                    v.b = scene->mMeshes[node->mMeshes[i]]->mColors[0][j].b;
-                    v.a = scene->mMeshes[node->mMeshes[i]]->mColors[0][j].a;
-                }
+                v.r = col[0];
+                v.g = col[1];
+                v.b = col[2];
+                v.a = 1.0f; // FIXME: transparency
+                // if (scene->mMeshes[node->mMeshes[i]]->HasVertexColors(0))
+                // {
+                //     v.r = scene->mMeshes[node->mMeshes[i]]->mColors[0][j].r;
+                //     v.g = scene->mMeshes[node->mMeshes[i]]->mColors[0][j].g;
+                //     v.b = scene->mMeshes[node->mMeshes[i]]->mColors[0][j].b;
+                //     v.a = scene->mMeshes[node->mMeshes[i]]->mColors[0][j].a;
+                // }
                 if (scene->mMeshes[node->mMeshes[i]]->HasTextureCoords(0))
                 {
                     v.tc0x = scene->mMeshes[node->mMeshes[i]]->mTextureCoords[0][j].x;
@@ -177,6 +192,7 @@ SceneAsset* ModelLoader::loadModel(const uint8_t* data, size_t size, bool flipYZ
                     }
                 }
             }
+
             scNode._meshes.push_back(std::move(mesh));
         }
         

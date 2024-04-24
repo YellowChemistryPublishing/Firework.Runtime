@@ -22,9 +22,6 @@ void Panel::renderInitialize()
         switch (Renderer::rendererBackend())
         {
         #if _WIN32
-        case RendererBackend::Direct3D9:
-            Panel::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Panel, d3d9), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
-            break;
         case RendererBackend::Direct3D11:
             Panel::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Panel, d3d11), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
             break;

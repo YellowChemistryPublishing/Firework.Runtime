@@ -25,7 +25,7 @@ namespace Firework
         struct MeshVertex
         {
             float x, y, z;
-            float xNorm, yNorm, zNorm;
+            float nx, ny, nz;
             float r, g, b, a;
             float tc0x, tc0y, tc0z;
             // float tc1x, tc1y, tc1z;

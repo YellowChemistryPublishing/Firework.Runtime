@@ -21,7 +21,7 @@ namespace Firework::Internal
             PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x00, 0x01, 0x00, 0x00, 0x00 });
             PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x74, 0x72, 0x75, 0x65, 0x00 });
 
-            EngineEvent::OnInitialize += []()
+            EngineEvent::OnInitialize += []
             {
                 Panel::renderInitialize();
                 Image::renderInitialize();
@@ -45,6 +45,6 @@ namespace Firework::Internal
                     break;
                 }
             };
-        };
+        }
     } init;
 }

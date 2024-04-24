@@ -69,6 +69,8 @@ namespace Firework
         float _rotation = 0;
         Mathematics::Vector2 _scale { 1, 1 };
 
+        bool _dirty = true;
+
         /// @internal
         /// @brief Internal API. Set the position of this transform.
         /// @param value Position to set.
@@ -198,6 +200,22 @@ namespace Firework
             [this]() -> Mathematics::Vector2 { return this->getLocalScale(); },
             [this](Mathematics::Vector2 value) { this->setLocalScale(value); }
         }};
+        
+        /// @property
+        /// @brief [Property] Whether this ```Firework::RectTransform``` has been modified this logic frame.
+        /// @return ```bool```
+        /// @note Main thread only.
+        inline bool dirty()
+        {
+            return this->_dirty;
+        }
+        /// @brief You **_shouldn't_** ever need to call this, but if you do, this sets the RectTransform-modified-this-frame flag to false.
+        /// @return ```bool```
+        /// @note Main thread only.
+        inline void forceSetClean()
+        {
+            this->_dirty = false;
+        }
 
         /// @brief Check whether a point is within the rectangle of this transform.
         /// @param point Point to query.
@@ -205,6 +223,7 @@ namespace Firework
         /// @note Main thread only.
         bool queryPointIn(const Mathematics::Vector2& point);
 
+        friend class Firework::Internal::CoreEngine;
         friend class Firework::Entity2D;
         friend class Firework::Debug;
     };

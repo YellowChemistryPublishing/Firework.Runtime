@@ -16,7 +16,7 @@ namespace Firework
             static TextureSamplerHandle create(const char* name);
             void destroy();
 
-            inline TextureSamplerHandle([[maybe_unused]] std::nullptr_t _) noexcept
+            inline TextureSamplerHandle(std::nullptr_t) noexcept
             { }
             inline TextureSamplerHandle() noexcept = default;
 
@@ -56,6 +56,14 @@ namespace Firework
                 uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE
             );
             static Texture2DHandle create(const unsigned char (&color)[4]);
+            static Texture2DHandle createDynamic
+            (
+                uint16_t width, uint16_t height,
+                bool hasMipMaps = false, uint16_t layerCount = 1,
+                bgfx::TextureFormat::Enum format = bgfx::TextureFormat::RGBA8,
+                uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE
+            );
+            void updateDynamic(const void* textureData, uint32_t textureDataSize, uint16_t layer, uint8_t mip, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
             void destroy();
 
             friend class Firework::GL::Renderer;

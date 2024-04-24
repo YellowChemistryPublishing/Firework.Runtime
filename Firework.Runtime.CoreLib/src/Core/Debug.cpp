@@ -1,25 +1,25 @@
 #include "Debug.h"
 
 #include <EntityComponentSystem/SceneManagement.h>
+#include <GL/Renderer.h>
 #include <Objects/Entity2D.h>
 
 using namespace Firework;
-
-SpinLock Debug::outputLock;
+using namespace Firework::GL;
 
 void Debug::printHierarchy()
 {
     using namespace Firework::Internal;
 
-    Debug::outputLock.lock();
+    std::wstringstream out;
 
     auto printEntity2D = [&](auto&& printEntity2D, Entity2D* entity, int depth) -> void
     {
         for (auto it = entity->childrenFront; it != nullptr; it = it->next)
         {
             for (int i = 0; i < depth; i++)
-                std::wcout << L'\t';
-            std::wcout << it->name << L'\n';
+                out << L'\t';
+            out << it->name << L'\n';
             printEntity2D(printEntity2D, it, depth + 1);
         }
     };
@@ -28,8 +28,8 @@ void Debug::printHierarchy()
         for (auto it = entity->childrenFront; it != nullptr; it = it->next)
         {
             for (int i = 0; i < depth; i++)
-                std::wcout << L'\t';
-            std::wcout << it->name << L'\n';
+                out << L'\t';
+            out << it->name << L'\n';
             printEntity(printEntity, it, depth + 1);
         }
     };
@@ -38,19 +38,31 @@ void Debug::printHierarchy()
     {
         auto it1 = reinterpret_cast<Scene*>(&_it1->data);
 
-        std::wcout << it1->_name << L"\n\t[2D]\n";
+        out << it1->_name << L"\n\t[2D]\n";
         for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next)
         {
-            std::wcout << L'\t' << it2->name << L'\n';
+            out << L'\t' << it2->name << L'\n';
             printEntity2D(printEntity2D, it2, 2);
         }
-        std::wcout << L"\t[3D]\n";
+        out << L"\t[3D]\n";
         for (auto it2 = it1->front; it2 != nullptr; it2 = it2->next)
         {
-            std::wcout << L'\t' << it2->name << L'\n';
+            out << L'\t' << it2->name << L'\n';
             printEntity(printEntity, it2, 2);
         }
     }
 
-    Debug::outputLock.unlock();
+    Application::queueJobForWorkerThread([out = std::move(out).str()]
+    {
+        std::wcout << out;
+    });
+}
+
+void Debug::showF3Menu()
+{
+    Renderer::showDebugInformation();
+}
+void Debug::hideF3Menu()
+{
+    Renderer::hideDebugInformation();
 }

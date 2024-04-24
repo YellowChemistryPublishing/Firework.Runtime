@@ -57,8 +57,6 @@ namespace Firework
             }
         };
 
-        static GL::GeometryProgramHandle program;
-
         struct RenderData
         {
             uint_fast32_t accessCount;

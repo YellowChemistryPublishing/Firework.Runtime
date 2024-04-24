@@ -59,7 +59,6 @@ elseif (FIREWORK_COMPILER_ID STREQUAL "GNU")
     set(FIREWORK_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_TYPE}-${FIREWORK_BUILD_PLATFORM}")
     add_compile_options(-fnon-call-exceptions)
-    add_link_options(-static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic)
     if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" AND FIREWORK_WINDOWS_COMPATIBILITY)
         add_definitions(-D_WIN32_WINNT=0x0501 -DWINVER=0x0501 -D__REQUIRED_RPCNDR_H_VERSION__=475)
     endif()
@@ -178,6 +177,10 @@ set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/assimp")
+get_target_property(ASSIMP_LINK_LIBRARIES assimp LINK_LIBRARIES)
+# external/assimp/code/CMakeLists.txt - 1348: TARGET_LINK_LIBRARIES ( assimp -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lwinpthread ) -> Breaks our binary.
+list(REMOVE_ITEM ASSIMP_LINK_LIBRARIES "-static-libgcc" "-static-libstdc++" "-Wl,-Bstatic" "-lstdc++" "-lwinpthread")
+set_target_properties(assimp PROPERTIES LINK_LIBRARIES "${ASSIMP_LINK_LIBRARIES}")
 unset(BUILD_SHARED_LIBS)
 firework_push_nowarn()
 
@@ -189,7 +192,7 @@ endif()
 
 set(BGFX_LIBRARY_TYPE "STATIC" CACHE INTERNAL "" FORCE)
 set(BGFX_BUILD_EXAMPLES ON CACHE INTERNAL "" FORCE)
-set(BGFX_CONFIG_MULTITHREADED ON CACHE INTERNAL "" FORCE)
+set(BGFX_CONFIG_MULTITHREADED OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 
 if (FIREWORK_COMPILER STREQUAL "MinGW")
@@ -301,11 +304,11 @@ target_include_directories(Firework.Runtime.GL
 target_link_libraries(Firework.Runtime.GL
     PUBLIC
     Firework.Mathematics
+    assimp
     PRIVATE
     bimg
     bx
     bgfx
-    assimp
 )
 if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
     if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "Clang")
@@ -335,12 +338,24 @@ set_target_properties(Firework.Runtime.GL
 
 # Firework.Runtime.RenderPipeline
 
+add_custom_target(PrecompileRenderPipelineShaders
+    COMMAND ${CMAKE_COMMAND}
+    -DSHADERC_PATH="$<TARGET_FILE:shaderc>"
+    -DSHADERC_DIR="$<TARGET_FILE_DIR:shaderc>"
+    -DSHADER_FILES_DIR="${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders"
+    -DBGFX_SHADER_DIR="${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bgfx/src"
+    -DCMAKE_BUILD_TYPE=$<CONFIG>
+    -P "${CMAKE_CURRENT_LIST_DIR}/cmake/PrecompileShaders.cmake"
+)
+add_dependencies(PrecompileRenderPipelineShaders shaderc)
+
 file(GLOB_RECURSE RPSRCS configure_depends
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/*.h"
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/*.cpp"
 )
 
 add_library(Firework.Runtime.RenderPipeline SHARED ${RPSRCS})
+add_dependencies(Firework.Runtime.GL PrecompileRenderPipelineShaders)
 
 generate_export_header(Firework.Runtime.RenderPipeline
     BASE_NAME FIREWORK_RP
@@ -352,6 +367,8 @@ target_include_directories(Firework.Runtime.RenderPipeline
     PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}"
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/src"
+    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders/include"
+    "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bgfx/include"
 )
 target_link_libraries(Firework.Runtime.RenderPipeline
     PUBLIC

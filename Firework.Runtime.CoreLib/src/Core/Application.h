@@ -24,6 +24,7 @@ namespace Firework
     class __firework_corelib_api Application final
     {
         static moodycamel::ConcurrentQueue<func::function<void()>> mainThreadQueue;
+        static moodycamel::ConcurrentQueue<func::function<void()>> workerThreadQueue;
         static float secondsPerFrame;
     public:
         Application() = delete;
@@ -36,9 +37,19 @@ namespace Firework
         template <typename Func>
 		requires std::constructible_from<func::function<void()>, Func&&>
         inline static void queueJobForMainThread(Func&& job)
-        requires requires { func::function<void()>(job); }
         {
             Application::mainThreadQueue.enqueue(job);
+        }
+        /// @internal 
+        /// @brief Low-level API [Internal]. Queues a function to be run on the background worker thread. 
+        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>``` 
+        /// @param job Job to queue.
+        /// @note Thread-safe. 
+        template <typename Func>
+		requires std::constructible_from<func::function<void()>, Func&&>
+        inline static void queueJobForWorkerThread(Func&& job)
+        {
+            Application::workerThreadQueue.enqueue(job);
         }
 
         /// @brief Sets the minimum frame time by frames-per-second. 

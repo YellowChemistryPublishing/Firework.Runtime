@@ -2,13 +2,21 @@
 
 #include "Firework.Runtime.RenderPipeline.Exports.h"
 
+#include <GL/ModelLoader.h>
+
 namespace Firework
 {
-    class __firework_rp_api RenderPipeline final
+    namespace GL
     {
-    public:
-        static void unimplemented();
+        class __firework_rp_api RenderPipeline final
+        {
+        public:
+            RenderPipeline() = delete;
 
-        RenderPipeline() = delete;
-    };
+            static void init();
+            static void deinit();
+
+            static void drawMesh(GL::StaticMeshHandle mesh);
+        };
+    }
 }

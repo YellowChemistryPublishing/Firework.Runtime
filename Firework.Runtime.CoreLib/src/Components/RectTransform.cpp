@@ -48,6 +48,7 @@ namespace Firework::Internal
 
 void RectTransform::setPosition(Vector2 value)
 {
+    this->_dirty = true;
     Vector2 delta = value - this->_position;
     this->_position = value;
 
@@ -63,6 +64,7 @@ void RectTransform::setPosition(Vector2 value)
 }
 void RectTransform::setRotation(float value)
 {
+    this->_dirty = true;
     float delta = value - this->_rotation;
     this->_rotation = value;
 
@@ -79,6 +81,7 @@ void RectTransform::setRotation(float value)
 }
 void RectTransform::setScale(Vector2 value)
 {
+    this->_dirty = true;
     Vector2 delta = value / this->_scale;
     this->_scale = value;
 
@@ -107,6 +110,7 @@ Vector2 RectTransform::getLocalPosition() const
 }
 void RectTransform::setLocalPosition(Vector2 value)
 {
+    this->_dirty = true;
     Entity2D* parent = this->attachedEntity->_parent;
     Vector2 delta;
     if (parent)
@@ -134,6 +138,7 @@ float RectTransform::getLocalRotation() const
 }
 void RectTransform::setLocalRotation(float value)
 {
+    this->_dirty = true;
     Entity2D* parent = this->attachedEntity->_parent;
     float delta;
     if (parent)
@@ -159,6 +164,7 @@ Vector2 RectTransform::getLocalScale() const
 }
 void RectTransform::setLocalScale(Vector2 value)
 {
+    this->_dirty = true;
     Entity2D* parent = this->attachedEntity->_parent;
     Vector2 delta;
     if (parent)

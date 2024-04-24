@@ -10,7 +10,7 @@ namespace Firework
     namespace GL
     {
         class Renderer;
-        class StaticLitObjectHandle;
+        class LitObjectHandle;
 
         struct __firework_gl_api RenderTransform
         {
@@ -20,7 +20,7 @@ namespace Firework
             void scale(Mathematics::Vector3 vec);
 
             friend class Firework::GL::Renderer;
-            friend class Firework::GL::StaticLitObjectHandle;
+            friend class Firework::GL::LitObjectHandle;
         private:
             Mathematics::Matrix4x4 tf;
             float normalMatrix[3][3];

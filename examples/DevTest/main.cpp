@@ -34,6 +34,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         meshObject->transform()->scale = Vector3(2.5f);
 
         mesh->meshType = MeshType::Static;
+        for (auto v : sceneAsset->children().front().children().front().meshes().front().vertices())
+            Debug::logInfo(v.nx, " ", v.ny, " ", v.nz);
         mesh->mesh = &sceneAsset->children().front().children().front().meshes().front();
 
         Debug::printHierarchy();

@@ -5,8 +5,6 @@
 #include <bx/math.h>
 
 #include <Mathematics.h>
-#include <GL/Lighting.h>
-#include <GL/LitObject.h>
 
 #include <DebugCube.vfAll.h>
 
@@ -68,28 +66,23 @@ bool Renderer::initialize(void* ndt, void* nwh, uint32_t width, uint32_t height,
 
     if (!bgfx::init(init))
         return false;
-    
-    bgfx::setDebug(BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT);
 
     #if _DEBUG
     cubeMesh = StaticMeshHandle::create(verts, sizeof(verts), layout, inds, sizeof(inds));
-    switch (Renderer::rendererBackend())
+    switch (bgfx::getRendererType())
     {
     #if _WIN32
-    case RendererBackend::Direct3D9:
-        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d9));
-        break;
-    case RendererBackend::Direct3D11:
+    case bgfx::RendererType::Direct3D11:
         cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d11));
         break;
-    case RendererBackend::Direct3D12:
+    case bgfx::RendererType::Direct3D12:
         cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d12));
         break;
     #endif
-    case RendererBackend::OpenGL:
+    case bgfx::RendererType::OpenGL:
         cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, opengl));
         break;
-    case RendererBackend::Vulkan:
+    case bgfx::RendererType::Vulkan:
         cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, vulkan));
         break;
     default:
@@ -105,9 +98,6 @@ bool Renderer::initialize(void* ndt, void* nwh, uint32_t width, uint32_t height,
     bgfx::setViewTransform(0, view, proj);
     bgfx::setViewRect(0, 0, 0, 1280, 720);
 
-    Lighting::init();
-    StaticLitObjectHandle::init();
-
     return true;
 }
 void Renderer::shutdown()
@@ -117,10 +107,16 @@ void Renderer::shutdown()
     cubeProgram.destroy();
     #endif
 
-    StaticLitObjectHandle::deinit();
-    Lighting::deinit();
-
     bgfx::shutdown();
+}
+
+void Renderer::showDebugInformation()
+{
+    bgfx::setDebug(BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT);
+}
+void Renderer::hideDebugInformation()
+{
+    bgfx::setDebug(BGFX_DEBUG_NONE);
 }
 
 RendererBackend Renderer::rendererBackend()

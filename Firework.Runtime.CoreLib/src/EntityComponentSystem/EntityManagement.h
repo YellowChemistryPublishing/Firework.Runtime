@@ -115,7 +115,7 @@ namespace Firework
         {
             EntityManager2D::foreachEntity([&](Entity2D* entity)
             {
-                Internal::Component2D* arr[sizeof...(Ts)] { std::is_same<Ts, RectTransform>::value ? entity->attachedRectTransform : EntityManager2D::components.find({ entity->attachedScene, entity, __typeid(Ts).qualifiedNameHash() })->second ... };
+                Internal::Component2D* arr[sizeof...(Ts)] { std::is_same<Ts, RectTransform>::value ? entity->attachedRectTransform : EntityManager2D::components.find({ entity, __typeid(Ts).qualifiedNameHash() })->second ... };
 
                 bool pred = true;
                 for (auto it = arr; it != arr + sizeof...(Ts); ++it)

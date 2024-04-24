@@ -52,23 +52,20 @@ endmacro()
 macro(CreateShaderInclude SHADER_NAME SHADER_EXT)
     if (SHADER_EXT STREQUAL ".vert")
         if (GL_PLATFORM STREQUAL Win32)
-            ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_3_0" "d3d9")
             ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_4_0" "d3d11")
             ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_5_0" "d3d12")
         endif()
-        ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "120" "opengl")
+        ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "130" "opengl")
         ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "spirv10-10" "vulkan")
     elseif (SHADER_EXT STREQUAL ".frag")
         if (GL_PLATFORM STREQUAL Win32)
-            ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_3_0" "d3d9")
             ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_4_0" "d3d11")
             ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_5_0" "d3d12")
         endif()
-        ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "120" "opengl")
+        ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "130" "opengl")
         ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "spirv10-10" "vulkan")
     elseif (SHADER_EXT STREQUAL ".comp")
         if (GL_PLATFORM STREQUAL Win32)
-            ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_3_0" "d3d9")
             ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_5_0" "d3d11")
             ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "s_5_0" "d3d12")
         endif()
@@ -111,8 +108,6 @@ foreach (SHADER ${SHADER_SOURCE_FILES})
 "#pragma once\n\
 \n\
 #ifdef _WIN32\n\
-#include <${SHADER_NAME}.vert.d3d9.h>\n\
-#include <${SHADER_NAME}.frag.d3d9.h>\n\
 #include <${SHADER_NAME}.vert.d3d11.h>\n\
 #include <${SHADER_NAME}.frag.d3d11.h>\n\
 #include <${SHADER_NAME}.vert.d3d12.h>\n\

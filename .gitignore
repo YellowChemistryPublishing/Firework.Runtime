@@ -6,5 +6,6 @@ build/
 
 # Shader build artifacts.
 /Firework.Runtime.GL/shaders/include/
+/Firework.Runtime.RenderPipeline/shaders/include/
 /Firework.Components.Core2D/shaders/include/
 /Firework.Components.Core3D/shaders/include/

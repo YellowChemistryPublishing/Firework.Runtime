@@ -18,9 +18,12 @@ namespace Firework
         /// @brief Event raised immediately after the runtime has initialized.
         /// @note Main thread only.
         static FuncPtrEvent<> OnInitialize;
-        /// @brief Event raised immediately before the runtime is shutdown.
+        /// @brief Event raised every logic frame.
         /// @note Main thread only.
         static FuncPtrEvent<> OnTick;
+        /// @brief Event raised every logic frame, immediately after ```Firework::EngineEvent::OnTick```.
+        /// @note Main thread only.
+        static FuncPtrEvent<> OnLateTick;
         /// @brief Event raised when physics increments.
         /// @warning Unimplemented.
         /// @note Physics thread only.
@@ -57,6 +60,10 @@ namespace Firework
         /// @param from ```Firework::Mathematics::Vector2Int```. The previous position of the cursor. Retrieve the current position of the cursor with ```Firework::Input::mousePosition()```.
         /// @note Main thread only.
         static FuncPtrEvent<Mathematics::Vector2Int> OnMouseMove;
+        /// @brief Event raised when the mouse scrolls.
+        /// @param scroll ```Firework::Mathematics::Vector2```. The scroll amount in the x and y directions.
+        /// @note Main thread only.
+        static FuncPtrEvent<Mathematics::Vector2> OnMouseScroll;
 
         /// @brief Event raised when the window is resized.
         /// @param from ```Firework::Mathematics::Vector2Int```. The previous size of the window. Retrieve the current window size with ```Firework::Window::pixelWidth()``` and ```Firework::Window::pixelHeight()```.

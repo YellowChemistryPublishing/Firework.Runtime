@@ -1,7 +1,9 @@
 #include "CoreEngine.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <thread>
 #if __has_include(<cpptrace/cpptrace.hpp>)
 #include <cpptrace/cpptrace.hpp>
 #endif
@@ -116,6 +118,23 @@ int CoreEngine::execute(int argc, char* argv[])
     }
     else Debug::logError("The CorePackage could not be found in the Runtime folder. Did you accidentally delete it?");
 
+    std::thread workerThread([]
+    {
+        func::function<void()> event;
+        while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowThreadDone)
+        {
+            while (Application::workerThreadQueue.try_dequeue(event))
+                event();
+        
+            #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+            std::this_thread::yield();
+            #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            #endif
+        }
+        while (Application::workerThreadQueue.try_dequeue(event))
+            event();
+    });
     std::thread windowThread(internalWindowLoop);
     std::thread mainThread(internalLoop);
     #ifdef __EMSCRIPTEN__
@@ -128,6 +147,7 @@ int CoreEngine::execute(int argc, char* argv[])
     renderThread.join();
     #endif
     windowThread.join();
+    workerThread.join();
 
     // Cleanup here is done for stuff created in CoreEngine::execute, thread-specific cleanup is done per-thread, at the end of their lifetime.
 
@@ -299,6 +319,23 @@ void CoreEngine::internalLoop()
             #pragma endregion
             
             handled([] { EngineEvent::OnTick(); });
+            handled([] { EngineEvent::OnLateTick(); });
+
+            for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)
+            {
+                Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
+                if (it1->active)
+                {
+                    constexpr auto recurse = [](auto&& recurse, Entity2D* entity) -> void
+                    {
+                        entity->rectTransform()->_dirty = false;
+                        for (auto it2 = entity->childrenFront; it2 != nullptr; it2 = it2->next)
+                            recurse(recurse, it2);
+                    };
+                    for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next)
+                        recurse(recurse, it2);
+                }
+            }
 
             #pragma region Post-Tick
             Input::internalMouseMotion = Vector2Int(0, 0);
@@ -339,15 +376,27 @@ void CoreEngine::internalLoop()
                                 InternalEngineEvent::OnRenderOffloadForComponent(component->second);
                         }
                     }
-                    for (auto it2 = it1->back2D; it2 != nullptr; it2 = it2->prev)
+
+                    auto recurse = [](auto&& recurse, Entity2D* entity) -> void
                     {
                         for (auto it3 = EntityManager2D::existingComponents.begin(); it3 != EntityManager2D::existingComponents.end(); ++it3)
                         {
-                            auto component = EntityManager2D::components.find(std::make_pair(it2, it3->first));
-                            if (component != EntityManager2D::components.end() && component->second->active)
+                            auto component = EntityManager2D::components.find(std::make_pair(entity, it3->first));
+                            if (component != EntityManager2D::components.end() && component->second->active &&
+                                !(
+                                    // FIXME: Doesn't account for rotation!
+                                    component->second->attachedRectTransform->_position.y + component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y < -Window::height / 2 ||
+                                    component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x < -Window::width / 2 ||
+                                    component->second->attachedRectTransform->_position.y + component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y > Window::height / 2 ||
+                                    component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x > Window::width / 2
+                                ))
                                 InternalEngineEvent::OnRenderOffloadForComponent2D(component->second);
+                            for (auto it2 = entity->childrenBack; it2 != nullptr; it2 = it2->prev)
+                                recurse(recurse, it2);
                         }
-                    }
+                    };
+                    for (auto it2 = it1->back2D; it2 != nullptr; it2 = it2->prev)
+                        recurse(recurse, it2);
                 }
             }
             
@@ -388,6 +437,14 @@ void CoreEngine::internalLoop()
             frameBegin = SDL_GetPerformanceCounter();
             targetDeltaTime = std::max(Application::secondsPerFrame - (deltaTime - targetDeltaTime), 0.0f);
             Time::frameDeltaTime = deltaTime * Time::timeScale;
+        }
+        else
+        {
+            #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+            std::this_thread::yield();
+            #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+            std::this_thread::sleep_for(std::chrono::nanoseconds((uint64_t)((targetDeltaTime - ((float)(SDL_GetPerformanceCounter() - frameBegin) / (float)perfFreq)) * 1000000000.0f)));
+            #endif
         }
 
         #ifdef __EMSCRIPTEN__
@@ -513,7 +570,7 @@ void CoreEngine::internalWindowLoop()
     CoreEngine::state.store(EngineState::RenderInit, std::memory_order_relaxed); // Spin off rendering thread.
 
     SDL_Event ev;
-    while (true)
+    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadDone)
     {
         if (SDL_PeepEvents(&ev, 1, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST) &&
             ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
@@ -546,6 +603,10 @@ void CoreEngine::internalWindowLoop()
                 });
                 break;
             case SDL_EVENT_MOUSE_WHEEL:
+                Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y]
+                {
+                    EngineEvent::OnMouseScroll(Vector2(scrX, scrY));
+                });
                 break;
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
                 Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
@@ -593,29 +654,21 @@ void CoreEngine::internalWindowLoop()
                 break;
             case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
             case SDL_EVENT_QUIT:
-                while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::Playing)
-                {
-                    #if __EMSCRIPTEN__
-                    emscripten_sleep(1);
-                    #endif
-                }
-                goto Exit;
+                CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_relaxed);
                 break;
             }
+        }
+        else
+        {
+            #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+            std::this_thread::yield();
+            #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            #endif
         }
 
         #ifdef __EMSCRIPTEN__
         Debug::logTrace("Event loop end.");
-        emscripten_sleep(1);
-        #endif
-    }
-
-    Exit:
-    CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_relaxed);
-    // Wait for render thread to finish.
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadDone)
-    {
-        #ifdef __EMSCRIPTEN__
         emscripten_sleep(1);
         #endif
     }
@@ -642,8 +695,7 @@ void CoreEngine::internalRenderLoop()
         RendererBackend::Vulkan,
         RendererBackend::Direct3D12,
         RendererBackend::Direct3D11,
-        RendererBackend::OpenGL,
-        RendererBackend::Direct3D9
+        RendererBackend::OpenGL
         #else
         RendererBackend::Vulkan,
         RendererBackend::OpenGL
@@ -711,6 +763,12 @@ void CoreEngine::internalRenderLoop()
             else job();
             job.destroy();
         }
+    
+        #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+        std::this_thread::yield();
+        #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        #endif
 
         #ifdef __EMSCRIPTEN__
         Debug::logTrace("Render loop end.");

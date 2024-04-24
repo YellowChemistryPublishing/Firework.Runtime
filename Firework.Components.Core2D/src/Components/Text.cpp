@@ -133,11 +133,21 @@ void Text::setFontFile(TrueTypeFontPackageFile* value)
         }
         else
         {
-            this->data = Text::textFonts.insert(robin_hood::pair<TrueTypeFontPackageFile*, RenderData*>(value, new RenderData { 1, { }, value })).first->second;
+            this->data = Text::textFonts.insert(robin_hood::pair<TrueTypeFontPackageFile*, RenderData*>(value, new RenderData { 1, value })).first->second;
             this->data->trackCharacters(this->textData);
         }
     }
     else this->data = nullptr;
+    
+    this->dirty = true;
+    this->recalculateCharacterPositions();
+}
+void Text::setFontSize(uint32_t value)
+{
+    this->_fontSize = value;
+
+    this->dirty = true;
+    this->recalculateCharacterPositions();
 }
 void Text::setText(std::u32string value)
 {
@@ -162,6 +172,9 @@ void Text::setText(std::u32string value)
         this->data->trackCharacters(this->textData);
         this->data->untrackCharacters(oldTextData);
     }
+    
+    this->dirty = true;
+    this->recalculateCharacterPositions();
 }
 void Text::setHorizontalAlign(TextAlign value)
 {
@@ -180,6 +193,9 @@ void Text::setHorizontalAlign(TextAlign value)
         this->getHorizontalAlignOffset = getAlignOffsetMinor;
         break;
     }
+    
+    this->dirty = true;
+    this->recalculateCharacterPositions();
 }
 void Text::setVerticalAlign(TextAlign value)
 {
@@ -198,10 +214,9 @@ void Text::setVerticalAlign(TextAlign value)
         this->getVerticalAlignOffset = getAlignOffsetMinor;
         break;
     }
-}
-void Text::setFontSize(uint32_t value)
-{
-    this->_fontSize = value;
+    
+    this->dirty = true;
+    this->recalculateCharacterPositions();
 }
 
 uint32_t Text::calculateBestFitFontSize()
@@ -416,6 +431,297 @@ uint32_t Text::calculateBestFitFontSize()
     }
     else return 0;
 }
+float Text::calculateBestFitHeight()
+{
+    if (this->data) [[likely]]
+    {
+        const RectTransform* const thisRect = this->rectTransform();
+        Typography::Font& font = this->data->file->fontHandle();
+
+        float accAdv = 0;
+        for (auto it = this->textData.begin(); it != this->textData.end(); ++it)
+            accAdv += it->metrics.advanceWidth;
+
+        const float rectWidth = thisRect->rect().right - thisRect->rect().left;
+        const float rectHeight = thisRect->rect().top - thisRect->rect().bottom;
+
+        const float asc = this->data->file->fontHandle().ascent;
+        const float lineHeight = asc - this->data->file->fontHandle().descent;
+
+        float glyphScale = (float)this->_fontSize / lineHeight;
+        float lineHeightScaled = lineHeight * glyphScale;
+        float lineDiff = this->data->file->fontHandle().lineGap * glyphScale + lineHeightScaled;
+        float accXAdvance = 0;
+        float accYAdvance = 0;
+
+        size_t beg = 0;
+        size_t end;
+
+        // Horrific code that avoids multiple calls of find_first_*.
+        // I don't even know if this was optimal.
+        if (size_t _end = this->_text.find_first_of(U" \t\r\n", 0);
+            _end < (end = this->_text.find_first_not_of(U" \t\r\n", 0)))
+        {
+            end = _end;
+            goto HandleWord;
+        }
+        else
+        {
+            if (end == std::u32string::npos)
+                end = 0;
+            goto HandleSpace;
+        }
+
+        // Ohhhhhhh the goto abuse...
+        // I am going to hell.
+        // Do calculations for an individual text segment. This matters because each word cannot be split across lines, unless there is no space for it to fit in one line.
+        HandleWord:
+        {
+            std::vector<float> advanceLengths;
+            advanceLengths.reserve(end - beg);
+            for (size_t i = beg; i < end; i++)
+                advanceLengths.push_back(float(this->textData[i].metrics.advanceWidth) * glyphScale);
+
+            auto advanceLenIt = advanceLengths.begin();
+
+            float wordLen = std::accumulate(advanceLenIt, advanceLengths.end(), 0.0f);
+            if (accXAdvance + wordLen > rectWidth) [[unlikely]]
+            {
+                // If the word doesn't fit in one line, split it across two, otherwise, put it on a new line.
+                if (wordLen > rectWidth) [[unlikely]]
+                    goto SplitCalcWord;
+                else
+                {
+                    accXAdvance = 0;
+                    accYAdvance += lineDiff;
+                    goto InlineCalcWord;
+                }
+            }
+            else goto InlineCalcWord;
+
+            // For when a word doesn't fit within its line, and has to be split across two.
+            SplitCalcWord:
+            for (auto it = advanceLengths.begin(); it != advanceLengths.end(); ++it)
+            {
+                if (accXAdvance + *it > rectWidth) [[unlikely]]
+                {
+                    accXAdvance = 0;
+                    accYAdvance += lineDiff;
+                }
+                accXAdvance += *it;
+            }
+            goto ExitCalcWord;
+
+            // For when a text segment fits within its line.
+            InlineCalcWord:
+            for (auto it = advanceLengths.begin(); it != advanceLengths.end(); ++it)
+                accXAdvance += *it;
+            // No goto here, jump would go to the same place anyways.
+
+            ExitCalcWord:;
+        }
+        beg = end;
+        if (end != this->_text.size()) [[likely]]
+        {
+            size_t _end = this->_text.find_first_not_of(U" \t\r\n", beg + 1);
+            end = (_end == std::u32string::npos ? this->_text.size() : _end);
+            goto HandleSpace;
+        }
+        else goto ExitTextHandling;
+
+        HandleSpace:
+        for (size_t i = beg; i < end; i++)
+        {
+            switch (this->_text[i])
+            {
+            case U' ':
+                accXAdvance += this->textData[i].metrics.advanceWidth * glyphScale;
+                break;
+            case U'\t':
+                accXAdvance += this->textData[i].metrics.advanceWidth * glyphScale * 8;
+                break;
+            case U'\r':
+                break;
+            case U'\n':
+                accXAdvance = 0;
+                accYAdvance += lineDiff;
+                break;
+            }
+        }
+        beg = end;
+        if (end != this->_text.size()) [[likely]]
+        {
+            size_t _end = this->_text.find_first_of(U" \t\r\n", beg + 1);
+            end = (_end == std::u32string::npos ? this->_text.size() : _end);
+            goto HandleWord;
+        }
+        
+        ExitTextHandling:
+        return accYAdvance + lineHeightScaled;
+    }
+    else return 0;
+}
+
+void Text::recalculateCharacterPositions()
+{
+    if (this->data && !this->_text.empty()) [[likely]]
+    {
+        const RectTransform* const thisRect = this->rectTransform();
+        const RectFloat rect = thisRect->rect;
+
+        const float rectWidth = (rect.right - rect.left);
+        const float rectHeight = (rect.top - rect.bottom);
+        const float asc = this->data->file->fontHandle().ascent;
+        const float lineHeight = asc - this->data->file->fontHandle().descent;
+        const float glyphScale = float(this->_fontSize) / lineHeight;
+        const float lineHeightScaled = lineHeight * glyphScale;
+        const float lineDiff = (this->data->file->fontHandle().lineGap + lineHeight) * glyphScale;
+
+        float leftAdjSpaceWidth = 0.0f;
+        std::vector<float> advanceLengths;
+        float curXPos = 0.0f;
+        float curYPos = 0.0f;
+
+        this->_positionedText.clear();
+        this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
+
+        auto appendNewLineToPositionedText = [&]
+        {
+            this->_positionedText.back().width = curXPos;
+            curYPos += lineDiff;
+            this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
+            curXPos = 0.0f;
+            leftAdjSpaceWidth = 0.0f;
+        };
+
+        size_t beg = 0;
+        size_t end;
+
+        // Horrific code that avoids multiple calls of find_first_*.
+        // I don't even know if this was optimal.
+        if
+        (
+            size_t _end = this->_text.find_first_of(U" \t\r\n", 0);
+            _end < (end = this->_text.find_first_not_of(U" \t\r\n", 0))
+        )
+        {
+            end = _end;
+            goto HandleWord;
+        }
+        else goto HandleSpace;
+
+        // I am going to hell.
+        HandleWord:
+        {
+            for (size_t i = beg; i < end; i++)
+                advanceLengths.push_back(float(this->textData[i].metrics.advanceWidth) * glyphScale);
+
+            float wordLen = std::accumulate(advanceLengths.begin(), advanceLengths.end(), 0.0f);
+            if (curXPos + leftAdjSpaceWidth + wordLen > rectWidth) [[unlikely]]
+            {
+                if (wordLen > rectWidth) [[unlikely]]
+                // Draw a word split across lines. This is used when a word is longer than the width of a line.
+                {
+                    if (curXPos + leftAdjSpaceWidth > rectWidth) [[unlikely]]
+                    {
+                        if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                            goto ExitTextHandling;
+                        appendNewLineToPositionedText();
+                    }
+                    else curXPos += leftAdjSpaceWidth;
+                    for (size_t i = beg; i < end; i++)
+                    {
+                        if (curXPos + advanceLengths[i - beg] > rectWidth) [[unlikely]]
+                        {
+                            if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                                goto ExitTextHandling;
+                            appendNewLineToPositionedText();
+                        }
+                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos });
+                        curXPos += advanceLengths[i - beg];
+                    }
+                }
+                else // We can fit the whole word in a new line.
+                {
+                    // Nevermind we can't.
+                    if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                        goto ExitTextHandling;
+                    
+                    // Otherwise we can.
+                    curYPos += lineDiff;
+                    this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
+                    curXPos = 0.0f;
+                    for (size_t i = beg; i < end; i++)
+                    {
+                        // Character should never be missing from dictionary.
+                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos });
+                        curXPos += advanceLengths[i - beg];
+                    }
+                }
+            }
+            else // Draw a word in one line. This makes the assumption that the whole word will fit within a line.
+            {
+                curXPos += leftAdjSpaceWidth;
+                for (size_t i = beg; i < end; i++)
+                {
+                    this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos });
+                    curXPos += advanceLengths[i - beg];
+                }
+            }
+
+            advanceLengths.clear();
+            leftAdjSpaceWidth = 0.0f;
+        }
+        beg = end;
+        if (end != this->_text.size()) [[likely]]
+        {
+            size_t _end = this->_text.find_first_not_of(U" \t\r\n", beg + 1);
+            end = (_end == std::u32string::npos ? this->_text.size() : _end);
+            goto HandleSpace;
+        }
+        else goto ExitTextHandling;
+
+        HandleSpace:
+        {
+            for (size_t i = beg; i < end; i++)
+            {
+                switch (this->_text[i])
+                {
+                    case U' ':
+                        leftAdjSpaceWidth += this->textData[i].metrics.advanceWidth * glyphScale;
+                        goto PushSpace;
+                    case U'\t':
+                        leftAdjSpaceWidth += this->textData[i].metrics.advanceWidth * glyphScale * 8;
+                        
+                        PushSpace:
+                        if (curXPos + leftAdjSpaceWidth > rectWidth)
+                        {
+                            if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                                goto ExitTextHandling;
+                            appendNewLineToPositionedText();
+                        }
+                        break;
+                    case U'\r':
+                        break;
+                    case U'\n':
+                    if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                        goto ExitTextHandling;
+                    appendNewLineToPositionedText();
+                    break;
+                }
+            }
+        }
+        beg = end;
+        if (end != this->_text.size()) [[likely]]
+        {
+            size_t _end = this->_text.find_first_of(U" \t\r\n", beg + 1);
+            end = (_end == std::u32string::npos ? this->_text.size() : _end);
+            goto HandleWord;
+        }
+
+        ExitTextHandling:;
+    }
+}
 
 void Text::renderInitialize()
 {
@@ -424,9 +730,6 @@ void Text::renderInitialize()
         switch (Renderer::rendererBackend())
         {
         #if _WIN32
-        case RendererBackend::Direct3D9:
-            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, d3d9));
-            break;
         case RendererBackend::Direct3D11:
             Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, d3d11));
             break;
@@ -458,203 +761,44 @@ void Text::renderOffload()
         const Vector2 scale = thisRect->scale;
         const RectFloat rect = thisRect->rect;
 
-        const float rectWidth = (rect.right - rect.left) * scale.x;
-        const float rectHeight = (rect.top - rect.bottom) * scale.y;
         const float rot = thisRect->rotation;
         const float asc = this->data->file->fontHandle().ascent;
         const float lineHeight = asc - this->data->file->fontHandle().descent;
         const float glyphScale = float(this->_fontSize) / lineHeight;
-        const float lineHeightScaled = lineHeight * glyphScale * scale.y;
-        const float lineDiff = (this->data->file->fontHandle().lineGap + lineHeight) * glyphScale * scale.y;
 
-        float accYAdvance = 0.0f;
-        float spaceAdv = 0.0f;
-
-        std::vector<float> advanceLengths;
-        decltype(advanceLengths)::iterator advanceLenIt;
-
-        struct Character
+        if (this->dirty || this->rectTransform()->dirty())
         {
-            CharacterRenderData* character;
-            float xOffset;
-        };
-        struct Word
-        {
-            std::vector<Character> characters;
-        };
-        struct Line
-        {
-            std::vector<Word> words;
-            float width;
-            float yOffset;
-        };
-        std::vector<Line> lines
-        ({{ { }, 0.0f, 0.0f }});
-
-        auto pushCharAndIterNext = [&, this](size_t i)
-        {
-            auto c = this->data->characters.find(this->textData[i].glyphIndex);
-            if (c != this->data->characters.end())
-                lines.back().words.back().characters.push_back({ c->second, lines.back().width });
-
-            lines.back().width += *advanceLenIt;
-            ++advanceLenIt;
-        };
-
-        auto pushCurrentLine = [&]
-        {
-            accYAdvance += lineDiff;
-            lines.push_back({ { }, 0.0f, accYAdvance });
-        };
-        
-        size_t beg = 0;
-        size_t end;
-
-        // Horrific code that avoids multiple calls of find_first_*.
-        // I don't even know if this was optimal.
-        if
-        (
-            size_t _end = this->_text.find_first_of(U" \t\r\n", 0);
-            _end < (end = this->_text.find_first_not_of(U" \t\r\n", 0))
-        )
-        {
-            end = _end;
-            goto HandleWord;
-        }
-        else goto HandleSpace;
-
-        // Ohhhhhhh the goto abuse...
-        // I am going to hell.
-        // wait i swear im feeling some deja vu
-        HandleWord:
-        {
-            advanceLengths.reserve(end - beg);
-            for (size_t i = beg; i < end; i++)
-                advanceLengths.push_back(float(this->textData[i].metrics.advanceWidth) * glyphScale * scale.x);
-
-            advanceLenIt = advanceLengths.begin();
-
-            float wordLen = std::accumulate(advanceLenIt, advanceLengths.end(), 0.0f);
-            if (lines.back().width + spaceAdv + wordLen > rectWidth) [[unlikely]]
+            std::vector<std::pair<CharacterRenderData*, RenderTransform>> charactersForRender;
+            for (auto it1 = this->_positionedText.begin(); it1 != this->_positionedText.end(); ++it1)
             {
-                if (wordLen > rectWidth) [[unlikely]]
-                {
-                    lines.back().words.push_back({ { } });
-                    lines.back().words.back().characters.reserve(end - beg);
-                    goto SplitDrawWord;
-                }
-                else
-                {
-                    if (accYAdvance + lineDiff + lineHeightScaled > rectHeight)
-                        goto ExitTextHandling;
-                    pushCurrentLine();
-                    lines.back().words.push_back({ { } });
-                    lines.back().words.back().characters.reserve(end - beg);
-                }
-            }
-            else
-            {
-                lines.back().width += spaceAdv;
-                lines.back().words.push_back({ { } });
-                lines.back().words.back().characters.reserve(end - beg);
-                goto InlineDrawWord;
-            }
-
-            // Draw a word split across lines. This is used when a word is longer than the width of a line.
-            SplitDrawWord:
-            for (size_t i = beg; i < end; i++)
-            {
-                if (lines.back().width + *advanceLenIt > rectWidth) [[unlikely]]
-                {
-                    if (accYAdvance + lineDiff + lineHeightScaled > rectHeight)
-                        goto ExitTextHandling;
-                    pushCurrentLine();
-                    lines.back().words.push_back({ { } });
-                    lines.back().words.back().characters.reserve(end - i);
-                }
-                pushCharAndIterNext(i);
-            }
-            goto ExitDrawWord;
-
-            // Draw a word in one line. This makes the assumption that the whole word will fit within a line.
-            InlineDrawWord:
-            for (size_t i = beg; i < end; i++)
-                pushCharAndIterNext(i);
-            // No goto here, jump would go to the same place anyways.
-
-            ExitDrawWord:
-            advanceLengths.clear();
-        }
-        beg = end;
-        if (end != this->_text.size()) [[likely]]
-        {
-            size_t _end = this->_text.find_first_not_of(U" \t\r\n", beg + 1);
-            end = (_end == std::u32string::npos ? this->_text.size() : _end);
-            goto HandleSpace;
-        }
-        else goto ExitTextHandling;
-
-        HandleSpace:
-        {
-            spaceAdv = 0.0f;
-            for (size_t i = beg; i < end; i++)
-            {
-                switch (this->_text[i])
-                {
-                    case U' ':
-                        spaceAdv += this->textData[i].metrics.advanceWidth * glyphScale * scale.x;
-                        break;
-                    case U'\t':
-                        spaceAdv += this->textData[i].metrics.advanceWidth * glyphScale * scale.x * 8;
-                        break;
-                    case U'\r':
-                        break;
-                    case U'\n':
-                    if (accYAdvance + lineDiff + lineHeightScaled > rectHeight)
-                        goto ExitTextHandling;
-                    spaceAdv = 0.0f;
-                    pushCurrentLine();
-                    break;
-                }
-            }
-        }
-        beg = end;
-        if (end != this->_text.size()) [[likely]]
-        {
-            size_t _end = this->_text.find_first_of(U" \t\r\n", beg + 1);
-            end = (_end == std::u32string::npos ? this->_text.size() : _end);
-            goto HandleWord;
-        }
-        // No else here, it just goes to the same place anyways.
-
-        ExitTextHandling:
-        std::vector<std::pair<CharacterRenderData*, RenderTransform>> charsToDraw;
-        for (auto it1 = lines.begin(); it1 != lines.end(); ++it1)
-        {
-            for (auto it2 = it1->words.begin(); it2 != it1->words.end(); ++it2)
-            {
-                charsToDraw.reserve(charsToDraw.size() + it2->characters.size());
-                for (auto it3 = it2->characters.begin(); it3 != it2->characters.end(); ++it3)
+                for (auto it2 = it1->characters.begin(); it2 != it1->characters.end(); ++it2)
                 {
                     RenderTransform transform;
                     transform.scale({ glyphScale * scale.x, glyphScale * scale.y, 1.0f });
                     transform.translate
                     ({
-                        rect.left * scale.x + it3->xOffset +
-                        this->getHorizontalAlignOffset(rectWidth - it1->width, float(it2 - it1->words.begin()) / (it1->words.size() > 1 ? it1->words.size() - 1 : 1)),
-                        (rect.top - asc * glyphScale) * scale.y - it1->yOffset -
-                        this->getVerticalAlignOffset(rectHeight - lines.size() * lineDiff, float(it1 - lines.begin()) / (lines.size() > 1 ? lines.size() - 1 : 1)),
-                        0.0f
+                        rect.left * scale.x + it2->xOffset, //+
+                        //this->getHorizontalAlignOffset(rectWidth - it1->width, float(it2 - it1->words.begin()) / (it1->words.size() > 1 ? it1->words.size() - 1 : 1)),
+                        (rect.top - asc * glyphScale) * scale.y - it1->yOffset //-
+                        //this->getVerticalAlignOffset(rectHeight - lines.size() * lineDiff, float(it1 - lines.begin()) / (lines.size() > 1 ? lines.size() - 1 : 1)),
+                        ,0.0f
                     });
                     transform.rotate(Renderer::fromEuler({ 0.0f, 0.0f, -rot }));
                     transform.translate({ pos.x, pos.y, 0.0f });
-                    charsToDraw.push_back(std::make_pair(it3->character, transform));
+                    charactersForRender.push_back(std::make_pair(it2->character, transform));
                 }
             }
+            CoreEngine::queueRenderJobForFrame([data = this->data, charactersForRender = std::move(charactersForRender)]
+            {
+                data->charactersForRender = std::move(charactersForRender);
+            }, true);
+
+            this->dirty = false;
         }
-        CoreEngine::queueRenderJobForFrame([charsToDraw = std::move(charsToDraw)]
+        
+        CoreEngine::queueRenderJobForFrame([data = this->data]
         {
-            for (auto it = charsToDraw.begin(); it != charsToDraw.end(); ++it)
+            for (auto it = data->charactersForRender.begin(); it != data->charactersForRender.end(); ++it)
             {
                 Renderer::setDrawTransform(it->second);
                 Renderer::submitDraw

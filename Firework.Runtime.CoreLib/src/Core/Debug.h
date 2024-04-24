@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include <Core/Application.h>
 #include <Library/Lock.h>
 
 namespace Firework
@@ -32,6 +33,12 @@ namespace Firework
 		{
 			for (auto it = rhs.begin(); it != rhs.end(); ++it)
 				stream << *it;
+			return stream;
+		}
+		inline static std::wostream& operator<<(std::wostream& stream, const std::u32string& rhs)
+		{
+			std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
+			stream << conv.from_bytes(conv.to_bytes(rhs));
 			return stream;
 		}
 	}
@@ -55,9 +62,7 @@ namespace Firework
 	/// @brief Static class containing functionality relevant to debugging and logging.
 	class __firework_corelib_api Debug final
 	{
-		static Firework::SpinLock outputLock;
-
-		/// @internal 
+		/// @internal
 		/// @brief Internal API. Concatenates args... into a string.
 		/// @tparam ...T
 		/// @param[out] str Output wostringstream.
@@ -74,7 +79,7 @@ namespace Firework
 				(void(str << args), 0)...
 			};
 		}
-		/// @internal 
+		/// @internal
 		/// @brief Internal API. Returns the ANSI escape sequence for a certain rgb color. 
 		/// @param r Red, from 0 - 255. 
 		/// @param g Green, from 0 - 255. 
@@ -87,7 +92,7 @@ namespace Firework
 			out << L"\x1b[38;2;" << r << L';' << g << L';' << b << L'm';
 			return std::move(out).str();
 		}
-		/// @internal 
+		/// @internal
 		/// @brief Internal API. Returns the ANSI escape sequence for a color code. 
 		/// @param code Color code value. 
 		/// @return Escape sequence wstring. 
@@ -98,7 +103,7 @@ namespace Firework
 			out << L"\x1b[38;5;" << code << L'm';
 			return std::move(out).str();
 		}
-		/// @internal 
+		/// @internal
 		/// @brief Internal API. Returns the ANSI escape sequence for a special type of escape code.
 		/// @param seq Escape code type.
 		/// @return Escape sequence wstring.
@@ -115,8 +120,8 @@ namespace Firework
 	public:
 		Debug() = delete;
 
-		/// @brief Log a message to the console. 
-		/// @warning Whilst Debug::log is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @brief Log a message to the console.
+		/// @warning Whilst Debug::log is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel!
 		/// @tparam ...T
 		/// @param severity Severity level of message.
 		/// @param ...log Message to concatenate together.
@@ -148,59 +153,58 @@ namespace Firework
 			
 			bool hasNewline = logText.contains('\n');
 			time_t t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+			std::wstringstream out;
 			
-			Debug::outputLock.lock();
-			std::wcout <<
-
+			out <<
 			Debug::escapeCodeFromColor(12) <<
-
 			L"[UTC: " <<
 			std::put_time(std::gmtime(&t), L"%Y/%m/%d %X") <<
 			L"]" <<
-
 			Debug::escapeCode(EscapeSequence::Reset) <<
-
 			L' ' <<
 			Debug::escapeCodeFromColor(255, 165, 0) <<
-
 			L"[tID: " <<
 			std::this_thread::get_id() <<
-			L"]";
+			L"]" <<
+			Debug::escapeCode(EscapeSequence::Reset) <<
+			beginLogLevel;
 
-			std::wcout << Debug::escapeCode(EscapeSequence::Reset);
-
-			std::wcout << beginLogLevel;
 			switch (severity)
 			{
 			case LogLevel::Trace:
-				std::wcout << L" [TRACE]";
+				out << L" [TRACE]";
 				break;
 			case LogLevel::Info:
-				std::wcout << L" [INFO] ";
+				out << L" [INFO] ";
 				break;
 			case LogLevel::Warn:
-				std::wcout << L" [WARN] ";
+				out << L" [WARN] ";
 				break;
 			case LogLevel::Error:
-				std::wcout << L" [ERROR]";
+				out << L" [ERROR]";
 				break;
 			}
-			std::wcout << endLogLevel;
+
+			out << endLogLevel;
 
 			if (hasNewline)
-				std::wcout << '\n';
-			else std::wcout << " | ";
-			std::wcout << beginLogLevel;
+				out << '\n';
+			else out << " | ";
 
-			std::wcout << logText;
+			out <<
+			beginLogLevel <<
+			logText <<
+			endLogLevel <<
+			L'\n';
 
-			std::wcout << endLogLevel;
-
-			std::wcout << L'\n';
-			Debug::outputLock.unlock();
+			Application::queueJobForWorkerThread([out = std::move(out).str()]() -> void
+			{
+				std::wcout << out;
+			});
 		}
-		/// @brief Logs a message at the trace severity. 
-		/// @warning Whilst Debug::logTrace is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @brief Logs a message at the trace severity.
+		/// @warning Whilst Debug::logTrace is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel!
 		/// @tparam ...T
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::Debug::log
@@ -210,8 +214,8 @@ namespace Firework
 		{
 			Debug::log(LogLevel::Trace, log...);
 		}
-		/// @brief Logs a message at the info severity. 
-		/// @warning Whilst Debug::logInfo is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @brief Logs a message at the info severity.
+		/// @warning Whilst Debug::logInfo is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel!
 		/// @tparam ...T
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::Debug::log
@@ -221,8 +225,8 @@ namespace Firework
 		{
 			Debug::log(LogLevel::Info, log...);
 		}
-		/// @brief Logs a message at the warn severity. 
-		/// @warning Whilst Debug::logWarn is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @brief Logs a message at the warn severity.
+		/// @warning Whilst Debug::logWarn is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel!
 		/// @tparam ...T
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::Debug::log
@@ -232,8 +236,8 @@ namespace Firework
 		{
 			Debug::log(LogLevel::Warn, log...);
 		}
-		/// @brief Logs a message at the error severity. 
-		/// @warning Whilst Debug::logError is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel! 
+		/// @brief Logs a message at the error severity.
+		/// @warning Whilst Debug::logError is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel!
 		/// @tparam ...T
 		/// @param ...log Message to concatenate together.
 		/// @see Firework::Debug::log
@@ -312,12 +316,15 @@ namespace Firework
 			Debug::log(LogLevel::Error, out);
 		}
 
-		/// @brief Logs a message detailing the current hierachy of the world. 
-		/// @note Main thread only. 
+		/// @brief Logs a message detailing the current hierachy of the world.
+		/// @note Main thread only.
 		static void printHierarchy();
 
-		/// @brief Triggers a breakpoint trap. 
-		/// @note Thread-safe. 
+		static void showF3Menu();
+		static void hideF3Menu();
+
+		/// @brief Triggers a breakpoint trap.
+		/// @note Thread-safe.
 		inline static void breakPoint()
 		{
 			#if _WIN32
