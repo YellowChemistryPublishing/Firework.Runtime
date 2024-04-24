@@ -154,9 +154,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL Windows OR CMAKE_SYSTEM_NAME STREQUAL Darwin OR C
     set(CPPTRACE_STATIC ON CACHE INTERNAL "" FORCE)
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/cpptrace")
     if (FIREWORK_COMPILER STREQUAL "MSVC")
-        target_compile_options(cpptrace PRIVATE /D_CRT_SECURE_NO_WARNINGS)
+        target_compile_options(cpptrace-lib PRIVATE /D_CRT_SECURE_NO_WARNINGS)
     endif()
-    set_target_properties(cpptrace PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    set_target_properties(cpptrace-lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 firework_push_nowarn()
 
@@ -175,7 +175,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/SDL")
 firework_pop_nowarn()
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
-set(ASSIMP_BUILD_ZLIB ON CACHE INTERNAL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/assimp")
 get_target_property(ASSIMP_LINK_LIBRARIES assimp LINK_LIBRARIES)
@@ -404,6 +403,9 @@ generate_export_header(Firework.Runtime.CoreLib
 # file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/Firework.Runtime.CoreLib.Exports.h" "\n#ifndef FIREWORK_EXPORT_MODULE\n    #define FIREWORK_EXPORT_MODULE 0\n#endif\n#ifndef __fw_module_export\n    #define __fw_module_export\n#endif\n")
 
 target_compile_definitions(Firework.Runtime.CoreLib PUBLIC SDL_MAIN_HANDLED)
+if (FIREWORK_COMPILER STREQUAL "MSVC")
+    target_compile_options(Firework.Runtime.CoreLib PUBLIC /Zc:preprocessor)
+endif()
 target_include_directories(Firework.Runtime.CoreLib
     PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}"
@@ -432,7 +434,7 @@ target_link_libraries(Firework.Runtime.CoreLib
     SDL3-static
 )
 if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL "MacOS" OR FIREWORK_BUILD_PLATFORM STREQUAL "Linux")
-    target_link_libraries(Firework.Runtime.CoreLib PRIVATE cpptrace)
+    target_link_libraries(Firework.Runtime.CoreLib PRIVATE cpptrace-lib)
     if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc")
         # When using libdwarf, avoid dynamic zlib dependency.
         # This zlib comes from some mystery subdirectory.

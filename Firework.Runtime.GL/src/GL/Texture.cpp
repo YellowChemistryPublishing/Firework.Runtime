@@ -40,7 +40,7 @@ Texture2DHandle Texture2DHandle::create(const unsigned char (&color)[4])
     ret.internalHandle = bgfx::createTexture2D
     (
         1, 1, false, 1, bgfx::TextureFormat::RGBA8,
-        BGFX_TEXTURE_NONE | BGFX_SAMPLER_COMPARE_LESS | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT, bgfx::copy(color, sizeof(color))
+        BGFX_TEXTURE_NONE | BGFX_SAMPLER_COMPARE_LESS | BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC, bgfx::copy(color, sizeof(color))
     );
     return ret;
 }

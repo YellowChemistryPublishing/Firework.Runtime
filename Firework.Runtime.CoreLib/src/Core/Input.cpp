@@ -84,9 +84,10 @@ Key Input::convertFromSDLKey(SDL_Keycode code)
 	case SDLK_QUOTEDBL: return Key::DoubleQuotes;
 	case SDLK_BACKQUOTE: return Key::BackQuote;
 
-	case SDL_KMOD_SHIFT: return Key::Shift;
-	case SDL_KMOD_LSHIFT: return Key::LeftShift;
-	case SDL_KMOD_RSHIFT: return Key::RightShift;
+	case SDLK_UP: return Key::UpArrow;
+	case SDLK_DOWN: return Key::DownArrow;
+	case SDLK_LEFT: return Key::LeftArrow;
+	case SDLK_RIGHT: return Key::RightArrow;
 
 	// TODO: Implement rest.
 	

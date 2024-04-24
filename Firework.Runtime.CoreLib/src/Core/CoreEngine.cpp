@@ -208,9 +208,9 @@ void CoreEngine::internalLoop()
             traceback
             .append(cpptrace::demangle(typeid(ex).name()))
             .append("): ")
-            .append(ex.get_message())
+            .append(ex.message())
             .append("\nUnhandled exception thrown, at:\n")
-            .append(fmtTrace(ex.get_raw_trace().resolve()));
+            .append(fmtTrace(ex.trace()));
             Debug::logError(traceback);
         }
         catch (const cpptrace::exception& ex)
@@ -221,7 +221,7 @@ void CoreEngine::internalLoop()
             .append("): ")
             .append(ex.what())
             .append("\nUnhandled exception thrown, at:\n")
-            .append(fmtTrace(ex.get_raw_trace().resolve()));
+            .append(fmtTrace(ex.trace()));
             Debug::logError(traceback);
         }
         catch (const Exception& ex)
@@ -692,9 +692,9 @@ void CoreEngine::internalRenderLoop()
     RendererBackend backendPriorityOrder[]
     {
         #if _WIN32
+        RendererBackend::Direct3D11,
         RendererBackend::Vulkan,
         RendererBackend::Direct3D12,
-        RendererBackend::Direct3D11,
         RendererBackend::OpenGL
         #else
         RendererBackend::Vulkan,
