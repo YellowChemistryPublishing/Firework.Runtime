@@ -80,7 +80,7 @@ elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU" AND (FIREWORK_COMPILE
     set(FIREWORK_COMPILER "Clang")
     set(FIREWORK_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_TYPE}-${FIREWORK_BUILD_PLATFORM}")
-    add_compile_options(-fms-extensions -fasynchronous-unwind-tables -fsafe-buffer-usage-suggestions) # -fasync-exceptions breaks clang. Let the bug crunching happen.
+    add_compile_options(-fms-extensions -fasync-exceptions -fsafe-buffer-usage-suggestions)
     add_link_options(-pthread)
     
     if (FIREWORK_SANITIZE)
@@ -187,12 +187,12 @@ firework_push_nowarn()
 
 # bgfx
 
-if (FIREWORK_COMPILER STREQUAL MinGW)
+if (FIREWORK_COMPILER STREQUAL "MinGW")
     add_definitions(-DMINGW_HAS_SECURE_API=0)
 endif()
 
 set(BGFX_LIBRARY_TYPE "STATIC" CACHE INTERNAL "" FORCE)
-set(BGFX_BUILD_EXAMPLES ON CACHE INTERNAL "" FORCE)
+set(BGFX_BUILD_EXAMPLES OFF CACHE INTERNAL "" FORCE)
 set(BGFX_CONFIG_MULTITHREADED OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 
@@ -215,7 +215,7 @@ elseif (FIREWORK_COMPILER STREQUAL "Clang")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmost -Wno-c++98-compat -Wno-c++0x-compat -Wno-c++11-compat -Wno-c++14-compat -Wno-c++17-compat -Wno-c++20-compat")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmost -Wno-c++98-compat -Wno-c++0x-compat -Wno-c++11-compat -Wno-c++14-compat -Wno-c++17-compat -Wno-c++20-compat")
 elseif (FIREWORK_COMPILER STREQUAL "MSVC")
-    add_compile_options(/Zc:preprocessor)
+    add_compile_options(/Zc:preprocessor /FI "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/src/__msvc_bgfx_fix.h")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
@@ -405,7 +405,7 @@ generate_export_header(Firework.Runtime.CoreLib
 
 target_compile_definitions(Firework.Runtime.CoreLib PUBLIC SDL_MAIN_HANDLED)
 if (FIREWORK_COMPILER STREQUAL "MSVC")
-    target_compile_options(Firework.Runtime.CoreLib PUBLIC /Zc:preprocessor)
+    target_compile_options(Firework.Runtime.CoreLib PUBLIC /Zc:preprocessor /FI "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/src/__msvc_bgfx_fix.h")
 endif()
 target_include_directories(Firework.Runtime.CoreLib
     PUBLIC

@@ -1,13 +1,12 @@
 #include "Mesh.h"
 
+#include <cstdint>
+
 #include <Components/Transform.h>
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <GL/Renderer.h>
 #include <GL/RenderPipeline.h>
-
-#include <Mesh.vfAll.h>
-#include <cstdint>
 
 using namespace Firework;
 using namespace Firework::Internal;
