@@ -692,9 +692,9 @@ void CoreEngine::internalRenderLoop()
     RendererBackend backendPriorityOrder[]
     {
         #if _WIN32
-        RendererBackend::Direct3D11,
         RendererBackend::Vulkan,
         RendererBackend::Direct3D12,
+        RendererBackend::Direct3D11,
         RendererBackend::OpenGL
         #else
         RendererBackend::Vulkan,
