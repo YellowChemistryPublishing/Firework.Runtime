@@ -26,6 +26,7 @@
 #endif
 
 #include <Core/Application.h>
+#include <Firework/Config.h>
 
 extern __firework_corelib_api void __fw_rt_hw_sighf();
 extern __firework_corelib_api void __fw_rt_hw_sigh(int sig);
@@ -70,14 +71,18 @@ namespace Firework
         class CoreEngine;
     }
 
-    class Exception : public std::exception
+    class __firework_corelib_api Exception : public std::exception
     {
-    public:
         #if __has_include(<cpptrace/cpptrace.hpp>)
-        cpptrace::stacktrace trace = cpptrace::stacktrace::current();
+        // cpptrace::safe_object_frame frame;
+        // cpptrace::frame_ptr buffer[FIREWORK_EXCEPTION_TRACE_DEPTH];
+        // size_t bufferLen;
+        cpptrace::stacktrace trace;
         #endif
+
+        cpptrace::stacktrace resolveStacktrace() const;
     public:
-        inline Exception() = default;
+        Exception();
         inline virtual ~Exception() noexcept = 0;
 
         friend class Firework::Internal::CoreEngine;

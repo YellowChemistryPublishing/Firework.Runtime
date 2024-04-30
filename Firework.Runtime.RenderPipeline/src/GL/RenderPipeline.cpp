@@ -5,6 +5,9 @@
 
 #include <Generic.vfAll.h>
 
+#include <thread>
+#include <chrono>
+
 using namespace Firework;
 using namespace Firework::GL;
 

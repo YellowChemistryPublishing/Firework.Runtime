@@ -52,10 +52,14 @@ void Debug::printHierarchy()
         }
     }
 
+	#if FIREWORK_DEBUG_LOG_ASYNC
     Application::queueJobForWorkerThread([out = std::move(out).str()]
     {
         std::wcout << out;
     });
+    #else
+	std::wcout << out.rdbuf();
+    #endif
 }
 
 void Debug::showF3Menu()

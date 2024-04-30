@@ -16,6 +16,7 @@
 #include <vector>
 
 #include <Core/Application.h>
+#include <Firework/Config.h>
 #include <Library/Lock.h>
 
 namespace Firework
@@ -198,10 +199,14 @@ namespace Firework
 			endLogLevel <<
 			L'\n';
 
+			#if FIREWORK_DEBUG_LOG_ASYNC
 			Application::queueJobForWorkerThread([out = std::move(out).str()]() -> void
 			{
 				std::wcout << out;
 			});
+			#else
+			std::wcout << out.rdbuf();
+			#endif
 		}
 		/// @brief Logs a message at the trace severity.
 		/// @warning Whilst Debug::logTrace is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel!

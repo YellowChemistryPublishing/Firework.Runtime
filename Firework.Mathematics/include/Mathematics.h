@@ -681,6 +681,25 @@ namespace Firework
 			{
 				return q.norm();
 			}
+
+			template <typename T>
+			constexpr static T clamp(T val, T minVal, T maxVal)
+			{
+				return val < minVal ? minVal : (val > maxVal ? maxVal : val);
+			}
+
+			template <typename T>
+			requires std::floating_point<T>
+			constexpr static T deg2Rad(T degrees)
+			{
+				return (T)Math::pi / (T)180.0l * degrees;
+			}
+			template <typename T>
+			requires std::floating_point<T>
+			constexpr static T rad2Deg(T radians)
+			{
+				return radians * (T)180.0l / (T)Math::pi;
+			}
 			
 			constexpr static float dot(const Vector2& lhs, const Vector2& rhs) noexcept
 			{
@@ -702,19 +721,6 @@ namespace Firework
 					-rhs.z * lhs.x + rhs.x * lhs.z,
 					rhs.y * lhs.x - rhs.x * lhs.y
 				};
-			}
-
-			template <typename T>
-			requires std::floating_point<T>
-			constexpr static T deg2Rad(T degrees)
-			{
-				return (T)Math::pi / (T)180.0l * degrees;
-			}
-			template <typename T>
-			requires std::floating_point<T>
-			constexpr static T rad2Deg(T radians)
-			{
-				return radians * (T)180.0l / (T)Math::pi;
 			}
 		};
 	}

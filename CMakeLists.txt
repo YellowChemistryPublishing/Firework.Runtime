@@ -10,10 +10,15 @@ project(Firework.Runtime)
 # Configuration options...
 option(FIREWORK_WINDOWS_COMPATIBILITY "Enable compatibility with Windows versions up to Windows XP. This option only has effect when compiling with MinGW." ON)
 option(FIREWORK_BUILD_EXAMPLES "Build various examples." ON)
+option(FIREWORK_LOCAL_DBGINFO_PATHS "Use local paths embedded in program for debug information." OFF)
 option(FIREWORK_SANITIZE "Enable supported sanitizers." OFF)
 option(FIREWORK_LTO "Enable link-time optimization on release builds." OFF)
 
 include(GenerateExportHeader)
+
+set(FIREWORK_COMPILE_DEFINITIONS "")
+set(FIREWORK_COMPILE_FLAGS "")
+set(FIREWORK_LINKER_FLAGS "")
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(FIREWORK_TARGET_ARCH x64)
@@ -22,7 +27,7 @@ else()
 endif()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-D_DEBUG=1)
+    set(FIREWORK_COMPILE_DEFINITIONS ${FIREWORK_COMPILE_DEFINITIONS} _DEBUG=1)
 endif()
 
 if (EMSCRIPTEN)
@@ -58,21 +63,29 @@ elseif (FIREWORK_COMPILER_ID STREQUAL "GNU")
     endif()
     set(FIREWORK_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_TYPE}-${FIREWORK_BUILD_PLATFORM}")
-    add_compile_options(-fnon-call-exceptions)
+    # Your copy of gcc better include a. Exceptions, and b. dynamic linking to libstdc++ and libgcc, or you're (silently) screwed.
+    set(FIREWORK_COMPILE_DEFINITIONS ${FIREWORK_COMPILE_DEFINITIONS} MINGW_HAS_SECURE_API=1)
+    set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -fnon-call-exceptions)
+    if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
+        set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -fno-omit-frame-pointer) # Do NOT delete this, you will ruin my week if you do. Optimizing out the frame pointer prevents SEH exceptions from working properly.
+    endif()
+    if (FIREWORK_LOCAL_DBGINFO_PATHS)
+        set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -ffile-prefix-map="${CMAKE_SOURCE_DIR}/"=/)
+    endif()
     if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" AND FIREWORK_WINDOWS_COMPATIBILITY)
-        add_definitions(-D_WIN32_WINNT=0x0501 -DWINVER=0x0501 -D__REQUIRED_RPCNDR_H_VERSION__=475)
+        set(FIREWORK_COMPILE_DEFINITIONS ${FIREWORK_COMPILE_DEFINITIONS} _WIN32_WINNT=0x0501 WINVER=0x0501 __REQUIRED_RPCNDR_H_VERSION__=475)
     endif()
 
     if (FIREWORK_SANITIZE)
-        add_compile_options(-fsanitize=undefined)
-        add_link_options(-fsanitize=undefined)
+        set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -fsanitize=undefined)
+        set(FIREWORK_LINKER_FLAGS ${FIREWORK_LINKER_FLAGS} -fsanitize=undefined)
         if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
-            add_compile_options(-fsanitize-undefined-trap-on-error)
-            add_link_options(-fsanitize-undefined-trap-on-error)
+            set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -fsanitize-undefined-trap-on-error)
+            set(FIREWORK_LINKER_FLAGS ${FIREWORK_LINKER_FLAGS} -fsanitize-undefined-trap-on-error)
             message(STATUS "[FireworkConfigure] [INFO]  MinGW sanitizers: -fsanitize=undefined -fsanitize-undefined-trap-on-error")
         else()
-            add_compile_options(-fsanitize=leak)
-            add_link_options(-fsanitize=leak)
+            set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -fsanitize=leak)
+            set(FIREWORK_LINKER_FLAGS ${FIREWORK_LINKER_FLAGS} -fsanitize=leak)
             message(STATUS "[FireworkConfigure] [INFO]  gcc sanitizers: -fsanitize=undefined -fsanitize=leak")
         endif()
     endif()
@@ -80,16 +93,16 @@ elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU" AND (FIREWORK_COMPILE
     set(FIREWORK_COMPILER "Clang")
     set(FIREWORK_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_TYPE}-${FIREWORK_BUILD_PLATFORM}")
-    add_compile_options(-fms-extensions -fasync-exceptions -fsafe-buffer-usage-suggestions)
-    add_link_options(-pthread)
+    set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -fms-extensions -fsafe-buffer-usage-suggestions) # TODO: -fasync-exceptions once everyone updates their version of Clang.
+    set(FIREWORK_LINKER_FLAGS ${FIREWORK_LINKER_FLAGS} -pthread)
     
     if (FIREWORK_SANITIZE)
-        add_link_options(-fsanitize=undefined)
+        set(FIREWORK_LINKER_FLAGS ${FIREWORK_LINKER_FLAGS} -fsanitize=undefined)
         if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
-            add_link_options(-fsanitize=address)
+            set(FIREWORK_LINKER_FLAGS ${FIREWORK_LINKER_FLAGS} -fsanitize=address)
             message(STATUS "[FireworkConfigure] [INFO]  clang sanitizers: -fsanitize=undefined -fsanitize=address")
         else()
-            add_link_options(-fsanitize=leak)
+            set(FIREWORK_LINKER_FLAGS ${FIREWORK_LINKER_FLAGS} -fsanitize=leak)
             message(STATUS "[FireworkConfigure] [INFO]  clang sanitizers: -fsanitize=undefined -fsanitize=leak")
         endif()
     endif()
@@ -99,10 +112,10 @@ elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" OR FIREWORK_COMPILER
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_PLATFORM}")
     string(REPLACE " /EHs" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     string(REPLACE " /EHs" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    add_compile_options(/Zc:__cplusplus /utf-8 /EHa)
+    set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} /Zc:__cplusplus /utf-8 /EHa)
 
     if (FIREWORK_SANITIZE)
-        add_compile_options(/fsanitize=address)
+        set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} /fsanitize=address)
         message(STATUS "[FireworkConfigure] [INFO]  MSVC sanitizers: /fsanitize=address")
     endif()
 else()
@@ -113,6 +126,13 @@ else()
     set(FIREWORK_BUILD_TYPE "UnknownBuildType")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_PLATFORM}")
 endif()
+
+message(STATUS "FIREWORK_COMPILE_DEFINITIONS: ${FIREWORK_COMPILE_DEFINITIONS}")
+message(STATUS "FIREWORK_COMPILE_FLAGS: ${FIREWORK_COMPILE_FLAGS}")
+message(STATUS "FIREWORK_LINKER_FLAGS: ${FIREWORK_LINKER_FLAGS}")
+add_compile_definitions(${FIREWORK_COMPILE_DEFINITIONS})
+add_compile_options(${FIREWORK_COMPILE_FLAGS})
+add_link_options(${FIREWORK_LINKER_FLAGS})
 
 macro(firework_push_nowarn)
     if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc" OR FIREWORK_COMPILER STREQUAL "Clang")
@@ -150,11 +170,14 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/uni-algo")
 
 # cpptrace
 firework_pop_nowarn()
-if (CMAKE_SYSTEM_NAME STREQUAL Windows OR CMAKE_SYSTEM_NAME STREQUAL Darwin OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL "MacOS" OR FIREWORK_BUILD_PLATFORM STREQUAL "Linux")
     set(CPPTRACE_STATIC ON CACHE INTERNAL "" FORCE)
+    set(CPPTRACE_GET_SYMBOLS_WITH_LIBDWARF ON CACHE INTERNAL "" FORCE)
+    set(CPPTRACE_UNWIND_WITH_UNWIND ON CACHE INTERNAL "" FORCE)
+    set(CPPTRACE_DEMANGLE_WITH_CXXABI ON CACHE INTERNAL "" FORCE)
     add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/cpptrace")
     if (FIREWORK_COMPILER STREQUAL "MSVC")
-        target_compile_options(cpptrace-lib PRIVATE /D_CRT_SECURE_NO_WARNINGS)
+        target_compile_definitions(cpptrace-lib PRIVATE _CRT_SECURE_NO_WARNINGS)
     endif()
     set_target_properties(cpptrace-lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
@@ -180,6 +203,7 @@ set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/assimp")
 get_target_property(ASSIMP_LINK_LIBRARIES assimp LINK_LIBRARIES)
 # external/assimp/code/CMakeLists.txt - 1348: TARGET_LINK_LIBRARIES ( assimp -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lwinpthread ) -> Breaks our binary.
+# This doesn't actually work. Thanks assimp for ruining my day. TODO: File bug report later.
 list(REMOVE_ITEM ASSIMP_LINK_LIBRARIES "-static-libgcc" "-static-libstdc++" "-Wl,-Bstatic" "-lstdc++" "-lwinpthread")
 set_target_properties(assimp PROPERTIES LINK_LIBRARIES "${ASSIMP_LINK_LIBRARIES}")
 unset(BUILD_SHARED_LIBS)
@@ -187,18 +211,10 @@ firework_push_nowarn()
 
 # bgfx
 
-if (FIREWORK_COMPILER STREQUAL "MinGW")
-    add_definitions(-DMINGW_HAS_SECURE_API=0)
-endif()
-
 set(BGFX_LIBRARY_TYPE "STATIC" CACHE INTERNAL "" FORCE)
 set(BGFX_BUILD_EXAMPLES OFF CACHE INTERNAL "" FORCE)
 set(BGFX_CONFIG_MULTITHREADED OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
-
-if (FIREWORK_COMPILER STREQUAL "MinGW")
-    remove_definitions(-DMINGW_HAS_SECURE_API)
-endif()
 
 # Firework.Runtime
 
@@ -215,7 +231,7 @@ elseif (FIREWORK_COMPILER STREQUAL "Clang")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmost -Wno-c++98-compat -Wno-c++0x-compat -Wno-c++11-compat -Wno-c++14-compat -Wno-c++17-compat -Wno-c++20-compat")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wmost -Wno-c++98-compat -Wno-c++0x-compat -Wno-c++11-compat -Wno-c++14-compat -Wno-c++17-compat -Wno-c++20-compat")
 elseif (FIREWORK_COMPILER STREQUAL "MSVC")
-    add_compile_options(/Zc:preprocessor /FI "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/src/__msvc_bgfx_fix.h")
+    set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} /Zc:preprocessor /FI "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/src/__msvc_bgfx_fix.h")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
 endif()
@@ -255,6 +271,9 @@ target_include_directories(Firework.Typography
     "${CMAKE_CURRENT_LIST_DIR}/dependencies/stb"
 )
 
+target_compile_definitions(Firework.Typography PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
+target_compile_options(Firework.Typography PUBLIC ${FIREWORK_COMPILE_FLAGS})
+target_link_options(Firework.Typography PUBLIC ${FIREWORK_LINKER_FLAGS})
 set_target_properties(Firework.Typography
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Typography"
@@ -328,6 +347,9 @@ else()
     target_compile_definitions(Firework.Runtime.GL PUBLIC BX_CONFIG_DEBUG=0)
 endif()
 
+target_compile_definitions(Firework.Runtime.GL PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
+target_compile_options(Firework.Runtime.GL PUBLIC ${FIREWORK_COMPILE_FLAGS})
+target_link_options(Firework.Runtime.GL PUBLIC ${FIREWORK_LINKER_FLAGS})
 set_target_properties(Firework.Runtime.GL
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Runtime.GL"
@@ -376,6 +398,9 @@ target_link_libraries(Firework.Runtime.RenderPipeline
     Firework.Runtime.GL
 )
 
+target_compile_definitions(Firework.Runtime.RenderPipeline PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
+target_compile_options(Firework.Runtime.RenderPipeline PUBLIC ${FIREWORK_COMPILE_FLAGS})
+target_link_options(Firework.Runtime.RenderPipeline PUBLIC ${FIREWORK_LINKER_FLAGS})
 set_target_properties(Firework.Runtime.RenderPipeline
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Runtime.RenderPipeline"
@@ -404,9 +429,6 @@ generate_export_header(Firework.Runtime.CoreLib
 # file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/Firework.Runtime.CoreLib.Exports.h" "\n#ifndef FIREWORK_EXPORT_MODULE\n    #define FIREWORK_EXPORT_MODULE 0\n#endif\n#ifndef __fw_module_export\n    #define __fw_module_export\n#endif\n")
 
 target_compile_definitions(Firework.Runtime.CoreLib PUBLIC SDL_MAIN_HANDLED)
-if (FIREWORK_COMPILER STREQUAL "MSVC")
-    target_compile_options(Firework.Runtime.CoreLib PUBLIC /Zc:preprocessor /FI "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/src/__msvc_bgfx_fix.h")
-endif()
 target_include_directories(Firework.Runtime.CoreLib
     PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}"
@@ -437,6 +459,7 @@ target_link_libraries(Firework.Runtime.CoreLib
 if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL "MacOS" OR FIREWORK_BUILD_PLATFORM STREQUAL "Linux")
     target_link_libraries(Firework.Runtime.CoreLib PRIVATE cpptrace-lib)
     if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc")
+        target_compile_options(cpptrace-lib PRIVATE -include "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/src/__mingw_cpptrace_fix.h")
         # When using libdwarf, avoid dynamic zlib dependency.
         # This zlib comes from some mystery subdirectory.
         target_link_libraries(Firework.Runtime.CoreLib PRIVATE zlibstatic)
@@ -446,6 +469,9 @@ if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
     target_link_libraries(Firework.Runtime.CoreLib PRIVATE psapi)
 endif()
 
+target_compile_definitions(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
+target_compile_options(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_COMPILE_FLAGS})
+target_link_options(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_LINKER_FLAGS})
 set_target_properties(Firework.Runtime.CoreLib
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Runtime.CoreLib"
@@ -506,6 +532,9 @@ target_link_libraries(Firework.Components.Core2D
     Firework.Typography
 )
 
+target_compile_definitions(Firework.Components.Core2D PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
+target_compile_options(Firework.Components.Core2D PUBLIC ${FIREWORK_COMPILE_FLAGS})
+target_link_options(Firework.Components.Core2D PUBLIC ${FIREWORK_LINKER_FLAGS})
 set_target_properties(Firework.Components.Core2D
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Components.Core2D"
@@ -558,6 +587,9 @@ target_link_libraries(Firework.Components.Core3D
     Firework.Runtime.CoreLib
 )
 
+target_compile_definitions(Firework.Components.Core3D PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
+target_compile_options(Firework.Components.Core3D PUBLIC ${FIREWORK_COMPILE_FLAGS})
+target_link_options(Firework.Components.Core3D PUBLIC ${FIREWORK_LINKER_FLAGS})
 set_target_properties(Firework.Components.Core3D
     PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Components.Core3D"
@@ -628,8 +660,4 @@ if (FIREWORK_BUILD_EXAMPLES)
             $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
         )
     endforeach()
-endif()
-
-if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
-    remove_definitions(-D_WIN32_WINNT)
 endif()
