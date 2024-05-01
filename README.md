@@ -6,7 +6,7 @@
 [![Firework.Runtime](https://img.shields.io/github/languages/code-size/YellowChemistryPublishing/Firework.Runtime)](https://en.wikipedia.org/wiki/Windsor_soup)  
 [![Firework.Runtime](https://img.shields.io/github/contributors/YellowChemistryPublishing/Firework.Runtime)](https://github.com/YellowChemistryPublishing/Firework.Runtime/graphs/contributors)
 [![Firework.Runtime](https://img.shields.io/github/last-commit/YellowChemistryPublishing/Firework.Runtime)](https://github.com/YellowChemistryPublishing/Firework.Runtime/commits/main)
-[![Firework.Runtime](https://img.shields.io/maintenance/yes/2023)](https://en.wikipedia.org/wiki/Laziness)  
+[![Firework.Runtime](https://img.shields.io/maintenance/yes/2024)](https://en.wikipedia.org/wiki/Laziness)  
 [![CMake](https://img.shields.io/github/actions/workflow/status/YellowChemistryPublishing/Firework.Runtime/cmake.yml?branch=main&logo=github)](https://github.com/YellowChemistryPublishing/Firework.Runtime/actions/workflows/cmake.yml)
 [![AppVeyor](https://img.shields.io/appveyor/build/YellowChemistryPublishing/firework-runtime?logo=appveyor)](https://ci.appveyor.com/project/YellowChemistryPublishing/firework-runtime)
 [![Firework.Runtime](https://img.shields.io/github/issues/YellowChemistryPublishing/Firework.Runtime)](https://github.com/YellowChemistryPublishing/Firework.Runtime/issues)

@@ -70,10 +70,10 @@ namespace Firework
         }
         
         const Property<Entity*, Entity*> parent
-        {{
+        {
             [this]() -> Entity* { return this->_parent; },
             [this](Entity* value) { this->setParent(value); }
-        }};
+        };
         inline std::vector<Entity*> children() const
         {
             std::vector<Entity*> ret;

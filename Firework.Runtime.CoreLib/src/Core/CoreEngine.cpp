@@ -171,20 +171,12 @@ void CoreEngine::resetDisplayData()
     });
 }
 
-void __fw_rt_hw_eh_frame(auto&& func)
-{
-    __hwTry
-    {
-        func();
-    }
-    __hwExcept();
-}
 void CoreEngine::internalLoop()
 {
     constexpr auto handled = []<typename Func>(Func&& func)
     {
         #if __has_include(<cpptrace/cpptrace.hpp>)
-        constexpr auto fmtTrace = [](cpptrace::stacktrace ret) -> std::string
+        auto fmtTrace = [](cpptrace::stacktrace ret) -> std::string
         {
             for (auto& frame : ret.frames)
             {
@@ -197,12 +189,11 @@ void CoreEngine::internalLoop()
         };
         #endif
 
-        try
+        __hwTry
         {
-            __fw_rt_hw_eh_frame(std::move(func));
+            func();
         }
-        #if __has_include(<cpptrace/cpptrace.hpp>)
-        catch (const cpptrace::exception_with_message& ex)
+        __hwCatch (const cpptrace::exception_with_message& ex)
         {
             std::string traceback = "std::exception (";
             traceback
@@ -213,7 +204,7 @@ void CoreEngine::internalLoop()
             .append(fmtTrace(ex.trace()));
             Debug::logError(traceback);
         }
-        catch (const cpptrace::exception& ex)
+        __hwCatch (const cpptrace::exception& ex)
         {
             std::string traceback = "std::exception (";
             traceback
@@ -224,7 +215,7 @@ void CoreEngine::internalLoop()
             .append(fmtTrace(ex.trace()));
             Debug::logError(traceback);
         }
-        catch (const Exception& ex)
+        __hwCatch (const Exception& ex)
         {
             std::string traceback = "std::exception (";
             traceback
@@ -235,8 +226,7 @@ void CoreEngine::internalLoop()
             /*/.append(fmtTrace(ex.resolveStacktrace()))/*/;
             Debug::logError(traceback);
         }
-        #endif
-        catch (const std::exception& ex)
+        __hwCatch (const std::exception& ex)
         {
             std::string traceback = "std::exception (";
             traceback
@@ -258,7 +248,7 @@ void CoreEngine::internalLoop()
             #endif
             Debug::logError(traceback);
         }
-        catch(...)
+        __hwCatch (...)
         {
             #if defined(_GLIBCXX_RELEASE) && __has_include(<cpptrace/cpptrace.hpp>)
             std::string traceback = cpptrace::demangle(std::current_exception().__cxa_exception_type()->name());
@@ -275,6 +265,7 @@ void CoreEngine::internalLoop()
             #endif
             Debug::logError(traceback);
         }
+        __hwEnd();
     };
 
     CoreEngine::state.store(EngineState::WindowInit, std::memory_order_relaxed); // Spin off window handling thread.
@@ -318,7 +309,7 @@ void CoreEngine::internalLoop()
             }
             #pragma endregion
             
-            handled([] { EngineEvent::OnTick(); });
+            handled([] { *(volatile int*)0=0; EngineEvent::OnTick(); });
             handled([] { EngineEvent::OnLateTick(); });
 
             for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)

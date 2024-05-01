@@ -79,10 +79,10 @@ namespace Firework
         /// @return ```Firework::Mathematics::Vector3```
         /// @note Main thread only.
         const Property<Mathematics::Vector3, Mathematics::Vector3> position
-        {{
+        {
             [this]() -> Mathematics::Vector3 { return this->_position; },
             [this](Mathematics::Vector3 value) { this->setPosition(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The rotation of this transform in radians.
         /// @param value ```Firework::Mathematics::Quaternion```
@@ -90,20 +90,20 @@ namespace Firework
         /// @see Firework::Mathematics::Quaternion::fromEuler when using euler angles for rotations.
         /// @note Main thread only.
         const Property<Mathematics::Quaternion, Mathematics::Quaternion> rotation
-        {{
+        {
             [this]() -> Mathematics::Quaternion { return this->_rotation; },
             [this](Mathematics::Quaternion value) { this->setRotation(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The scale of this transform.
         /// @param value ```Firework::Mathematics::Vector3```
         /// @return ```Firework::Mathematics::Vector3```
         /// @note Main thread only.
         const Property<Mathematics::Vector3, Mathematics::Vector3> scale
-        {{
+        {
             [this]() -> Mathematics::Vector3 { return this->_scale; },
             [this](Mathematics::Vector3 value) { this->setScale(value); }
-        }};
+        };
         
         /// @property
         /// @brief [Property] The local position of this transform.
@@ -111,10 +111,10 @@ namespace Firework
         /// @return ```Firework::Mathematics::Vector3```
         /// @note Main thread only.
         const Property<Mathematics::Vector3, Mathematics::Vector3> localPosition
-        {{
+        {
             [this]() -> Mathematics::Vector3 { return this->getLocalPosition(); },
             [this](Mathematics::Vector3 value) { this->setLocalPosition(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The local rotation of this transform in radians.
         /// @param value ```Firework::Mathematics::Quaternion```
@@ -122,20 +122,20 @@ namespace Firework
         /// @see Firework::Mathematics::Quaternion::fromEuler when using euler angles for rotations.
         /// @note Main thread only.
         const Property<Mathematics::Quaternion, Mathematics::Quaternion> localRotation
-        {{
+        {
             [this]() -> Mathematics::Quaternion { return this->getLocalRotation(); },
             [this](Mathematics::Quaternion value) { this->setLocalRotation(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The local scale of this transform.
         /// @param value ```Firework::Mathematics::Vector3```
         /// @return ```Firework::Mathematics::Vector3```
         /// @note Main thread only.
         const Property<Mathematics::Vector3, Mathematics::Vector3> localScale
-        {{
+        {
             [this]() -> Mathematics::Vector3 { return this->getLocalScale(); },
             [this](Mathematics::Vector3 value) { this->setLocalScale(value); }
-        }};
+        };
 
         friend __firework_corelib_api GL::RenderTransform Firework::Internal::renderTransformFromTransform(Transform* const transform);
     };

@@ -124,20 +124,20 @@ namespace Firework
         /// @return ```const Firework::RectFloat&```
         /// @note Main thread only.
         const Property<const RectFloat&, const RectFloat&> rect
-        {{
+        {
             [this]() -> const RectFloat& { return this->_rect; },
             [this](const RectFloat& value) { this->_rect = value; }
-        }};
+        };
         /// @property
         /// @brief [Property] The anchor for the rectangle bounds of this transform.
         /// @param value ```const Firework::RectFloat&```
         /// @return ```const Firework::RectFloat&```
         /// @note Main thread only.
         const Property<const RectFloat&, const RectFloat&> rectAnchor
-        {{
+        {
             [this]() -> const RectFloat& { return this->_anchor; },
             [this](const RectFloat& value) { this->_anchor = value; }
-        }};
+        };
 
         /// @property
         /// @brief [Property] The position of this transform.
@@ -145,30 +145,30 @@ namespace Firework
         /// @return ```Firework::Mathematics::Vector2```
         /// @note Main thread only.
         const Property<Mathematics::Vector2, Mathematics::Vector2> position
-        {{
+        {
             [this]() -> Mathematics::Vector2 { return this->_position; },
             [this](Mathematics::Vector2 value) { this->setPosition(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The rotation of this transform in radians.
         /// @param value ```float```
         /// @return ```float```
         /// @note Main thread only.
         const Property<float, float> rotation
-        {{
+        {
             [this]() -> float { return this->_rotation; },
             [this](float value) { this->setRotation(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The scale of this transform.
         /// @param value ```Firework::Mathematics::Vector2```
         /// @return ```Firework::Mathematics::Vector2```
         /// @note Main thread only.
         const Property<Mathematics::Vector2, Mathematics::Vector2> scale
-        {{
+        {
             [this]() -> Mathematics::Vector2 { return this->_scale; },
             [this](Mathematics::Vector2 value) { this->setScale(value); }
-        }};
+        };
         
         /// @property
         /// @brief [Property] The local position of this transform.
@@ -176,30 +176,30 @@ namespace Firework
         /// @return ```Firework::Mathematics::Vector2```
         /// @note Main thread only.
         const Property<Mathematics::Vector2, Mathematics::Vector2> localPosition
-        {{
+        {
             [this]() -> Mathematics::Vector2 { return this->getLocalPosition(); },
             [this](Mathematics::Vector2 value) { this->setLocalPosition(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The local rotation of this transform in radians.
         /// @param value ```float```
         /// @return ```float```
         /// @note Main thread only.
         const Property<float, float> localRotation
-        {{
+        {
             [this]() -> float { return this->getLocalRotation(); },
             [this](float value) { this->setLocalRotation(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The local scale of this transform.
         /// @param value ```Firework::Mathematics::Vector2```
         /// @return ```Firework::Mathematics::Vector2```
         /// @note Main thread only.
         const Property<Mathematics::Vector2, Mathematics::Vector2> localScale
-        {{
+        {
             [this]() -> Mathematics::Vector2 { return this->getLocalScale(); },
             [this](Mathematics::Vector2 value) { this->setLocalScale(value); }
-        }};
+        };
         
         /// @property
         /// @brief [Property] Whether this ```Firework::RectTransform``` has been modified this logic frame.

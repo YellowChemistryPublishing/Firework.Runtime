@@ -24,16 +24,20 @@ namespace Firework
     {
         if (!EntityManager::components.contains(std::make_pair(this, __typeid(T).qualifiedNameHash())))
         {
+            T* ret = new T();
+            
+            EntityManager::components.emplace(std::make_pair(this, __typeid(T).qualifiedNameHash()), ret);
+            ret->attachedEntity = this;
+            ret->attachedTransform = this->attachedTransform;
+            ret->reflection.typeID = __typeid(T).qualifiedNameHash();
+
             auto it = EntityManager::existingComponents.find(__typeid(T).qualifiedNameHash());
             if (it != EntityManager::existingComponents.end())
                 ++it->second;
             else EntityManager::existingComponents.emplace(__typeid(T).qualifiedNameHash(), 1);
 
-            T* ret = new T();
-            EntityManager::components.emplace(std::make_pair(this, __typeid(T).qualifiedNameHash()), ret);
-            ret->attachedEntity = this;
-            ret->attachedTransform = this->attachedTransform;
-            ret->reflection.typeID = __typeid(T).qualifiedNameHash();
+            if constexpr (requires { ret->onCreate(); })
+                ret->onCreate();
 
             return ret;
         }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <function.h>
+#include <type_traits>
 
 namespace Firework
 {
@@ -11,10 +12,8 @@ namespace Firework
     >
     struct Property
     {
-        inline explicit Property(const std::pair<func::function<GetterReturnType()>, func::function<void(SetterInputType)>>&& constructor) :
-        getter(std::move(std::get<0>(constructor))), setter(std::move(std::get<1>(constructor)))
-        {
-        }
+        inline explicit Property(auto&& getter, auto&& setter) : getter(std::forward<typename std::remove_cvref<decltype(getter)>::type>(getter)), setter(std::forward<typename std::remove_cvref<decltype(setter)>::type>(setter))
+        { }
         inline explicit Property(const Property<GetterReturnType, SetterInputType>& other) = delete;
         inline explicit Property(Property<GetterReturnType, SetterInputType>&& other) = delete;
 
@@ -145,7 +144,7 @@ namespace Firework
     template <typename SetterInputType>
     struct Property<void, SetterInputType>
     {
-        constexpr Property(auto&& setter) : setter(setter)
+        constexpr Property(auto&& setter) : setter(std::forward<typename std::remove_cvref<decltype(setter)>::type>(setter))
         { }
 
         constexpr void operator=(SetterInputType other) const

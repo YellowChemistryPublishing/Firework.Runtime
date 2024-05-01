@@ -87,7 +87,7 @@ namespace Firework
             }
         };
         const Property<MeshType, MeshType> meshType
-        {{
+        {
             [this]() -> MeshType
             {
                 return this->_meshType;
@@ -96,7 +96,7 @@ namespace Firework
             {
                 this->setMeshType(value);
             }
-        }};
+        };
 
         friend struct Firework::Internal::ComponentCoreStaticInit;
     };

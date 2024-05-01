@@ -96,20 +96,20 @@ namespace Firework
         ~Text() override;
 
         const Property<PackageSystem::TrueTypeFontPackageFile*, PackageSystem::TrueTypeFontPackageFile*> fontFile
-        {{
+        {
             [this]() -> PackageSystem::TrueTypeFontPackageFile* { return this->data ? this->data->file : nullptr; },
             [this](PackageSystem::TrueTypeFontPackageFile* value) { this->setFontFile(value); }
-        }};
+        };
         const Property<uint32_t, uint32_t> fontSize
-        {{
+        {
             [&]() -> uint32_t { return this->_fontSize; },
             [&, this](uint32_t value) { this->setFontSize(value); }
-        }};
+        };
         const Property<const std::u32string&, std::u32string> text
-        {{
+        {
             [this]() -> const std::u32string& { return this->_text; },
             [this](std::u32string value) { this->setText(value); }
-        }};
+        };
 
         const std::vector<PositionedLine>& positionedText() const
         {
@@ -117,15 +117,15 @@ namespace Firework
         }
         
         const Property<TextAlign, TextAlign> horizontalAlign
-        {{
+        {
             [&]() -> TextAlign { return this->_horizontalAlign; },
             [&, this](TextAlign value) { this->setHorizontalAlign(value); }
-        }};
+        };
         const Property<TextAlign, TextAlign> verticalAlign
-        {{
+        {
             [&]() -> TextAlign { return this->_verticalAlign; },
             [&, this](TextAlign value) { this->setVerticalAlign(value); }
-        }};
+        };
 
         uint32_t calculateBestFitFontSize();
         float calculateBestFitHeight();

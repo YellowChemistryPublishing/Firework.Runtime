@@ -41,10 +41,10 @@ namespace Firework
         /// @return ```const std::wstring&```
         /// @note Main thread only.
         const Property<const std::wstring&, std::wstring> name
-        {{
+        {
             [this]() -> const std::wstring& { return this->_name; },
             [this](std::wstring value) { this->_name = std::move(value); }
-        }};
+        };
         /// @brief Retrieves the index of the scene. Index ```0``` is first.
         /// @warning This function runs in O(n) time, for n number of scenes. Be reasonable with it!
         /// @return Index of scene.

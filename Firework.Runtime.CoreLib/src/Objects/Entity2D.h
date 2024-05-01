@@ -27,17 +27,17 @@ namespace Firework
 
         if (!EntityManager2D::components.contains(std::make_pair(this, __typeid(T).qualifiedNameHash())))
         {
-            auto it = EntityManager2D::existingComponents.find(__typeid(T).qualifiedNameHash());
-            if (it != EntityManager2D::existingComponents.end())
-                ++it->second;
-            else EntityManager2D::existingComponents.emplace(__typeid(T).qualifiedNameHash(), 1);
-
             T* ret = new T();
 
             EntityManager2D::components.emplace(std::make_pair(this, __typeid(T).qualifiedNameHash()), ret);
             ret->attachedEntity = this;
             ret->attachedRectTransform = this->attachedRectTransform;
             ret->reflection.typeID = __typeid(T).qualifiedNameHash();
+
+            auto it = EntityManager2D::existingComponents.find(__typeid(T).qualifiedNameHash());
+            if (it != EntityManager2D::existingComponents.end())
+                ++it->second;
+            else EntityManager2D::existingComponents.emplace(__typeid(T).qualifiedNameHash(), 1);
 
             if constexpr (requires { ret->onCreate(); })
                 ret->onCreate();

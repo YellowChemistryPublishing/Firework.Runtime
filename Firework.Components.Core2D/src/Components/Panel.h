@@ -29,10 +29,10 @@ namespace Firework
         Color _color { 0, 0, 0, 255 };
     public:
         const Property<const Color&, const Color&> color
-        {{
+        {
             [this]() -> const Color& { return this->_color; },
             [this](const Color& value) { this->_color = value; }
-        }};
+        };
 
         ~Panel() override = default;
 

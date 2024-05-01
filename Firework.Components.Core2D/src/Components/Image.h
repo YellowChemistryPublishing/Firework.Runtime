@@ -74,20 +74,20 @@ namespace Firework
         /// @return ```const RectFloat&```
         /// @note Main thread only.
         const Property<const RectFloat&, const RectFloat&> imageSplit
-        {{
+        {
             [this]() -> const RectFloat& { return this->split; },
             [this](const RectFloat& value) { this->setImageSplit(value); }
-        }};
+        };
         /// @property
         /// @brief [Property] The image file to display.
         /// @param value ```PackageSystem::PortableGraphicPackageFile*```
         /// @return ```PackageSystem::PortableGraphicPackageFile*```
         /// @note Main thread only.
         const Property<PackageSystem::PortableGraphicPackageFile*, PackageSystem::PortableGraphicPackageFile*> imageFile
-        {{
+        {
             [this]() -> PackageSystem::PortableGraphicPackageFile* { return this->file; },
             [this](PackageSystem::PortableGraphicPackageFile* value) { this->setImageFile(value); }
-        }};
+        };
         /// @brief The color tint of this image.
         /// @note Main thread only.
         Color tint { 255, 255, 255, 255 };

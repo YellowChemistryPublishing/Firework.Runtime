@@ -17,26 +17,19 @@ using namespace Firework::Internal;
 
 namespace Firework::Internal
 {
-    static struct __fw_rt_hw_libexcpt_init
+    static struct __firework_corelib_api __fw_rt_hw_libexcpt_init final
     {
-        inline __fw_rt_hw_libexcpt_init()
+        __fw_rt_hw_libexcpt_init()
         {
-            // https://github.com/jeremy-rifkin/cpptrace/blob/main/docs/signal-safe-tracing.md
-            // Necessary, apparently.
-            cpptrace::frame_ptr buffer[8];
-            cpptrace::safe_generate_raw_trace(buffer, 8);
-            cpptrace::safe_object_frame frame;
-            cpptrace::get_safe_object_frame(buffer[0], &frame);
-                
             ::__fw_rt_hw_sighf();
         }
     } init;
 }
-    
+
 #if __has_include(<cpptrace/cpptrace.hpp>)
 // Should check cpptrace::can_signal_safe_unwind, but it's probably fine without(TM).
-Exception::Exception() // : trace(cpptrace::stacktrace::current()) // bufferLen(cpptrace::safe_generate_raw_trace(buffer, FIREWORK_EXCEPTION_TRACE_DEPTH))
-{ }
+// Exception::Exception() // : trace(cpptrace::stacktrace::current()) // bufferLen(cpptrace::safe_generate_raw_trace(buffer, FIREWORK_EXCEPTION_TRACE_DEPTH))
+// { }
 
 cpptrace::stacktrace Exception::resolveStacktrace() const
 {
