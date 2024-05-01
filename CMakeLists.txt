@@ -64,7 +64,7 @@ elseif (FIREWORK_COMPILER_ID STREQUAL "GNU")
     set(FIREWORK_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_TYPE}-${FIREWORK_BUILD_PLATFORM}")
     # Your copy of gcc better include a. Exceptions, and b. dynamic linking to libstdc++ and libgcc, or you're (silently) screwed.
-    set(FIREWORK_COMPILE_DEFINITIONS ${FIREWORK_COMPILE_DEFINITIONS} MINGW_HAS_SECURE_API=1)
+    set(FIREWORK_COMPILE_DEFINITIONS ${FIREWORK_COMPILE_DEFINITIONS})
     set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -fnon-call-exceptions -fasynchronous-unwind-tables)
     if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
         set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} -fno-omit-frame-pointer) # Do NOT delete this, you will ruin my week if you do. Optimizing out the frame pointer prevents SEH exceptions from working properly.
