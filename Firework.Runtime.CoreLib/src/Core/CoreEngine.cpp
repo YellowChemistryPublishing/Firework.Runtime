@@ -309,7 +309,7 @@ void CoreEngine::internalLoop()
             }
             #pragma endregion
             
-            handled([] { *(volatile int*)0=0; EngineEvent::OnTick(); });
+            handled([] { EngineEvent::OnTick(); });
             handled([] { EngineEvent::OnLateTick(); });
 
             for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)
