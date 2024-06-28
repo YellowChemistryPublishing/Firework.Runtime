@@ -92,13 +92,11 @@ namespace Firework
             static std::map<std::streamoff, std::map<size_t, robin_hood::unordered_map<std::basic_string<uint8_t>, PackageFile* (*)(std::vector<uint8_t>)>, std::greater<size_t>>> binFileHandlers;
             static robin_hood::unordered_map<std::wstring, PackageFile* (*)(std::u32string)> textFileHandlers;
 
-            static std::vector<PackageFile*> loadedCorePackage;
-            static std::ifstream corePackageStream;
+            //                                             v Package file.
+            //                               v File path.                          v Package path.
+            static robin_hood::unordered_map<std::wstring, std::pair<PackageFile*, std::wstring>> loadedFiles;
             
             static void normalizePath(std::wstring& path);
-            
-            static void loadCorePackageIntoMemory(const std::filesystem::path& packagePath);
-            static void freeCorePackageInMemory();
         public:
             PackageManager() = delete;
 
@@ -148,14 +146,17 @@ namespace Firework
             {
                 PackageManager::textFileHandlers.erase(extension);
             }
+            
+            static bool loadPackageIntoMemory(const std::filesystem::path& packagePath);
+            static void freePackageInMemory(const std::filesystem::path& packagePath);
 
-            /// @brief Retrieve a file from the core package.
+            /// @brief Retrieve a file from the list of loaded package files.
             /// @param filePath The path of the file within the package filesystem.
             /// @return Package file.
             /// @retval ```nullptr```: Package file could not be found.
             /// @retval Otherwise, pointer to loaded package file.
             /// @note Main thread only.
-            static PackageFile* getCorePackageFileByPath(std::wstring filePath);
+            static PackageFile* lookupFileByPath(std::wstring filePath);
             
             friend class Firework::Internal::CoreEngine;
         };

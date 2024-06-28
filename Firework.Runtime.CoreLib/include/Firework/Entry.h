@@ -4,6 +4,7 @@
 #include <Core/Debug.h>
 #include <Core/HardwareExcept.h>
 #include <SDL3/SDL_main.h>
+#undef main
 
 inline int __fw_rt_handleInitializeAndExit(int argc, char* argv[])
 {
@@ -43,8 +44,8 @@ __main(__VA_ARGS__); \
  \
 int SDL_main(int argc, char* argv[]) \
 { \
-    [[maybe_unused]] int _ = ::__main(__VA_OPT__(argc) __VA_OPT__(,) __VA_OPT__(argv)); \
-    return ::__fw_rt_handleInitializeAndExit(argc, argv); \
+    [[maybe_unused]] int ret = ::__main(__VA_OPT__(argc) __VA_OPT__(,) __VA_OPT__(argv)); \
+    return !ret ? ::__fw_rt_handleInitializeAndExit(argc, argv) : ret; \
 } \
  \
 int __main(__VA_ARGS__)

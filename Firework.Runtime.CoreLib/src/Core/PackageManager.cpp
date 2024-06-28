@@ -50,35 +50,40 @@ void PackageManager::removeBinaryFileHandler(const std::vector<uint8_t>& signatu
 std::map<std::streamoff, std::map<size_t, robin_hood::unordered_map<std::basic_string<uint8_t>, PackageFile* (*)(std::vector<uint8_t>)>, std::greater<size_t>>> PackageManager::binFileHandlers;
 robin_hood::unordered_map<std::wstring, PackageFile* (*)(std::u32string)> PackageManager::textFileHandlers;
 
-std::vector<PackageFile*> PackageManager::loadedCorePackage;
-std::ifstream PackageManager::corePackageStream;
+robin_hood::unordered_map<std::wstring, std::pair<PackageFile*, std::wstring>> PackageManager::loadedFiles;
 
-void PackageManager::loadCorePackageIntoMemory(const fs::path& packagePath)
+bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
 {
-    PackageManager::corePackageStream.open(packagePath, std::ios::binary);
-    PackageManager::corePackageStream.seekg(0, std::ios::end);
-    uint32_t length = PackageManager::corePackageStream.tellg();
-    PackageManager::corePackageStream.seekg(0, std::ios::beg);
+    std::wstring packagePathNormalized = packagePath.wstring();
+    std::ifstream packageFile(packagePath, std::ios::binary);
+    
+    if (!packageFile)
+        return false;
 
-    while (PackageManager::corePackageStream.tellg() < length)
+    packageFile.ignore(std::numeric_limits<std::streamsize>::max());
+    std::streamsize length = packageFile.gcount();
+    packageFile.clear();
+    packageFile.seekg(0, std::ios_base::beg);
+
+    while (packageFile.tellg() < length)
     {
         uint32_t filePathLength_endianUnconverted;
-        PackageManager::corePackageStream.read(reinterpret_cast<char*>(&filePathLength_endianUnconverted), sizeof(uint32_t));
+        packageFile.read(reinterpret_cast<char*>(&filePathLength_endianUnconverted), sizeof(uint32_t));
         uint32_t filePathLength = toEndianness(filePathLength_endianUnconverted, Endianness::Big, PackageManager::endianness);
 
         std::wstring filePath;
         filePath.resize(filePathLength);
-        PackageManager::corePackageStream.read(reinterpret_cast<char*>(&filePath[0]), sizeof(wchar_t) * filePathLength);
+        packageFile.read(reinterpret_cast<char*>(&filePath[0]), sizeof(wchar_t) * filePathLength);
         PackageManager::normalizePath(filePath);
         Debug::logTrace("Package File - ", filePath, ".");
 
         uint32_t fileLen_endianUnconverted;
-        PackageManager::corePackageStream.read(reinterpret_cast<char*>(&fileLen_endianUnconverted), sizeof(uint32_t));
+        packageFile.read(reinterpret_cast<char*>(&fileLen_endianUnconverted), sizeof(uint32_t));
         uint32_t fileLen = toEndianness(fileLen_endianUnconverted, Endianness::Big, PackageManager::endianness);
         Debug::logTrace("Package File Size - ", fileLen, "B.");
 
         std::vector<uint8_t> fileBytes(fileLen);
-        PackageManager::corePackageStream.read(reinterpret_cast<char*>(fileBytes.data()), fileLen);
+        packageFile.read(reinterpret_cast<char*>(fileBytes.data()), fileLen);
 
         for (auto it1 = PackageManager::binFileHandlers.begin(); it1 != PackageManager::binFileHandlers.end(); ++it1)
         {
@@ -90,7 +95,7 @@ void PackageManager::loadCorePackageIntoMemory(const fs::path& packagePath)
                 {
                     PackageFile* file = it3->second(std::move(fileBytes));
                     file->fileLocalPath = filePath;
-                    PackageManager::loadedCorePackage.push_back(file);
+                    PackageManager::loadedFiles.emplace(filePath, std::make_pair(file, packagePathNormalized));
                     goto FileHandled;
                 }
             }
@@ -104,16 +109,22 @@ void PackageManager::loadCorePackageIntoMemory(const fs::path& packagePath)
             // TODO: Implement.
             Debug::logError("Text file loading has not been implemented. This file handler will not be run.");
         }
-        else PackageManager::loadedCorePackage.push_back(new BinaryPackageFile(std::move(fileBytes), filePath));
+        else PackageManager::loadedFiles.emplace(filePath, std::make_pair(new BinaryPackageFile(std::move(fileBytes), filePath), packagePathNormalized));
 
         FileHandled:;
     }
+
+    return true;
 }
-void PackageManager::freeCorePackageInMemory()
+void PackageManager::freePackageInMemory(const std::filesystem::path& packagePath)
 {
-    PackageManager::corePackageStream.close();
-    for (auto it = PackageManager::loadedCorePackage.begin(); it != PackageManager::loadedCorePackage.end(); ++it)
-        delete *it;
+    std::wstring packagePathNormalized = packagePath.wstring();
+    PackageManager::normalizePath(packagePathNormalized);
+    for (auto&[_, packageFileInfo] : PackageManager::loadedFiles)
+    {
+        if (packageFileInfo.second == packagePathNormalized)
+            delete packageFileInfo.first;
+    }
 }
 
 void PackageManager::normalizePath(std::wstring& path)
@@ -134,13 +145,10 @@ void PackageManager::normalizePath(std::wstring& path)
             *it = std::tolower(*it);
     }
 }
-PackageFile* PackageManager::getCorePackageFileByPath(std::wstring filePath)
+PackageFile* PackageManager::lookupFileByPath(std::wstring filePath)
 {
     PackageManager::normalizePath(filePath);
-    for (auto it = PackageManager::loadedCorePackage.begin(); it != PackageManager::loadedCorePackage.end(); ++it)
-    {
-        if ((*it)->fileLocalPath == filePath)
-            return *it;
-    }
-    return nullptr;
+    if (auto it = PackageManager::loadedFiles.find(filePath); it != PackageManager::loadedFiles.end())
+        return it->second.first;
+    else return nullptr;
 }

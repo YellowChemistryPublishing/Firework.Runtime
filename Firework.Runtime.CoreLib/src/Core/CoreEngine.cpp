@@ -111,7 +111,7 @@ int CoreEngine::execute(int argc, char* argv[])
     if (fs::exists(corePackagePath))
     {
         Debug::logInfo("Loading CorePackage...");
-        PackageManager::loadCorePackageIntoMemory(corePackagePath);
+        PackageManager::loadPackageIntoMemory(corePackagePath);
         Debug::logInfo("CorePackage loaded!");
     }
     else Debug::logError("The CorePackage could not be found in the Runtime folder. Did you accidentally delete it?");
@@ -149,7 +149,7 @@ int CoreEngine::execute(int argc, char* argv[])
 
     // Cleanup here is done for stuff created in CoreEngine::execute, thread-specific cleanup is done per-thread, at the end of their lifetime.
 
-    PackageManager::freeCorePackageInMemory();
+    PackageManager::freePackageInMemory(corePackagePath);
     fs::remove_all(dir);
 
     SDL_Quit();
