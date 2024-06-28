@@ -64,11 +64,29 @@ namespace Firework
                 uint64_t flags = BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE
             );
             void updateDynamic(const void* textureData, uint32_t textureDataSize, uint16_t layer, uint8_t mip, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
+            void copyTo(Texture2DHandle dest, uint16_t dstX, uint16_t dstY, uint16_t srcX, uint16_t srcY, uint16_t width, uint16_t height);
+            void copyTo(uint16_t view, Texture2DHandle dest, uint16_t dstX, uint16_t dstY, uint16_t srcX, uint16_t srcY, uint16_t width, uint16_t height);
             void destroy();
+
+            inline Texture2DHandle() noexcept = default;
+            inline Texture2DHandle(std::nullptr_t) noexcept
+            { }
+            inline Texture2DHandle(const Texture2DHandle& other) noexcept : internalHandle(other.internalHandle)
+            { }
+            inline Texture2DHandle& operator=(const Texture2DHandle& other) noexcept
+            {
+                this->internalHandle = other.internalHandle;
+                return *this;
+            }
+
+            inline operator bool () const noexcept
+            {
+                return bgfx::isValid(this->internalHandle);
+            }
 
             friend class Firework::GL::Renderer;
         private:
-            bgfx::TextureHandle internalHandle;
+            bgfx::TextureHandle internalHandle { bgfx::kInvalidHandle };
         };
     }
 }

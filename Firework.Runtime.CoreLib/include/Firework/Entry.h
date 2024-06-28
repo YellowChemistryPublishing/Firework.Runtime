@@ -3,18 +3,19 @@
 #include <Core/Application.h>
 #include <Core/Debug.h>
 #include <Core/HardwareExcept.h>
+#include <SDL3/SDL_main.h>
 
 inline int __fw_rt_handleInitializeAndExit(int argc, char* argv[])
 {
     if (Firework::Application::run(argc, argv) != EXIT_SUCCESS)
         return EXIT_FAILURE;
 
-    #if _WIN32
-    std::system("pause");
-    #else
-    std::system("bash -c \"read -n1 -r -p \"Press\\\\\\ any\\\\\\ key\\\\\\ to\\\\\\ continue\\\\\\ .\\\\\\ .\\\\\\ .\"\"");
-    std::system("bash -c \"echo -e \'\\b \'\"");
-    #endif
+    // #if _WIN32
+    // std::system("pause");
+    // #else
+    // std::system("bash -c \"read -n1 -r -p \"Press\\\\\\ any\\\\\\ key\\\\\\ to\\\\\\ continue\\\\\\ .\\\\\\ .\\\\\\ .\"\"");
+    // std::system("bash -c \"echo -e \'\\b \'\"");
+    // #endif
 
     return EXIT_SUCCESS;
 }
@@ -28,10 +29,19 @@ static_assert
     "Source or compiler not UTF-8 compliant! Well this is bad... File bug report."
 );
 
+namespace Firework::Internal
+{
+    extern __firework_corelib_api int __fw_rt_fwd_main_invoc(int argc, char* argv[], SDL_main_func mainFunction, void* reserved);
+}
+inline int SDL_RunApp(int argc, char* argv[], SDL_main_func mainFunction, void* reserved)
+{
+    return Firework::Internal::__fw_rt_fwd_main_invoc(argc, argv, mainFunction, reserved);
+}
+
 #define main(...) \
 __main(__VA_ARGS__); \
  \
-int main(int argc, char* argv[]) \
+int SDL_main(int argc, char* argv[]) \
 { \
     [[maybe_unused]] int _ = ::__main(__VA_OPT__(argc) __VA_OPT__(,) __VA_OPT__(argv)); \
     return ::__fw_rt_handleInitializeAndExit(argc, argv); \

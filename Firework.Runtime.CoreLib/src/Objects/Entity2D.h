@@ -61,7 +61,7 @@ namespace Firework
 
             auto it = EntityManager2D::components.find(std::make_pair(this, __typeid(T).qualifiedNameHash()));
             if (it != EntityManager2D::components.end())
-                return it;
+                return static_cast<T*>(it->second);
 
             Debug::logWarn("No component of type \"", __typeid(T).qualifiedName(), "\" could be found on this Entity2D!");
             return nullptr;

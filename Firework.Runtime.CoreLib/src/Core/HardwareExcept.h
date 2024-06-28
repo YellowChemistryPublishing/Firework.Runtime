@@ -78,15 +78,15 @@ namespace Firework
     class Exception : public std::exception
     {
         #if __has_include(<cpptrace/cpptrace.hpp>)
-        // cpptrace::safe_object_frame frame;
-        // cpptrace::frame_ptr buffer[FIREWORK_EXCEPTION_TRACE_DEPTH];
-        // size_t bufferLen;
+        cpptrace::safe_object_frame frame;
+        cpptrace::frame_ptr buffer[FIREWORK_EXCEPTION_TRACE_DEPTH];
+        size_t bufferLen;
         cpptrace::stacktrace trace;
-        #endif
 
         cpptrace::stacktrace resolveStacktrace() const;
+        #endif
     public:
-        inline Exception() = default;
+        Exception();// = default;
         inline virtual ~Exception() noexcept = 0;
 
         friend class Firework::Internal::CoreEngine;

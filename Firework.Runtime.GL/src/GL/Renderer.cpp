@@ -86,6 +86,7 @@ bool Renderer::initialize(void* ndt, void* nwh, uint32_t width, uint32_t height,
         cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, vulkan));
         break;
     default:
+        // TODO: Implement.
         throw "unimplemented";
     }
     #endif
@@ -162,6 +163,14 @@ void Renderer::resetBackbuffer(uint32_t width, uint32_t height, uint32_t flags, 
 void Renderer::setDrawTransform(const RenderTransform& transform)
 {
     bgfx::setTransform(transform.tf.data);
+}
+void Renderer::setDrawUniform(UniformHandle uniform, const void* data)
+{
+    bgfx::setUniform(uniform.internalHandle, data);
+}
+void Renderer::setDrawArrayUniform(UniformHandle uniform, const void* data, uint16_t count)
+{
+    bgfx::setUniform(uniform.internalHandle, data, count);
 }
 void Renderer::setDrawTexture(uint8_t stage, Texture2DHandle texture, TextureSamplerHandle sampler, uint64_t flags)
 {

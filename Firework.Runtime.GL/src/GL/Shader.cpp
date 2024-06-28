@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstring>
 
+#include <GL/Renderer.h>
+
 using namespace Firework::GL;
 
 GeometryProgramHandle GeometryProgramHandle::create
@@ -27,14 +29,14 @@ GeometryProgramHandle GeometryProgramHandle::create
     for (size_t i = 0; i < uniformsLength; i++)
     {
         if (!ret.internalUniformHandles.count(uniforms[i].name))
-            ret.internalUniformHandles.emplace(uniforms[i].name, bgfx::createUniform(uniforms[i].name, (bgfx::UniformType::Enum)uniforms[i].type, uniforms[i].count));
+            ret.internalUniformHandles.emplace(uniforms[i].name, UniformHandle::createArray(uniforms[i].name, uniforms[i].type, uniforms[i].count));
     }
     return ret;
 }
 void GeometryProgramHandle::destroy()
 {
     for (auto&[_, internalUniformHandle] : this->internalUniformHandles)
-        bgfx::destroy(internalUniformHandle);
+        internalUniformHandle.destroy();
     this->internalUniformHandles.clear();
     bgfx::destroy(this->internalHandle);
 }
@@ -43,11 +45,11 @@ void GeometryProgramHandle::setUniform(const char* name, const void* value)
 {
     auto it = this->internalUniformHandles.find(name);
     if (it != this->internalUniformHandles.end())
-        bgfx::setUniform(it->second, value);
+        Renderer::setDrawUniform(it->second, value);
 }
-void GeometryProgramHandle::setUniform(const char* name, const void* value, uint16_t count)
+void GeometryProgramHandle::setArrayUniform(const char* name, const void* value, uint16_t count)
 {
     auto it = this->internalUniformHandles.find(name);
     if (it != this->internalUniformHandles.end())
-        bgfx::setUniform(it->second, value, count);
+        Renderer::setDrawArrayUniform(it->second, value, count);
 }

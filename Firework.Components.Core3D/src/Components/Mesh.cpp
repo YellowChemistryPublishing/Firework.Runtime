@@ -38,6 +38,7 @@ void Mesh::setMesh(const GL::SceneMesh* value)
                     data->dynMesh.destroy();
                     break;
                 case MeshType::Transient:
+                    // TODO: Implement.
                     throw "unimplemented";
                     break;
                 }
@@ -107,6 +108,7 @@ void Mesh::renderInitialize()
                 it->second->dynMesh.destroy();
                 break;
             case MeshType::Transient:
+                // TODO: Implement.
                 throw "unimplemented";
                 break;
             }
@@ -129,10 +131,12 @@ void Mesh::renderOffload()
                 RenderPipeline::drawMesh(data->staticMesh);
                 break;
             case MeshType::Dynamic:
+                // TODO: Implement.
                 throw "unimplemented";
                 // Renderer::submitDraw(0, data->dynMesh, Mesh::program);
                 break;
             case MeshType::Transient:
+                // TODO: Implement.
                 throw "unimplemented";
                 break;
             }

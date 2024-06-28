@@ -36,12 +36,6 @@ namespace Firework
 				stream << *it;
 			return stream;
 		}
-		inline static std::wostream& operator<<(std::wostream& stream, const std::u32string& rhs)
-		{
-			std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> conv;
-			stream << conv.from_bytes(conv.to_bytes(rhs));
-			return stream;
-		}
 	}
 
 	/// @internal 
@@ -51,7 +45,7 @@ namespace Firework
 		Reset
 	};
 	/// @brief Specifies the severity level of a log message
-	/// @see Firework::Debug::log
+	/// @see ```Firework::Debug::log```
 	enum class LogLevel : uint_fast8_t
 	{
 		Trace,
@@ -338,5 +332,12 @@ namespace Firework
 			raise(SIGTRAP);
 			#endif
 		}
+
+		/// @brief Displays a simple message box.
+		/// @param severity What kind of message box to display.
+		/// @param title Name of the message box.
+		/// @param message Message to display.
+		/// @note Thread-safe. TODO: Is this a lie?
+		static void messageBox(LogLevel severity, std::string_view title, std::string_view message);
 	};
 }

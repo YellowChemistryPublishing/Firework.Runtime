@@ -17,7 +17,7 @@ namespace Firework
     {
         return curPos < len ? strmix(*m, strhash(m + 1, len, curPos + 1)) : 0;
     }
-    // TODO: No clue whether these work. Not sure why I even put these here, they never get used.
+    // No clue whether these work. Not sure why I even put these here, they never get used.
     inline uint64_t constexpr wstrmix(wchar_t m, uint64_t s)
     {
         return ((s << 7) + ~(s >> 3)) + ~m;

@@ -7,6 +7,8 @@
 #include <map>
 #include <vector>
 
+#include <GL/Uniform.h>
+
 #define __concat(a, b) a##b
 #define __recat(a, b) __concat(a, b)
 #define getGeometryProgramArgsFromPrecompiledShaderName(shaderName, backend) \
@@ -21,12 +23,6 @@ namespace Firework
     {
         class Renderer;
 
-        enum class UniformType
-        {
-            Vec4 = bgfx::UniformType::Vec4,
-            Mat3 = bgfx::UniformType::Mat3,
-            Mat4 = bgfx::UniformType::Mat4
-        };
         struct ShaderUniform
         {
             const char* name;
@@ -45,7 +41,7 @@ namespace Firework
             };
 
             bgfx::ProgramHandle internalHandle;
-            std::map<const char*, bgfx::UniformHandle, Comp> internalUniformHandles;
+            std::map<const char*, UniformHandle, Comp> internalUniformHandles;
             
             static GeometryProgramHandle create
             (
@@ -71,7 +67,7 @@ namespace Firework
             void destroy();
 
             void setUniform(const char* name, const void* value);
-            void setUniform(const char* name, const void* value, uint16_t count);
+            void setArrayUniform(const char* name, const void* value, uint16_t count);
 
             friend class Firework::GL::Renderer;
         };

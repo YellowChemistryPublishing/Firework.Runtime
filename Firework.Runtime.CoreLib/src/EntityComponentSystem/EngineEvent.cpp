@@ -34,7 +34,7 @@ FuncPtrEvent<Component2D*> InternalEngineEvent::OnRenderOffloadForComponent2D;
 FuncPtrEvent<Component*> InternalEngineEvent::OnRenderOffloadForComponent;
 void (*InternalEngineEvent::ClearViewArea)() = []
 {
-    Renderer::setViewClear(0, 0x000000ff, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL);
+    Renderer::setViewClear(0, 0x00000000, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL);
 };
 void (*InternalEngineEvent::ResetViewArea)(uint16_t, uint16_t) = [](uint16_t w, uint16_t h)
 {

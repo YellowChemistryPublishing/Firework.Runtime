@@ -108,11 +108,12 @@ namespace Firework
             /// @param offset Byte index location of the signature.
             /// @note Main thread only.
             template <typename PackageFileType>
-            requires std::is_base_of<PackageFile, PackageFileType>::value && std::is_final<PackageFileType>::value
+            requires std::is_base_of<PackageFile, PackageFileType>::value && std::is_final<PackageFileType>::value && requires
+            {
+                new PackageFileType(std::vector<uint8_t>());
+            }
             inline static void addBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset = 0)
             {
-                // FIXME: This doesn't work. static_assert(std::is_constructible<PackageFileType, std::vector<uint8_t>>::value, "A custom package file type is required to be constructible from a std::vector<uint8_t>.");
-
                 PackageManager::binFileHandlers[offset][signature.size()].emplace
                 (
                     std::basic_string<uint8_t>(signature.data(), signature.size()),

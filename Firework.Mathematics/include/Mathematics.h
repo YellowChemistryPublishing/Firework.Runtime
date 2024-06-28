@@ -610,7 +610,7 @@ namespace Firework
 				return (*this = *this * other);
 			}
 
-			constexpr Matrix4x4 transpose()
+			constexpr Matrix4x4 transpose() const
 			{
 				Matrix4x4 ret(*this);
 				for (size_t i = 0; i < 4; i++)

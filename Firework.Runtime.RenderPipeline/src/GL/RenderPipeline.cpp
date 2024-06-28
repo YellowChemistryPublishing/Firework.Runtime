@@ -32,6 +32,7 @@ void RenderPipeline::init()
         genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, vulkan), { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
         break;
     default:
+        // TODO: Implement.
         throw "unimplemented";
     }
 
@@ -48,6 +49,6 @@ void RenderPipeline::drawMesh(GL::StaticMeshHandle mesh)
 {
     float ambient[4] { 0.015f, 0.0f, 0.0f, 0.0f };
     genericProgram.setUniform("u_ambientData", ambient);
-    Renderer::setDrawTexture(0, DirectionalLightManager::directionalLightsAcc, DirectionalLightManager::directionalLightsSampler);
+    Renderer::setDrawTexture(0, *DirectionalLightManager::directionalLights, DirectionalLightManager::directionalLightsSampler);
     Renderer::submitDraw(0, mesh, genericProgram);
 }

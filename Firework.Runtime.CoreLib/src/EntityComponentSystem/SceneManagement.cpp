@@ -19,11 +19,13 @@ Scene::~Scene()
 {
     {
         Entity2D* it = this->front2D;
+        int i = 0;
         while (it)
         {
             auto itNext = it->next;
             delete it;
             it = itNext;
+            ++i;
         }
     }
     {

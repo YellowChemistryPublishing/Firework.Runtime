@@ -8,6 +8,7 @@
 #include <GL/Geometry.h>
 #include <GL/Shader.h>
 #include <GL/Texture.h>
+#include <GL/TextureVector.h>
 #include <GL/Transform.h>
 
 namespace Firework
@@ -62,7 +63,14 @@ namespace Firework
             static void resetBackbuffer(uint32_t width, uint32_t height, uint32_t flags = BGFX_RESET_NONE, bgfx::TextureFormat::Enum format = bgfx::TextureFormat::Count);
 
             static void setDrawTransform(const RenderTransform& transform);
+            static void setDrawUniform(UniformHandle uniform, const void* data);
+            static void setDrawArrayUniform(UniformHandle uniform, const void* data, uint16_t count);
             static void setDrawTexture(uint8_t stage, Texture2DHandle texture, TextureSamplerHandle sampler, uint64_t flags = BGFX_TEXTURE_NONE);
+            template <uint16_t Vec4Count>
+            inline static void setDrawTexture(uint8_t stage, const TextureVector<Vec4Count>& texture, TextureSamplerHandle sampler)
+            {
+                Renderer::setDrawTexture(stage, texture.gpuData, sampler, BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+            }
             static void submitDraw
             (
                 bgfx::ViewId id, StaticMeshHandle mesh, GeometryProgramHandle program,

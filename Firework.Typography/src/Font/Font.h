@@ -50,7 +50,7 @@ namespace Firework
                 other.verts = nullptr;
                 other.vertsSize = 0;
             }
-            // FIXME: Not in header because STBTT_free supposedly doesn't exist here!
+            // Not in header because STBTT_free not linked in.
             __firework_typography_api ~GlyphOutline();
 
             template <typename VertType>

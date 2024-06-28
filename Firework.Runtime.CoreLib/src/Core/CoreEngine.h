@@ -6,7 +6,7 @@
 #include <concepts>
 #include <list>
 #include <SDL3/SDL.h>
-#include <SDL3/SDL_syswm.h>
+#include <SDL3/SDL_version.h>
 #include <concurrentqueue.h>
 #include <function.h>
 #include <vector>
@@ -17,6 +17,8 @@
 namespace Firework
 {
 	class Application;
+	class Debug;
+	class Window;
 
 	namespace Internal
 	{
@@ -44,8 +46,6 @@ namespace Firework
 			static SDL_Window* wind;
 			static SDL_Renderer* rend;
 			static const SDL_DisplayMode* displMd;
-			static SDL_SysWMinfo wmInfo;
-			static SDL_version backendVer;
 
 			/// @internal 
 			/// @brief Internal API. Update the display information.
@@ -96,6 +96,8 @@ namespace Firework
 			}
 
 			friend class Firework::Application;
+			friend class Firework::Debug;
+			friend class Firework::Window;
 		};
 	}
 }

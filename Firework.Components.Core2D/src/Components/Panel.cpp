@@ -36,6 +36,7 @@ void Panel::renderInitialize()
             Panel::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Panel, vulkan), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
             break;
         default:
+            // TODO: Implement.
             throw "unimplemented";
         }
         
@@ -78,7 +79,7 @@ void Panel::renderOffload()
         Renderer::submitDraw
         (
             1, Panel::unitSquare, Panel::program,
-            BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_WRITE_Z |
+            BGFX_STATE_CULL_CW |
             (color.r == 0 ? 0 : BGFX_STATE_WRITE_R) |
             (color.g == 0 ? 0 : BGFX_STATE_WRITE_G) |
             (color.b == 0 ? 0 : BGFX_STATE_WRITE_B) |

@@ -22,10 +22,10 @@
 #if __linux__
 #include <pthread.h>
 #endif
-#include <SDL_video.h>
-#include <SDL_pixels.h>
 #include <span>
 #if _WIN32
+#define NOMINMAX 1
+#include <windows.h>
 #include <VersionHelpers.h>
 #endif
 
@@ -46,9 +46,9 @@
 
 namespace fs = std::filesystem;
 using namespace Firework;
-using namespace Firework::GL;
 using namespace Firework::Internal;
 using namespace Firework::Mathematics;
+using namespace Firework::GL;
 using namespace Firework::PackageSystem;
 
 std::atomic<EngineState> CoreEngine::state(EngineState::FirstInit);
@@ -56,8 +56,6 @@ std::atomic<EngineState> CoreEngine::state(EngineState::FirstInit);
 SDL_Window* CoreEngine::wind = nullptr;
 SDL_Renderer* CoreEngine::rend = nullptr;
 const SDL_DisplayMode* CoreEngine::displMd;
-SDL_SysWMinfo CoreEngine::wmInfo;
-SDL_version CoreEngine::backendVer;
 
 moodycamel::ConcurrentQueue<func::function<void()>> CoreEngine::pendingPreTickQueue;
 moodycamel::ConcurrentQueue<func::function<void()>> CoreEngine::pendingPostTickQueue;
@@ -189,83 +187,83 @@ void CoreEngine::internalLoop()
         };
         #endif
 
-        __hwTry
-        {
+        // __hwTry
+        // {
             func();
-        }
-        __hwCatch (const cpptrace::exception_with_message& ex)
-        {
-            std::string traceback = "std::exception (";
-            traceback
-            .append(cpptrace::demangle(typeid(ex).name()))
-            .append("): ")
-            .append(ex.message())
-            .append("\nUnhandled exception thrown, at:\n")
-            .append(fmtTrace(ex.trace()));
-            Debug::logError(traceback);
-        }
-        __hwCatch (const cpptrace::exception& ex)
-        {
-            std::string traceback = "std::exception (";
-            traceback
-            .append(cpptrace::demangle(typeid(ex).name()))
-            .append("): ")
-            .append(ex.what())
-            .append("\nUnhandled exception thrown, at:\n")
-            .append(fmtTrace(ex.trace()));
-            Debug::logError(traceback);
-        }
-        __hwCatch (const Exception& ex)
-        {
-            std::string traceback = "std::exception (";
-            traceback
-            .append(cpptrace::demangle(typeid(ex).name()))
-            .append("): ")
-            .append(ex.what())
-            .append("\nUnhandled exception thrown, at:\n")
-            /*/.append(fmtTrace(ex.resolveStacktrace()))/*/;
-            Debug::logError(traceback);
-        }
-        __hwCatch (const std::exception& ex)
-        {
-            std::string traceback = "std::exception (";
-            traceback
-            .append(
-            #if __has_include(<cpptrace/cpptrace.hpp>)
-            cpptrace::demangle(
-            #endif
-            typeid(ex).name()
-            #if __has_include(<cpptrace/cpptrace.hpp>)
-            )
-            #endif
-            )
-            .append("): ")
-            .append(ex.what());
-            #if __has_include(<cpptrace/cpptrace.hpp>)
-            traceback
-            .append("\nUnhandled exception thrown, at:\n")
-            .append(fmtTrace(cpptrace::stacktrace::current()));
-            #endif
-            Debug::logError(traceback);
-        }
-        __hwCatch (...)
-        {
-            #if defined(_GLIBCXX_RELEASE) && __has_include(<cpptrace/cpptrace.hpp>)
-            std::string traceback = cpptrace::demangle(std::current_exception().__cxa_exception_type()->name());
-            traceback.append(": ");
-            #else
-            std::string traceback;
-            #endif
-            traceback
-            .append("[Unknown / JIT Compiled Code]");
-            #if __has_include(<cpptrace/cpptrace.hpp>)
-            traceback
-            .append("\nUnhandled exception thrown, at:\n")
-            .append(fmtTrace(cpptrace::stacktrace::current()));
-            #endif
-            Debug::logError(traceback);
-        }
-        __hwEnd();
+        // }
+        // __hwCatch (const cpptrace::exception_with_message& ex)
+        // {
+        //     std::string traceback = "std::exception (";
+        //     traceback
+        //     .append(cpptrace::demangle(typeid(ex).name()))
+        //     .append("): ")
+        //     .append(ex.message())
+        //     .append("\nUnhandled exception thrown, at:\n")
+        //     .append(fmtTrace(ex.trace()));
+        //     Debug::logError(traceback);
+        // }
+        // __hwCatch (const cpptrace::exception& ex)
+        // {
+        //     std::string traceback = "std::exception (";
+        //     traceback
+        //     .append(cpptrace::demangle(typeid(ex).name()))
+        //     .append("): ")
+        //     .append(ex.what())
+        //     .append("\nUnhandled exception thrown, at:\n")
+        //     .append(fmtTrace(ex.trace()));
+        //     Debug::logError(traceback);
+        // }
+        // __hwCatch (const Exception& ex)
+        // {
+        //     std::string traceback = "std::exception (";
+        //     traceback
+        //     .append(cpptrace::demangle(typeid(ex).name()))
+        //     .append("): ")
+        //     .append(ex.what())
+        //     .append("\nUnhandled exception thrown, at:\n")
+        //     /*/.append(fmtTrace(ex.resolveStacktrace()))/*/;
+        //     Debug::logError(traceback);
+        // }
+        // __hwCatch (const std::exception& ex)
+        // {
+        //     std::string traceback = "std::exception (";
+        //     traceback
+        //     .append(
+        //     #if __has_include(<cpptrace/cpptrace.hpp>)
+        //     cpptrace::demangle(
+        //     #endif
+        //     typeid(ex).name()
+        //     #if __has_include(<cpptrace/cpptrace.hpp>)
+        //     )
+        //     #endif
+        //     )
+        //     .append("): ")
+        //     .append(ex.what());
+        //     #if __has_include(<cpptrace/cpptrace.hpp>)
+        //     traceback
+        //     .append("\nUnhandled exception thrown, at:\n")
+        //     .append(fmtTrace(cpptrace::stacktrace::current()));
+        //     #endif
+        //     Debug::logError(traceback);
+        // }
+        // __hwCatch (...)
+        // {
+        //     #if defined(_GLIBCXX_RELEASE) && __has_include(<cpptrace/cpptrace.hpp>)
+        //     std::string traceback = cpptrace::demangle(std::current_exception().__cxa_exception_type()->name());
+        //     traceback.append(": ");
+        //     #else
+        //     std::string traceback;
+        //     #endif
+        //     traceback
+        //     .append("[Unknown / JIT Compiled Code]");
+        //     #if __has_include(<cpptrace/cpptrace.hpp>)
+        //     traceback
+        //     .append("\nUnhandled exception thrown, at:\n")
+        //     .append(fmtTrace(cpptrace::stacktrace::current()));
+        //     #endif
+        //     Debug::logError(traceback);
+        // }
+        // __hwEnd();
     };
 
     CoreEngine::state.store(EngineState::WindowInit, std::memory_order_relaxed); // Spin off window handling thread.
@@ -279,23 +277,25 @@ void CoreEngine::internalLoop()
 
     EngineEvent::OnInitialize();
 
-    func::function<void()> event;
+    func::function<void()> job;
     Uint64 frameBegin = SDL_GetPerformanceCounter();
     Uint64 perfFreq = SDL_GetPerformanceFrequency();
     float targetDeltaTime = Application::secondsPerFrame;
     float deltaTime = -1.0f;
     float prevw = Window::width, prevh = Window::height;
+    
+    EngineEvent::OnWindowResize(Vector2Int { Window::width, Window::height });
 
     while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::ExitRequested)
     {
         deltaTime = (float)(SDL_GetPerformanceCounter() - frameBegin) / (float)perfFreq;
-        if (Application::mainThreadQueue.try_dequeue(event))
-            event();
+        if (Application::mainThreadQueue.try_dequeue(job))
+            job();
         else if (deltaTime >= targetDeltaTime)
         {
             #pragma region Pre-Tick
-            while (CoreEngine::pendingPreTickQueue.try_dequeue(event))
-                event();
+            while (CoreEngine::pendingPreTickQueue.try_dequeue(job))
+                job();
                 
             for (uint_fast16_t i = 0; i < (uint_fast16_t)MouseButton::Count; i++)
             {
@@ -331,8 +331,8 @@ void CoreEngine::internalLoop()
             #pragma region Post-Tick
             Input::internalMouseMotion = Vector2Int(0, 0);
 
-            while (CoreEngine::pendingPostTickQueue.try_dequeue(event))
-                event();
+            while (CoreEngine::pendingPostTickQueue.try_dequeue(job))
+                job();
             #pragma endregion
 
             #pragma region Render Offload
@@ -442,15 +442,15 @@ void CoreEngine::internalLoop()
         #endif
     }
     
+    EngineEvent::OnQuit();
+
     for (auto it = SceneManager::existingScenes.begin(); it != SceneManager::existingScenes.end(); ++it)
         reinterpret_cast<Scene*>(it->data)->~Scene();
     SceneManager::existingScenes.clear();
-    
-    EngineEvent::OnQuit();
 
-    while (Application::mainThreadQueue.try_dequeue(event));
-    while (CoreEngine::pendingPreTickQueue.try_dequeue(event));
-    while (CoreEngine::pendingPostTickQueue.try_dequeue(event));
+    while (Application::mainThreadQueue.try_dequeue(job));
+    while (CoreEngine::pendingPreTickQueue.try_dequeue(job));
+    while (CoreEngine::pendingPostTickQueue.try_dequeue(job));
 
     // Render finalise.
     CoreEngine::renderQueue.enqueue(RenderJob::create([jobs = std::move(CoreEngine::frameRenderJobs)]
@@ -486,14 +486,14 @@ void CoreEngine::internalWindowLoop()
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) [[unlikely]]
     {
         Debug::logError("Display initialisation failed! Error: ", SDL_GetError(), ".\n");
-        throw "unimplemented";
-        return;
+        goto EarlyReturn;
     }
 
     if (!(CoreEngine::displMd = SDL_GetDesktopDisplayMode(1)))
     {
         Debug::logError("Failed to get desktop display details: ", SDL_GetError());
-        throw "unimplemented";
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);
+        goto EarlyReturn;
     }
 
     Screen::width = CoreEngine::displMd->w;
@@ -503,168 +503,179 @@ void CoreEngine::internalWindowLoop()
     Window::width = Screen::width / 2;
     Window::height = Screen::height / 2;
 
-    wind = SDL_CreateWindow("Window", Window::width, Window::height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    CoreEngine::wind = SDL_CreateWindow("Window", Window::width, Window::height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (wind == nullptr)
     {
         Debug::logError("Could not create window: ", SDL_GetError(), ".");
-        throw "unimplemented";
-        return;
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);
+        goto EarlyReturn;
     }
 
-    SDL_VERSION(&CoreEngine::backendVer);
-    SDL_GetWindowWMInfo(CoreEngine::wind, &CoreEngine::wmInfo, SDL_SYSWM_CURRENT_VERSION);
     SDL_SetWindowMinimumSize(wind, 200, 200);
 
-    struct {
-        int32_t w, h;
-        bool shouldUnlock = false;
-        SpinLock shouldUnlockLock;
-    } resizeData;
-
-    SDL_AddEventWatch([](void* _data, SDL_Event* event) -> int
-    // These few lines of code were literal years in the making. It formed part of my journey in learning C++.
-    // I hope you fucking like your pretty rendering while resizing you straw assholes.
     {
-        decltype(resizeData)& windowSizeData = *(decltype(resizeData)*)_data;
-
-        if (std::lock_guard guard(windowSizeData.shouldUnlockLock); windowSizeData.shouldUnlock)
+        func::function<void()> job;
+        struct
         {
-            renderResizeLock.unlock();
-            windowSizeData.shouldUnlock = false;
-        }
-        if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
-        {
-            windowSizeData.shouldUnlockLock.lock();
-            windowSizeData.shouldUnlock = true;
-            windowSizeData.shouldUnlockLock.unlock();
+            int32_t w, h;
+            bool shouldUnlock = false;
+            SpinLock shouldUnlockLock;
+            func::function<void()>& job;
+        } resizeData { .job = job };
 
-            int32_t w = event->window.data1, h = event->window.data2;
-            Application::mainThreadQueue.enqueue([w, h]
-            {
-                Window::resizing = true;
-                int prevw = Window::width, prevh = Window::height;
-                Window::width = w;
-                Window::height = h;
-                EngineEvent::OnWindowResize(Vector2Int { prevw, prevh });
-            });
+        SDL_AddEventWatch([](void* _data, SDL_Event* event) -> int
+        // These few lines of code were literal years in the making. It formed part of my journey in learning C++.
+        // I hope you fucking like your pretty rendering while resizing you straw assholes.
+        {
+            decltype(resizeData)& windowSizeData = *(decltype(resizeData)*)_data;
             
-            renderResizeLock.lock();
-        }
+            while (Application::windowThreadQueue.try_dequeue(windowSizeData.job))
+                windowSizeData.job();
 
-        return 0;
-    }, &resizeData);
-
-    SDL_SetWindowResizable(CoreEngine::wind, SDL_TRUE);
-    
-    CoreEngine::state.store(EngineState::RenderInit, std::memory_order_relaxed); // Spin off rendering thread.
-
-    SDL_Event ev;
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadDone)
-    {
-        if (SDL_PeepEvents(&ev, 1, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST) &&
-            ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
-        {
-            assert(ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED);
-
-            if (std::lock_guard guard(resizeData.shouldUnlockLock); resizeData.shouldUnlock)
+            if (std::lock_guard guard(windowSizeData.shouldUnlockLock);
+            windowSizeData.shouldUnlock)
             {
                 renderResizeLock.unlock();
-                resizeData.shouldUnlock = false;
+                windowSizeData.shouldUnlock = false;
+            }
+            if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
+            {
+                windowSizeData.shouldUnlockLock.lock();
+                windowSizeData.shouldUnlock = true;
+                windowSizeData.shouldUnlockLock.unlock();
+
+                int32_t w = event->window.data1, h = event->window.data2;
+                Application::mainThreadQueue.enqueue([w, h]
+                {
+                    Window::resizing = true;
+                    int prevw = Window::width, prevh = Window::height;
+                    Window::width = w;
+                    Window::height = h;
+                    EngineEvent::OnWindowResize(Vector2Int { prevw, prevh });
+                });
+                
+                renderResizeLock.lock();
             }
 
-            renderResizeLock.lock();
-            SDL_PollEvent(&ev);
-            renderResizeLock.unlock();
-        }
-        else if (SDL_PollEvent(&ev))
+            return 0;
+        }, &resizeData);
+
+        SDL_SetWindowResizable(CoreEngine::wind, SDL_TRUE);
+        
+        CoreEngine::state.store(EngineState::RenderInit, std::memory_order_relaxed); // Spin off rendering thread.
+
+        SDL_Event ev;
+        while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadDone)
         {
-            switch (ev.type)
+            while (Application::windowThreadQueue.try_dequeue(job))
+                job();
+            
+            if (SDL_PeepEvents(&ev, 1, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST) &&
+                ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
             {
-                #pragma region Mouse Events
-            case SDL_EVENT_MOUSE_MOTION:
-                Application::mainThreadQueue.enqueue([posX = ev.motion.x, posY = ev.motion.y, motX = ev.motion.xrel, motY = ev.motion.yrel]
+                assert(ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED);
+
+                if (std::lock_guard guard(resizeData.shouldUnlockLock); resizeData.shouldUnlock)
                 {
-                    Input::internalMousePosition.x = posX - Window::width / 2;
-                    Input::internalMousePosition.y = -posY + Window::height / 2;
-                    Input::internalMouseMotion.x += motX;
-                    Input::internalMouseMotion.y += motY;
-                    EngineEvent::OnMouseMove(Vector2Int(motX, -motY));
-                });
-                break;
-            case SDL_EVENT_MOUSE_WHEEL:
-                Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y]
+                    renderResizeLock.unlock();
+                    resizeData.shouldUnlock = false;
+                }
+
+                renderResizeLock.lock();
+                SDL_PollEvent(&ev);
+                renderResizeLock.unlock();
+            }
+            else if (SDL_PollEvent(&ev))
+            {
+                switch (ev.type)
                 {
-                    EngineEvent::OnMouseScroll(Vector2(scrX, scrY));
-                });
-                break;
-            case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
-                {
-                    Input::heldMouseInputs[(size_t)button] = true;
-                    EngineEvent::OnMouseDown(button);
-                });
-                break;
-            case SDL_EVENT_MOUSE_BUTTON_UP:
-                Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
-                {
-                    Input::heldMouseInputs[(size_t)button] = false;
-                    EngineEvent::OnMouseUp(button);
-                });
-                break;
-                #pragma endregion
-                #pragma region Key Events
-            case SDL_EVENT_KEY_DOWN:
-                switch (ev.key.repeat)
-                {
-                case true:
-                    Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.keysym.sym)]
+                    #pragma region Mouse Events
+                case SDL_EVENT_MOUSE_MOTION:
+                    Application::mainThreadQueue.enqueue([posX = ev.motion.x, posY = ev.motion.y, motX = ev.motion.xrel, motY = ev.motion.yrel]
                     {
-                        EngineEvent::OnKeyRepeat(key);
+                        Input::internalMousePosition.x = posX - Window::width / 2;
+                        Input::internalMousePosition.y = -posY + Window::height / 2;
+                        Input::internalMouseMotion.x += motX;
+                        Input::internalMouseMotion.y += motY;
+                        EngineEvent::OnMouseMove(Vector2Int(motX, -motY));
                     });
                     break;
-                case false:
+                case SDL_EVENT_MOUSE_WHEEL:
+                    Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y]
+                    {
+                        EngineEvent::OnMouseScroll(Vector2(scrX, scrY));
+                    });
+                    break;
+                case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                    Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
+                    {
+                        Input::heldMouseInputs[(size_t)button] = true;
+                        EngineEvent::OnMouseDown(button);
+                    });
+                    break;
+                case SDL_EVENT_MOUSE_BUTTON_UP:
+                    Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
+                    {
+                        Input::heldMouseInputs[(size_t)button] = false;
+                        EngineEvent::OnMouseUp(button);
+                    });
+                    break;
+                    #pragma endregion
+                    #pragma region Key Events
+                case SDL_EVENT_KEY_DOWN:
+                    switch (ev.key.repeat)
+                    {
+                    case true:
+                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.keysym.sym)]
+                        {
+                            EngineEvent::OnKeyRepeat(key);
+                        });
+                        break;
+                    case false:
+                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.keysym.sym)]
+                        {
+                            Input::heldKeyInputs[(size_t)key] = true;
+                            EngineEvent::OnKeyDown(key);
+                        });
+                        break;
+                    }
+                    break;
+                case SDL_EVENT_KEY_UP:
                     Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.keysym.sym)]
                     {
-                        Input::heldKeyInputs[(size_t)key] = true;
-                        EngineEvent::OnKeyDown(key);
+                        Input::heldKeyInputs[(size_t)key] = false;
+                        EngineEvent::OnKeyUp(key);
                     });
+                    break;
+                    #pragma endregion
+                case SDL_EVENT_WINDOW_MOVED:
+                    break;
+                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                case SDL_EVENT_QUIT:
+                    CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_relaxed);
                     break;
                 }
-                break;
-            case SDL_EVENT_KEY_UP:
-                Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.keysym.sym)]
-                {
-                    Input::heldKeyInputs[(size_t)key] = false;
-                    EngineEvent::OnKeyUp(key);
-                });
-                break;
-                #pragma endregion
-            case SDL_EVENT_WINDOW_MOVED:
-                break;
-            case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-            case SDL_EVENT_QUIT:
-                CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_relaxed);
-                break;
             }
-        }
-        else
-        {
-            #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
-            std::this_thread::yield();
-            #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            else
+            {
+                #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+                std::this_thread::yield();
+                #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                #endif
+            }
+
+            #ifdef __EMSCRIPTEN__
+            Debug::logTrace("Event loop end.");
+            emscripten_sleep(1);
             #endif
         }
 
-        #ifdef __EMSCRIPTEN__
-        Debug::logTrace("Event loop end.");
-        emscripten_sleep(1);
-        #endif
+        SDL_DestroyWindow(CoreEngine::wind);
+        SDL_QuitSubSystem(SDL_INIT_VIDEO);
     }
 
-    SDL_DestroyWindow(CoreEngine::wind);
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
-
+    EarlyReturn:
     CoreEngine::state.store(EngineState::WindowThreadDone, std::memory_order_relaxed); // Signal main thread.
 }
 
@@ -681,9 +692,9 @@ void CoreEngine::internalRenderLoop()
     RendererBackend backendPriorityOrder[]
     {
         #if _WIN32
-        RendererBackend::OpenGL,
-        RendererBackend::Vulkan,
         RendererBackend::Direct3D12,
+        RendererBackend::Vulkan,
+        RendererBackend::OpenGL,
         RendererBackend::Direct3D11
         #else
         RendererBackend::Vulkan,
@@ -704,35 +715,47 @@ void CoreEngine::internalRenderLoop()
     }
     BreakAll:;
 
-    if (!Renderer::initialize
-        (
-            #if defined(SDL_ENABLE_SYSWM_WAYLAND)
-            (void*)wmInfo.info.wl.display,
-            #elif defined(SDL_ENABLE_SYSWM_X11)
-            (void*)wmInfo.info.x11.display,
-            #else
-            nullptr,
-            #endif
+    void* nwh = nullptr, *ndt = nullptr;
+    #if defined(SDL_PLATFORM_WIN32)
+    nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    #elif defined(SDL_PLATFORM_MACOS)
+    nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+    #elif defined(SDL_PLATFORM_LINUX)
+    if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) 
 
-            #if __EMSCRIPTEN__
-            (void*)"#canvas",
-            #elif defined(SDL_ENABLE_SYSWM_WAYLAND)
-            (void*)wmInfo.info.wl.egl_window,
-            #elif defined(SDL_ENABLE_SYSWM_X11)
-            (void*)wmInfo.info.x11.window,
-            #elif defined(SDL_ENABLE_SYSWM_COCOA)
-            (void*)wmInfo.info.cocoa.window,
-            #elif defined(SDL_ENABLE_SYSWM_WINDOWS)
-            (void*)wmInfo.info.win.window,
-            #else
-            nullptr,
-            #endif
-
-            Window::width, Window::height, initBackend
-        ))
+        ndt = SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+        nwh = SDL_GetNumberProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+    }
+    else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0)
     {
-        Debug::logError("goddamnit");
-        throw "unimplemented";
+        ndt = SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL);
+        nwh = SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
+    }
+    else
+    {
+        Debug::logError("Invalid Linux video driver!");
+        goto EarlyReturn;
+    }
+
+    if (!ndt)
+    {
+        Debug::logError("Failed to get Linux display!");
+        goto EarlyReturn;
+    }
+    #elif defined(SDL_PLATFORM_IOS)
+    nwh = SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL);
+    #endif
+
+    if (!nwh)
+    {
+        Debug::logError("Failed to get window handle!");
+        goto EarlyReturn;
+    }
+
+    if (!Renderer::initialize(ndt, nwh, Window::width, Window::height, initBackend))
+    {
+        Debug::logError("Failed to initialize renderer!");
+        goto EarlyReturn;
     }
 
     InternalEngineEvent::ResetViewArea(Window::width, Window::height);
@@ -740,45 +763,43 @@ void CoreEngine::internalRenderLoop()
     
     CoreEngine::state.store(EngineState::RenderThreadReady, std::memory_order_relaxed); // Signal main thread.
 
-    RenderJob job;
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::MainThreadDone)
     {
+        RenderJob job;
+        while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::MainThreadDone)
+        {
+            while (renderQueue.try_dequeue(job))
+            {
+                if (renderQueue.size_approx() > GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required)
+                    Debug::logInfo("Render queue overburdened, skipping render job id ", job.callFunction, ".\n");
+                else job();
+                job.destroy();
+            }
+        
+            #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+            std::this_thread::yield();
+            #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            #endif
+
+            #ifdef __EMSCRIPTEN__
+            Debug::logTrace("Render loop end.");
+            emscripten_sleep(1);
+            #endif
+        }
+
+        // Cleanup.
         while (renderQueue.try_dequeue(job))
         {
-            if (renderQueue.size_approx() > GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required)
-                Debug::logInfo("Render queue overburdened, skipping render job id ", job.callFunction, ".\n");
-            else job();
+            if (job.required)
+                job();
             job.destroy();
         }
-    
-        #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
-        std::this_thread::yield();
-        #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        #endif
-
-        #ifdef __EMSCRIPTEN__
-        Debug::logTrace("Render loop end.");
-        emscripten_sleep(1);
-        #endif
     }
 
-    // Cleanup.
-    while (renderQueue.try_dequeue(job))
-    {
-        if (job.required)
-            job();
-        job.destroy();
-    }
-
-    #ifdef __linux__
-    #define __platform_linux 1
-    #else
-    #define __platform_linux 0
-    #endif
     InternalEngineEvent::OnRenderShutdown();
-    if (!((bool)__platform_linux && initBackend == RendererBackend::OpenGL))
+    if (!(FIREWORK_BUILD_PLATFORM == FIREWORK_BUILD_PLATFORM_LINUX && initBackend == RendererBackend::OpenGL))
         Renderer::shutdown();
 
+    EarlyReturn:
     CoreEngine::state.store(EngineState::RenderThreadDone, std::memory_order_relaxed); // Signal window thread.
 }

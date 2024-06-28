@@ -32,7 +32,7 @@ endif()
 
 if (EMSCRIPTEN)
     add_compile_options(-pthread -fexceptions -O3)
-    add_link_options(-pthread -fexceptions -sASYNCIFY -sPTHREAD_POOL_SIZE=8 -sPTHREAD_POOL_SIZE_STRICT=8 -sALLOW_MEMORY_GROWTH -sWASM=0)
+    add_link_options(-pthread -fexceptions -sASYNCIFY -sPTHREAD_POOL_SIZE=8 -sPTHREAD_POOL_SIZE_STRICT=8 -sALLOW_MEMORY_GROWTH -sMIN_WEBGL_VERSION=2) # -sMIN_WEBGL_VERSION=2 is required for bgfx.
     set(FIREWORK_BUILD_PLATFORM Web)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
 elseif (WIN32 OR WIN64)
@@ -425,7 +425,7 @@ generate_export_header(Firework.Runtime.CoreLib
 )
 # file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/Firework.Runtime.CoreLib.Exports.h" "\n#ifndef FIREWORK_EXPORT_MODULE\n    #define FIREWORK_EXPORT_MODULE 0\n#endif\n#ifndef __fw_module_export\n    #define __fw_module_export\n#endif\n")
 
-target_compile_definitions(Firework.Runtime.CoreLib PUBLIC SDL_MAIN_HANDLED)
+# target_compile_definitions(Firework.Runtime.CoreLib PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(Firework.Runtime.CoreLib
     PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}"
@@ -453,6 +453,13 @@ target_link_libraries(Firework.Runtime.CoreLib
     PRIVATE
     SDL3-static
 )
+if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
+    if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "Clang")
+        target_link_options(Firework.Runtime.CoreLib PUBLIC -mwindows)
+    elseif (FIREWORK_COMPILER STREQUAL "MSVC")
+        target_link_options(Firework.Runtime.CoreLib PUBLIC /SUBSYSTEM:WINDOWS)
+    endif()
+endif()
 if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL "MacOS" OR FIREWORK_BUILD_PLATFORM STREQUAL "Linux")
     target_link_libraries(Firework.Runtime.CoreLib PRIVATE cpptrace-lib)
     if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc")

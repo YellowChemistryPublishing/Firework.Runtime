@@ -4,6 +4,7 @@
 
 #include <initializer_list>
 #include <list>
+#include <map>
 #include <tuple>
 #include <robin_hood.h>
 #include <EntityComponentSystem/SceneManagement.h>
@@ -34,9 +35,9 @@ namespace Firework
         {
             size_t operator()(const std::pair<EntityType*, uint64_t>& value) const
             {
-                return
-                std::hash<EntityType*>()(value.first) ^
-                std::hash<uint64_t>()(value.second);
+                size_t a = std::hash<EntityType*>()(value.first);
+                size_t b = std::hash<uint64_t>()(value.second);
+                return (a + b) / 2 * (a + b + 1) + b; // Cantor pairing function. Good enough.
             }
         };
     }
@@ -45,7 +46,7 @@ namespace Firework
     class __firework_corelib_api EntityManager2D final
     {
         static robin_hood::unordered_map<uint64_t, uint64_t> existingComponents;
-        static robin_hood::unordered_map<std::pair<Entity2D*, uint64_t>, Internal::Component2D*, Internal::EntityComponentHash<Entity2D>> components;
+        static std::map<std::pair<Entity2D*, uint64_t>, Internal::Component2D*> components;
     public:
         EntityManager2D() = delete;
 

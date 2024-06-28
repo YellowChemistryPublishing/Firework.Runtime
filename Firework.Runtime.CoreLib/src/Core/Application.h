@@ -25,61 +25,74 @@ namespace Firework
     {
         static moodycamel::ConcurrentQueue<func::function<void()>> mainThreadQueue;
         static moodycamel::ConcurrentQueue<func::function<void()>> workerThreadQueue;
+        static moodycamel::ConcurrentQueue<func::function<void()>> windowThreadQueue;
+        
         static float secondsPerFrame;
     public:
         Application() = delete;
 
-        /// @internal 
-        /// @brief Low-level API [Internal]. Queues a function to be run on the main thread. 
-        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>``` 
+        /// @internal
+        /// @brief Low-level API [Internal]. Queues a function to be run on the main thread.
+        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>```
         /// @param job Job to queue.
-        /// @note Thread-safe. 
+        /// @note Thread-safe.
         template <typename Func>
 		requires std::constructible_from<func::function<void()>, Func&&>
         inline static void queueJobForMainThread(Func&& job)
         {
             Application::mainThreadQueue.enqueue(job);
         }
-        /// @internal 
-        /// @brief Low-level API [Internal]. Queues a function to be run on the background worker thread. 
-        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>``` 
+        /// @internal
+        /// @brief Low-level API [Internal]. Queues a function to be run on the background worker thread.
+        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>```
         /// @param job Job to queue.
-        /// @note Thread-safe. 
+        /// @note Thread-safe.
         template <typename Func>
 		requires std::constructible_from<func::function<void()>, Func&&>
         inline static void queueJobForWorkerThread(Func&& job)
         {
             Application::workerThreadQueue.enqueue(job);
         }
+        /// @internal
+        /// @brief Low-level API [Internal]. Queues a function to be run on the window thread.
+        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>```
+        /// @param job Job to queue.
+        /// @note Thread-safe.
+        template <typename Func>
+		requires std::constructible_from<func::function<void()>, Func&&>
+        inline static void queueJobForWindowThread(Func&& job)
+        {
+            Application::windowThreadQueue.enqueue(job);
+        }
 
-        /// @brief Sets the minimum frame time by frames-per-second. 
+        /// @brief Sets the minimum frame time by frames-per-second.
         /// @param fps Framerate in frames per second.
-        /// @note Main thread only. 
+        /// @note Main thread only.
         inline static void setTargetFrameRate(float fps)
         {
             Application::secondsPerFrame = 1.0f / fps;
         }
-        /// @brief Sets the minimum frame time. 
+        /// @brief Sets the minimum frame time.
         /// @param deltaTime Frame time in seconds.
-        /// @note Main thread only. 
+        /// @note Main thread only.
         inline static void setTargetDeltaTime(float deltaTime)
         {
             Application::secondsPerFrame = deltaTime;
         }
 
-        /// @brief Start the runtime, blocking until the runtime has been requested to exit. 
-        /// @warning You shouldn't have to call this unless your main function is unmanaged! 
-        /// @warning Don't call this more than once! 
-        /// @param argc Forwarded from int main(...). 
-        /// @param argv Forwarded from int main(...). 
-        /// @return Whether the runtime was able to start successfully. 
-        /// @retval - EXIT_SUCCESS: The runtime initialized successfully. 
-        /// @retval - EXIT_FAILIURE: The runtime failed to initialize. 
-        /// @note Thread-safe. 
+        /// @brief Start the runtime, blocking until the runtime has been requested to exit.
+        /// @warning You shouldn't have to call this unless your main function is unmanaged!
+        /// @warning Don't call this more than once!
+        /// @param argc Forwarded from int main(...).
+        /// @param argv Forwarded from int main(...).
+        /// @return Whether the runtime was able to start successfully.
+        /// @retval - EXIT_SUCCESS: The runtime initialized successfully.
+        /// @retval - EXIT_FAILIURE: The runtime failed to initialize.
+        /// @note Thread-safe.
         static int run(int argc, char* argv[]);
 
-        /// @brief Politely request that the runtime should exit. 
-        /// @note Main thread only. 
+        /// @brief Politely request that the runtime should exit.
+        /// @note Main thread only.
         static void quit();
 
         friend class Firework::Internal::CoreEngine;

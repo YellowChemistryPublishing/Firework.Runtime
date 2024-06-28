@@ -17,6 +17,13 @@ namespace Firework
         static int height;
         static bool resizing;
     public:
+        /// @brief Retrieve whether the window is resizing this frame.
+        /// @return Whether the window is resizing.
+        /// @note Main thread only.
+        inline static bool isResizing()
+        {
+            return Window::resizing;
+        }
         /// @brief Retrieve the width of the window.
         /// @return Width of the window in pixels.
         /// @note Main thread only.
@@ -31,13 +38,10 @@ namespace Firework
         {
             return Window::height;
         }
-        /// @brief Retrieve whether the window is resizing this frame.
-        /// @return Whether the window is resizing.
+        /// @brief Set the resolution of the window.
+        /// @param size Dimensions of the window in pixels.
         /// @note Main thread only.
-        inline static bool isResizing()
-        {
-            return Window::resizing;
-        }
+        static void setResolution(Mathematics::Vector2Int resolution);
 
         friend class Firework::Internal::CoreEngine;
     };

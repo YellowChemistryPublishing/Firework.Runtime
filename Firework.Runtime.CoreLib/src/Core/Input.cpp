@@ -80,9 +80,9 @@ Key Input::convertFromSDLKey(SDL_Keycode code)
 	case SDLK_GREATER: return Key::GreaterThan;
 	case SDLK_LESS: return Key::LessThan;
 
-	case SDLK_QUOTE: return Key::SingleQuote;
-	case SDLK_QUOTEDBL: return Key::DoubleQuotes;
-	case SDLK_BACKQUOTE: return Key::BackQuote;
+	case SDLK_APOSTROPHE: return Key::SingleQuote;
+	case SDLK_DBLAPOSTROPHE: return Key::DoubleQuotes;
+	case SDLK_GRAVE: return Key::BackQuote;
 
 	case SDLK_UP: return Key::UpArrow;
 	case SDLK_DOWN: return Key::DownArrow;

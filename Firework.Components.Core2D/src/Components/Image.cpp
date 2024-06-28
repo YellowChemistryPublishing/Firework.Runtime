@@ -25,37 +25,31 @@ namespace fs = std::filesystem;
 GeometryProgramHandle Image::program;
 robin_hood::unordered_map<PackageSystem::PortableGraphicPackageFile*, Image::TextureData*> Image::imageTextures;
 
+#include <Objects/Entity2D.h>
+
 Image::~Image()
 {
-    RenderData* data = this->data;
     if (this->data) [[likely]]
     {
-        CoreEngine::queueRenderJobForFrame
-        (
-            [=]
-            {
-                data->internalMesh.destroy();
-                delete data;
-            }
-        );
+        CoreEngine::queueRenderJobForFrame([data = this->data]
+        {
+            data->internalMesh.destroy();
+            delete data;
+        });
     }
 
-    TextureData* textureData = this->textureData;
-    if (textureData) [[likely]]
+    if (this->textureData) [[likely]]
     {
-        --textureData->accessCount;
-        if (textureData->accessCount == 0)
+        --this->textureData->accessCount;
+        if (this->textureData->accessCount == 0)
         {
             Image::imageTextures.erase(this->file);
-            CoreEngine::queueRenderJobForFrame
-            (
-                [=]
-                {
-                    textureData->internalTexture.destroy();
-                    textureData->internalSampler.destroy();
-                    delete textureData;
-                }
-            );
+            CoreEngine::queueRenderJobForFrame([textureData = this->textureData]
+            {
+                textureData->internalTexture.destroy();
+                textureData->internalSampler.destroy();
+                delete textureData;
+            });
         }
     }
 }
@@ -192,26 +186,24 @@ void Image::setImageSplit(const RectFloat& value)
 }
 void Image::setImageFile(PortableGraphicPackageFile* value)
 {
-    if (this->textureData)
+    if (this->file != value)
     {
-        --this->textureData->accessCount;
-        if (this->textureData->accessCount == 0)
+        if (this->textureData)
         {
-            Image::imageTextures.erase(this->file);
-            CoreEngine::queueRenderJobForFrame
-            (
-                [textureData = this->textureData]
+            --this->textureData->accessCount;
+            if (this->textureData->accessCount == 0)
+            {
+                Image::imageTextures.erase(this->file);
+                CoreEngine::queueRenderJobForFrame([textureData = this->textureData]
                 {
                     textureData->internalTexture.destroy();
                     textureData->internalSampler.destroy();
                     delete textureData;
-                }
-            );
+                });
+            }
+            this->textureData = nullptr;
         }
-    }
-    if (value)
-    {
-        if (this->file != value)
+        if (value)
         {
             this->file = value;
             auto it = Image::imageTextures.find(value);
@@ -228,34 +220,23 @@ void Image::setImageFile(PortableGraphicPackageFile* value)
                 uint32_t imageDataSize = width * height * 4;
                 std::vector<uint8_t> imageData(value->imageRGBAData(), value->imageRGBAData() + imageDataSize);
                 
-                CoreEngine::queueRenderJobForFrame
-                (
-                    [width, height, textureData = this->textureData, imageData = std::move(imageData)]
-                    {
-                        textureData->internalTexture = Texture2DHandle::create(imageData.data(), width * height * 4, width, height);
-                        textureData->internalSampler = TextureSamplerHandle::create("s_imageTexture");
-                    }
-                );
-
-                this->updateImageSplit();
-            }
-        }
-    }
-    else
-    {
-        this->textureData = nullptr;
-        this->file = nullptr;
-        
-        if (this->data) [[likely]]
-        {
-            CoreEngine::queueRenderJobForFrame
-            (
-                [data = this->data]
+                CoreEngine::queueRenderJobForFrame([width, height, textureData = this->textureData, imageData = std::move(imageData)]
                 {
-                    data->internalMesh.destroy();
-                    delete data;
-                }
-            );
+                    textureData->internalTexture = Texture2DHandle::create(imageData.data(), width * height * 4, width, height);
+                    textureData->internalSampler = TextureSamplerHandle::create("s_imageTexture");
+                });
+            }
+            this->updateImageSplit();
+        }
+        else
+        {
+            this->file = nullptr;
+            
+            CoreEngine::queueRenderJobForFrame([data = this->data]
+            {
+                data->internalMesh.destroy();
+                delete data;
+            });
             this->data = nullptr;
         }
     }
@@ -282,6 +263,7 @@ void Image::renderInitialize()
             Image::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Image, vulkan), { ShaderUniform { .name = "u_tint", .type = UniformType::Vec4 } });
             break;
         default:
+            // TODO: Implement.
             throw "unimplemented";
         }
     });
@@ -302,15 +284,14 @@ void Image::renderOffload()
     {
         CoreEngine::queueRenderJobForFrame([t = renderTransformFromRectTransform(this->rectTransform()), data = this->data, textureData = this->textureData, tint = this->tint]
         {
-            Renderer::setDrawTexture(0, textureData->internalTexture, textureData->internalSampler);
+            Renderer::setDrawTexture(0, textureData->internalTexture, textureData->internalSampler, BGFX_TEXTURE_SRGB);
             float col[4] { (float)tint.r / 255.0f, (float)tint.g / 255.0f, (float)tint.b / 255.0f, (float)tint.a / 255.0f };
             Image::program.setUniform("u_tint", col);
             Renderer::setDrawTransform(t);
             Renderer::submitDraw
             (
                 1, data->internalMesh, Image::program,
-                BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_WRITE_Z |
-                BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA
+                BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA
             );
         }, false);
     }

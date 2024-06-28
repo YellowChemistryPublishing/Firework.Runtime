@@ -87,16 +87,21 @@ Entity2D::~Entity2D()
         it = itNext;
     }
 
-    for (auto it = EntityManager2D::existingComponents.begin(); it != EntityManager2D::existingComponents.end(); ++it)
+    for (auto it = EntityManager2D::existingComponents.begin(); it != EntityManager2D::existingComponents.end();)
     {
         auto component = EntityManager2D::components.find(std::make_pair(this, it->first));
         if (component != EntityManager2D::components.end())
         {
-            delete component->second;
+            Component2D* c = component->second;
             EntityManager2D::components.erase(component);
+            delete c;
             if (--it->second == 0)
-                EntityManager2D::existingComponents.erase(it);
+            {
+                it = EntityManager2D::existingComponents.erase(it);
+                continue;
+            }
         }
+        ++it;
     }
     delete this->attachedRectTransform;
 

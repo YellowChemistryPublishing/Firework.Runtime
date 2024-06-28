@@ -6,6 +6,7 @@
 #include <Components/PackageFileCore.h>
 #include <Core/PackageManager.h>
 #include <GL/Renderer.h>
+#include <GL/TextureVector.h>
 #include <Font/Font.h>
 #include <Objects/Component2D.h>
 #include <Library/Property.h>

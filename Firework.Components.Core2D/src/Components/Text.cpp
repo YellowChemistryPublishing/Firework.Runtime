@@ -744,6 +744,7 @@ void Text::renderInitialize()
             Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, vulkan));
             break;
         default:
+            // TODO: Implement.
             throw "unimplemented";
         }
     });
@@ -804,7 +805,7 @@ void Text::renderOffload()
                 Renderer::submitDraw
                 (
                     1, it->first->internalMesh, Text::program,
-                    BGFX_STATE_CULL_CW | BGFX_STATE_DEPTH_TEST_ALWAYS | BGFX_STATE_WRITE_Z |
+                    BGFX_STATE_CULL_CW |
                     BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A
                 );
             }

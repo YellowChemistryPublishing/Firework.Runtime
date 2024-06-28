@@ -28,8 +28,8 @@ namespace Firework::Internal
 
 #if __has_include(<cpptrace/cpptrace.hpp>)
 // Should check cpptrace::can_signal_safe_unwind, but it's probably fine without(TM).
-// Exception::Exception() // : trace(cpptrace::stacktrace::current()) // bufferLen(cpptrace::safe_generate_raw_trace(buffer, FIREWORK_EXCEPTION_TRACE_DEPTH))
-// { }
+Exception::Exception() : trace(cpptrace::stacktrace::current()) // bufferLen(cpptrace::safe_generate_raw_trace(buffer, FIREWORK_EXCEPTION_TRACE_DEPTH))
+{ }
 
 cpptrace::stacktrace Exception::resolveStacktrace() const
 {

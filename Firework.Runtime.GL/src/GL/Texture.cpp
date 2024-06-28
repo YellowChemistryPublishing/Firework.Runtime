@@ -57,13 +57,19 @@ Texture2DHandle Texture2DHandle::createDynamic
 }
 void Texture2DHandle::updateDynamic(const void* textureData, uint32_t textureDataSize, uint16_t layer, uint8_t mip, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
 {
-    char* texData = new char[textureDataSize];
-    memcpy(texData, textureData, textureDataSize);
     bgfx::updateTexture2D
     (
         this->internalHandle, layer, mip, x, y, width, height,
-        bgfx::makeRef(texData, textureDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); })
+        bgfx::copy(textureData, textureDataSize)
     );
+}
+void Texture2DHandle::copyTo(Texture2DHandle dest, uint16_t dstX, uint16_t dstY, uint16_t srcX, uint16_t srcY, uint16_t width, uint16_t height)
+{
+    bgfx::blit(0, dest.internalHandle, dstX, dstY, this->internalHandle, srcX, srcY, width, height);
+}
+void Texture2DHandle::copyTo(uint16_t view, Texture2DHandle dest, uint16_t dstX, uint16_t dstY, uint16_t srcX, uint16_t srcY, uint16_t width, uint16_t height)
+{
+    bgfx::blit(view, dest.internalHandle, dstX, dstY, this->internalHandle, srcX, srcY, width, height);
 }
 void Texture2DHandle::destroy()
 {
