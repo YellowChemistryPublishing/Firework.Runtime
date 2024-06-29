@@ -25,7 +25,7 @@ namespace Firework
     struct RuntimeInitializationOptions
     {
         std::string windowName = "Program";
-        bool windowResizeable = false;
+        bool windowResizeable = true;
         Mathematics::Vector2Int resolution = Mathematics::Vector2Int(800, 600);
     };
 

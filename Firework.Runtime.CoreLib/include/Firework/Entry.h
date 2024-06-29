@@ -5,6 +5,11 @@
 #include <Core/HardwareExcept.h>
 #include <SDL3/SDL_main.h>
 #undef main
+#ifdef SDL_main_impl_h_
+#define __entryPoint SDL_main
+#else
+#define __entryPoint main
+#endif
 
 inline int __fw_rt_handleInitializeAndExit(int argc, char* argv[])
 {
@@ -42,7 +47,7 @@ inline int SDL_RunApp(int argc, char* argv[], SDL_main_func mainFunction, void* 
 #define main(...) \
 __main(__VA_ARGS__); \
  \
-int SDL_main(int argc, char* argv[]) \
+int __entryPoint(int argc, char* argv[]) \
 { \
     [[maybe_unused]] int ret = ::__main(__VA_OPT__(argc) __VA_OPT__(,) __VA_OPT__(argv)); \
     return !ret ? ::__fw_rt_handleInitializeAndExit(argc, argv) : ret; \

@@ -95,9 +95,9 @@ bool Renderer::initialize(void* ndt, void* nwh, uint32_t width, uint32_t height,
     float view[16];
     float proj[16];
     bx::mtxLookAt(view, eye, at);
-    bx::mtxOrtho(proj, -1280.0f / 2.0f, 1280.0f / 2.0f, -720.0f / 2.0f, 720.0f / 2.0f, -1.0f, 2048.0f, 0, bgfx::getCaps()->homogeneousDepth);
+    bx::mtxOrtho(proj, -float(width) / 2.0f, float(width) / 2.0f, -float(height) / 2.0f, float(height) / 2.0f, -1.0f, 2048.0f, 0, bgfx::getCaps()->homogeneousDepth);
     bgfx::setViewTransform(0, view, proj);
-    bgfx::setViewRect(0, 0, 0, 1280, 720);
+    bgfx::setViewRect(0, 0, 0, width, height);
 
     return true;
 }

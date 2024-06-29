@@ -500,8 +500,8 @@ void CoreEngine::internalWindowLoop()
     Screen::height = CoreEngine::displMd->h;
     Screen::screenRefreshRate = CoreEngine::displMd->refresh_rate;
 
-    Window::width = Screen::width / 2;
-    Window::height = Screen::height / 2;
+    Window::width = Application::_initializationOptions.resolution.x;
+    Window::height = Application::_initializationOptions.resolution.y;
 
     CoreEngine::wind = SDL_CreateWindow
     (
@@ -729,9 +729,9 @@ void CoreEngine::internalRenderLoop()
     nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
     #elif defined(SDL_PLATFORM_LINUX)
     if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) 
-
+    {
         ndt = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
-        nwh = SDL_GetNumberProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+        nwh = (void*)SDL_GetNumberProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
     }
     else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0)
     {
