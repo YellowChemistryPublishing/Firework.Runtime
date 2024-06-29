@@ -4,6 +4,8 @@
 
 #include <concurrentqueue.h>
 #include <function.h>
+#include <Mathematics.h>
+#include <Library/Property.h>
 
 namespace Firework
 {
@@ -20,12 +22,21 @@ namespace Firework
         class PackageManager;
     }
 
+    struct RuntimeInitializationOptions
+    {
+        std::string windowName = "Program";
+        bool windowResizeable = false;
+        Mathematics::Vector2Int resolution = Mathematics::Vector2Int(800, 600);
+    };
+
     /// @brief Static class containing functionality relevant to the currently running program.
     class __firework_corelib_api Application final
     {
         static moodycamel::ConcurrentQueue<func::function<void()>> mainThreadQueue;
         static moodycamel::ConcurrentQueue<func::function<void()>> workerThreadQueue;
         static moodycamel::ConcurrentQueue<func::function<void()>> windowThreadQueue;
+
+        static RuntimeInitializationOptions _initializationOptions;
         
         static float secondsPerFrame;
     public:
@@ -64,6 +75,8 @@ namespace Firework
         {
             Application::windowThreadQueue.enqueue(job);
         }
+
+        static Property<const RuntimeInitializationOptions&, RuntimeInitializationOptions> initializationOptions;
 
         /// @brief Sets the minimum frame time by frames-per-second.
         /// @param fps Framerate in frames per second.

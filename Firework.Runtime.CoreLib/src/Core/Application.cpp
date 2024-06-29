@@ -6,10 +6,18 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
+using namespace Firework::Mathematics;
 
 moodycamel::ConcurrentQueue<func::function<void()>> Application::mainThreadQueue;
 moodycamel::ConcurrentQueue<func::function<void()>> Application::workerThreadQueue;
 moodycamel::ConcurrentQueue<func::function<void()>> Application::windowThreadQueue;
+
+RuntimeInitializationOptions Application::_initializationOptions;
+Property<const RuntimeInitializationOptions&, RuntimeInitializationOptions> Application::initializationOptions
+{
+    []() -> const RuntimeInitializationOptions& { return Application::_initializationOptions; },
+    [](RuntimeInitializationOptions value) { Application::_initializationOptions = std::move(value); }
+};
 
 float Application::secondsPerFrame = 1.0f / 60.0f;
 

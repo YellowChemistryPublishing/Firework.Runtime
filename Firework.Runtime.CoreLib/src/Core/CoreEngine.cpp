@@ -503,7 +503,13 @@ void CoreEngine::internalWindowLoop()
     Window::width = Screen::width / 2;
     Window::height = Screen::height / 2;
 
-    CoreEngine::wind = SDL_CreateWindow("Window", Window::width, Window::height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    CoreEngine::wind = SDL_CreateWindow
+    (
+        Application::_initializationOptions.windowName.c_str(),
+        Application::_initializationOptions.resolution.x,
+        Application::_initializationOptions.resolution.y,
+        SDL_WINDOW_HIGH_PIXEL_DENSITY
+    );
     if (wind == nullptr)
     {
         Debug::logError("Could not create window: ", SDL_GetError(), ".");
@@ -560,7 +566,8 @@ void CoreEngine::internalWindowLoop()
             return 0;
         }, &resizeData);
 
-        SDL_SetWindowResizable(CoreEngine::wind, SDL_TRUE);
+        if (Application::_initializationOptions.windowResizeable)
+            SDL_SetWindowResizable(CoreEngine::wind, SDL_TRUE);
         
         CoreEngine::state.store(EngineState::RenderInit, std::memory_order_relaxed); // Spin off rendering thread.
 
@@ -692,9 +699,9 @@ void CoreEngine::internalRenderLoop()
     RendererBackend backendPriorityOrder[]
     {
         #if _WIN32
-        RendererBackend::Direct3D12,
         RendererBackend::Vulkan,
         RendererBackend::OpenGL,
+        RendererBackend::Direct3D12,
         RendererBackend::Direct3D11
         #else
         RendererBackend::Vulkan,
@@ -723,13 +730,13 @@ void CoreEngine::internalRenderLoop()
     #elif defined(SDL_PLATFORM_LINUX)
     if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) 
 
-        ndt = SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
-        nwh = SDL_GetNumberProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+        ndt = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+        nwh = SDL_GetNumberProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
     }
     else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0)
     {
-        ndt = SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL);
-        nwh = SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
+        ndt = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL);
+        nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
     }
     else
     {
@@ -743,7 +750,7 @@ void CoreEngine::internalRenderLoop()
         goto EarlyReturn;
     }
     #elif defined(SDL_PLATFORM_IOS)
-    nwh = SDL_GetProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL);
+    nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL);
     #endif
 
     if (!nwh)

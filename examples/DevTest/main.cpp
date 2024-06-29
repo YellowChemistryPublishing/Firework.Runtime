@@ -27,7 +27,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         (player = new Entity)->addComponent<Camera>();
         Debug::logTrace("pos: ", Camera::active()->transform()->position(), ", rot: ", Camera::active()->transform()->rotation(), ", scl: ", Camera::active()->transform()->scale());
 
-        BinaryPackageFile* file = file_cast<BinaryPackageFile>(PackageManager::getCorePackageFileByPath(L"Assets/untitled.blend"));
+        BinaryPackageFile* file = file_cast<BinaryPackageFile>(PackageManager::lookupFileByPath(L"Assets/untitled.blend"));
         sceneAsset = ModelLoader::loadModel(file->binaryData().data(), file->binaryData().size());
 
         mesh = (meshObject = new Entity)->addComponent<Mesh>();

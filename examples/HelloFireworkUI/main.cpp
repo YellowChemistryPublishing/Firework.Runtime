@@ -29,7 +29,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         title->rectTransform()->rect = RectFloat { (float)Window::pixelHeight() / 2.0f - 10.0f, (float)Window::pixelWidth() / 2.0f, (float)Window::pixelHeight() / 2.0f - 100.0f, -(float)Window::pixelWidth() / 2.0f + 10.0f };
 
         titleText = title->addComponent<Text>();
-        titleText->fontFile = file_cast<TrueTypeFontPackageFile>(PackageManager::getCorePackageFileByPath(L"Assets/Fonts/Red Hat Mono/static/RedHatMono-SemiBold.ttf"));
+        titleText->fontFile = file_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"Assets/Fonts/Red Hat Mono/static/RedHatMono-SemiBold.ttf"));
         titleText->text = U"Hello Firework.Runtime!";
         titleText->horizontalAlign = TextAlign::Minor;
         titleText->verticalAlign = TextAlign::Minor;
@@ -41,7 +41,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
         borderImage = border->addComponent<Image>();
         borderImage->imageSplit = borderImage->rectTransform()->rect + RectFloat { -4.0f, -4.0f, 4.0f, 4.0f };
-        borderImage->imageFile = file_cast<PortableGraphicPackageFile>(PackageManager::getCorePackageFileByPath(L"Assets/Border.png"));
+        borderImage->imageFile = file_cast<PortableGraphicPackageFile>(PackageManager::lookupFileByPath(L"Assets/Border.png"));
         borderImage->tint = Color(255, 255, 255, 255);
 
         background = new Entity2D;
