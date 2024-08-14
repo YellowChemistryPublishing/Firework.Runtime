@@ -9,6 +9,7 @@
 #include <Components/RectTransform.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <GL/Renderer.h>
+#include <Library/FixedWidth.h>
 
 #include <Text.vfAll.h>
 
@@ -20,6 +21,8 @@ using namespace Firework::GL;
 using namespace Firework::PackageSystem;
 
 GeometryProgramHandle Text::program;
+TextureSamplerHandle Text::characterDataSampler;
+StaticMeshHandle Text::unitSquare;
 robin_hood::unordered_map<PackageSystem::TrueTypeFontPackageFile*, Text::RenderData*> Text::textFonts;
 
 inline static float getAlignOffsetJustify(float endDiff, float mul)
@@ -51,27 +54,16 @@ void Text::RenderData::trackCharacters(const std::vector<CharacterData>& text)
             GlyphOutline glyph = this->file->fontHandle().getGlyphOutline(it->glyphIndex);
             if (glyph.verts) [[likely]]
             {
-                struct CharacterVertex
+                this->characterData.insert(robin_hood::pair<int, std::vector<CharacterPoint>>(it->glyphIndex, glyph.createCurveBuffer<CharacterPoint>()));
+                this->characters.insert(robin_hood::pair<int, CharacterRenderData*>(it->glyphIndex, new CharacterRenderData
                 {
-                    float x = 0.0f, y = 0.0f, z = 1.0f;
-                    uint32_t abgr = 0xffffffff;
-                };
-
-                auto buffers = glyph.createGeometryBuffers<CharacterVertex>();
-                auto charData = this->characters.insert(robin_hood::pair<int, CharacterRenderData*>(it->glyphIndex, new CharacterRenderData { 1, { } })).first->second;
-                CoreEngine::queueRenderJobForFrame([vertsFlattened = std::move(buffers.first), indsFlattened = std::move(buffers.second), data = charData]
-                {
-                    data->internalMesh = StaticMeshHandle::create
-                    (
-                        vertsFlattened.data(), vertsFlattened.size() * sizeof(CharacterVertex),
-                        VertexLayout::create
-                        ({
-                            VertexDescriptor { bgfx::Attrib::Position, bgfx::AttribType::Float, 3 },
-                            VertexDescriptor { bgfx::Attrib::Color0, bgfx::AttribType::Uint8, 4, true }
-                        }),
-                        indsFlattened.data(), indsFlattened.size() * sizeof(uint16_t)
-                    );
-                });
+                    1, 0, 0,
+                    float(this->file->fontHandle().ascent),
+                    float(this->file->fontHandle().descent),
+                    0.0f,
+                    float(this->file->fontHandle().getGlyphMetrics(it->glyphIndex).advanceWidth)
+                }));
+                this->dirty = true;
             }
         }
     }
@@ -88,10 +80,10 @@ void Text::RenderData::untrackCharacters(const std::vector<CharacterData>& text)
             {
                 CoreEngine::queueRenderJobForFrame([data = charData->second]
                 {
-                    data->internalMesh.destroy();
                     delete data;
                 });
                 this->characters.erase(charData);
+                this->characterData.erase(it->glyphIndex);
             }
         }
     }
@@ -105,8 +97,14 @@ Text::~Text()
         --this->data->accessCount;
         if (this->data->accessCount == 0)
         {
+            CoreEngine::queueRenderJobForFrame([data = this->data]
+            {
+                data->characterDataTexture.destroy();
+
+                delete data;
+            });
+
             Text::textFonts.erase(this->data->file);
-            delete this->data;
         }
     }
 }
@@ -119,8 +117,14 @@ void Text::setFontFile(TrueTypeFontPackageFile* value)
         --this->data->accessCount;
         if (this->data->accessCount == 0)
         {
+            CoreEngine::queueRenderJobForFrame([data = this->data]
+            {
+                data->characterDataTexture.destroy();
+                
+                delete data;
+            });
+
             Text::textFonts.erase(this->data->file);
-            delete this->data;
         }
     }
     if (value)
@@ -135,6 +139,15 @@ void Text::setFontFile(TrueTypeFontPackageFile* value)
         {
             this->data = Text::textFonts.insert(robin_hood::pair<TrueTypeFontPackageFile*, RenderData*>(value, new RenderData { 1, value })).first->second;
             this->data->trackCharacters(this->textData);
+
+            CoreEngine::queueRenderJobForFrame([data = this->data]
+            {
+                data->characterDataTexture = Texture2DHandle::createDynamic(1, COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY, false, 1, bgfx::TextureFormat::RGBA32F);
+                data->characterDataTextureCapacity = COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY;
+                
+                data->characterDataBufferOffsetsTexture = Texture2DHandle::createDynamic(1, COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY, false, 1, bgfx::TextureFormat::RGBA32F);
+                data->characterDataBufferOffsetsTextureCapacity = (COMPONENT_TEXT_CHARACTER_DATA_OFFSETS_MIN_CAPACITY + 3) / 4;
+            });
         }
     }
     else this->data = nullptr;
@@ -637,7 +650,7 @@ void Text::recalculateCharacterPositions()
                                 goto ExitTextHandling;
                             appendNewLineToPositionedText();
                         }
-                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos });
+                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
                         curXPos += advanceLengths[i - beg];
                     }
                 }
@@ -654,7 +667,7 @@ void Text::recalculateCharacterPositions()
                     for (size_t i = beg; i < end; i++)
                     {
                         // Character should never be missing from dictionary.
-                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos });
+                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
                         curXPos += advanceLengths[i - beg];
                     }
                 }
@@ -664,7 +677,7 @@ void Text::recalculateCharacterPositions()
                 curXPos += leftAdjSpaceWidth;
                 for (size_t i = beg; i < end; i++)
                 {
-                    this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos });
+                    this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
                     curXPos += advanceLengths[i - beg];
                 }
             }
@@ -731,25 +744,76 @@ void Text::renderInitialize()
         {
         #if _WIN32
         case RendererBackend::Direct3D11:
-            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, d3d11));
+            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, d3d11),
+            {
+                ShaderUniform { .name = "u_characterOffsetAndConstantData", .type = UniformType::Vec4 },
+                ShaderUniform { .name = "u_characterGlyphMetricsData", .type = UniformType::Vec4 },
+                ShaderUniform { .name = "u_postProcessingData", .type = UniformType::Vec4 }
+            });
             break;
         case RendererBackend::Direct3D12:
-            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, d3d12));
+            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, d3d12),
+            {
+                ShaderUniform { .name = "u_characterOffsetAndConstantData", .type = UniformType::Vec4 },
+                ShaderUniform { .name = "u_characterGlyphMetricsData", .type = UniformType::Vec4 },
+                ShaderUniform { .name = "u_postProcessingData", .type = UniformType::Vec4 }
+            });
             break;
         #endif
         case RendererBackend::OpenGL:
-            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, opengl));
+            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, opengl),
+            {
+                ShaderUniform { .name = "u_characterOffsetAndConstantData", .type = UniformType::Vec4 },
+                ShaderUniform { .name = "u_characterGlyphMetricsData", .type = UniformType::Vec4 },
+                ShaderUniform { .name = "u_postProcessingData", .type = UniformType::Vec4 }
+            });
             break;
         case RendererBackend::Vulkan:
-            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, vulkan));
+            Text::program = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Text, vulkan),
+            {
+                ShaderUniform { .name = "u_characterOffsetAndConstantData", .type = UniformType::Vec4 },
+                ShaderUniform { .name = "u_characterGlyphMetricsData", .type = UniformType::Vec4 },
+                ShaderUniform { .name = "u_postProcessingData", .type = UniformType::Vec4 }
+            });
             break;
         default:
             // TODO: Implement.
             throw "unimplemented";
         }
+
+        Text::characterDataSampler = TextureSamplerHandle::create("s_characterData");
+
+        struct CharacterVertex
+        {
+            float x, y, z;
+            float u, v;
+        };
+        CharacterVertex unitSquareVerts[]
+        {
+            { 0.0f, 0.0f, 0.5f, 0.0f, 0.0f },
+            { 0.0f, 1.0f, 0.5f, 0.0f, 1.0f },
+            { 1.0f, 1.0f, 0.5f, 1.0f, 1.0f },
+            { 1.0f, 0.0f, 0.5f, 1.0f, 0.0f }
+        };
+        uint16_t unitSquareInds[]
+        {
+            2, 1, 0,
+            3, 2, 0
+        };
+        Text::unitSquare = StaticMeshHandle::create
+        (
+            unitSquareVerts, sizeof(unitSquareVerts),
+            VertexLayout::create
+            ({
+                VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 },
+                VertexDescriptor { .attribute = bgfx::Attrib::TexCoord0, .type = bgfx::AttribType::Float, .count = 2 },
+            }),
+            unitSquareInds, sizeof(unitSquareInds)
+        );
     });
     InternalEngineEvent::OnRenderShutdown += []
     {
+        Text::unitSquare.destroy();
         Text::program.destroy();
     };
 }
@@ -763,9 +827,46 @@ void Text::renderOffload()
         const RectFloat rect = thisRect->rect;
 
         const float rot = thisRect->rotation;
-        const float asc = this->data->file->fontHandle().ascent;
-        const float lineHeight = asc - this->data->file->fontHandle().descent;
+        const float lineHeight = this->data->file->fontHandle().ascent - this->data->file->fontHandle().descent;
         const float glyphScale = float(this->_fontSize) / lineHeight;
+
+        if (this->data->dirty)
+        {
+            std::vector<CharacterPoint> characterDataFlattened;
+
+            for (auto&[glyphIndex, charOutline] : this->data->characterData)
+            {
+                size_t beg = characterDataFlattened.size(), size = charOutline.size();
+                characterDataFlattened.insert(characterDataFlattened.end(), charOutline.begin(), charOutline.end());
+                auto it = this->data->characters.find(glyphIndex);
+                it->second->beg = beg;
+                it->second->size = size;
+            }
+
+            CoreEngine::queueRenderJobForFrame([characterDataFlattened = std::move(characterDataFlattened), data = this->data]
+            {
+                if (characterDataFlattened.size() > data->characterDataTextureCapacity)
+                {
+                    data->characterDataTexture.destroy();
+                    if (characterDataFlattened.size() > data->characterDataTextureCapacity)
+                    {
+                        while (data->characterDataTextureCapacity < characterDataFlattened.size())
+                            data->characterDataTextureCapacity *= 2;
+                    }
+                    else
+                    {
+                        while (data->characterDataTextureCapacity / 2 >= characterDataFlattened.size())
+                            data->characterDataTextureCapacity /= 2;
+                        data->characterDataTextureCapacity = std::max(data->characterDataTextureCapacity, (size_t)COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY);
+                    }
+                    data->characterDataTexture = Texture2DHandle::createDynamic(1, data->characterDataTextureCapacity, false, 1, bgfx::TextureFormat::RGBA32F);
+                }
+                
+                data->characterDataTexture.updateDynamic(characterDataFlattened.data(), characterDataFlattened.size() * sizeof(CharacterPoint), 0, 0, 0, 0, 1, characterDataFlattened.size());
+            });
+
+            this->data->dirty = false;
+        }
 
         if (this->dirty || this->rectTransform()->dirty())
         {
@@ -775,12 +876,12 @@ void Text::renderOffload()
                 for (auto it2 = it1->characters.begin(); it2 != it1->characters.end(); ++it2)
                 {
                     RenderTransform transform;
-                    transform.scale({ glyphScale * scale.x, glyphScale * scale.y, 1.0f });
+                    transform.scale({ glyphScale * scale.x * it2->width, glyphScale * scale.y * lineHeight, 1.0f });
                     transform.translate
                     ({
                         rect.left * scale.x + it2->xOffset, //+
                         //this->getHorizontalAlignOffset(rectWidth - it1->width, float(it2 - it1->words.begin()) / (it1->words.size() > 1 ? it1->words.size() - 1 : 1)),
-                        (rect.top - asc * glyphScale) * scale.y - it1->yOffset //-
+                        (rect.top - lineHeight * glyphScale) * scale.y - it1->yOffset //-
                         //this->getVerticalAlignOffset(rectHeight - lines.size() * lineDiff, float(it1 - lines.begin()) / (lines.size() > 1 ? lines.size() - 1 : 1)),
                         ,0.0f
                     });
@@ -801,10 +902,19 @@ void Text::renderOffload()
         {
             for (auto it = data->charactersForRender.begin(); it != data->charactersForRender.end(); ++it)
             {
+                FixedWidthInt<sizeof(float)> beg = it->first->beg, size = it->first->size;
+                float offsetAndConstantData[4] = { reinterpret_cast<float&>(beg), reinterpret_cast<float&>(size), TYPEFACE_GLYPH_INIT_POINT, TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR };
+                Text::program.setUniform("u_characterOffsetAndConstantData", offsetAndConstantData);
+                float glyphMetricsData[4] = { it->first->asc, it->first->desc, it->first->xInit, it->first->adv };
+                Text::program.setUniform("u_characterGlyphMetricsData", glyphMetricsData);
+                FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
+                float postProcessingData[4] = { it->second.tf.data[0][0], it->second.tf.data[1][1], reinterpret_cast<float&>(aa), 0.0f };
+                Text::program.setUniform("u_postProcessingData", postProcessingData);
+                Renderer::setDrawTexture(0, data->characterDataTexture, Text::characterDataSampler);
                 Renderer::setDrawTransform(it->second);
                 Renderer::submitDraw
                 (
-                    1, it->first->internalMesh, Text::program,
+                    1, Text::unitSquare, Text::program,
                     BGFX_STATE_CULL_CW |
                     BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A
                 );

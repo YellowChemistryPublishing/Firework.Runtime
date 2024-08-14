@@ -11,11 +11,21 @@
 #include <Objects/Component2D.h>
 #include <Library/Property.h>
 
+#define COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY 256
+#define COMPONENT_TEXT_CHARACTER_DATA_OFFSETS_MIN_CAPACITY 16
+#define COMPONENT_TEXT_ANTI_ALIAS 2
+
 namespace Firework
 {
     namespace Internal
     {
         struct ComponentCoreStaticInit;
+
+        struct CharacterPoint
+        {
+            float x, y;
+            float xCtrl, yCtrl;
+        };
     }
 
     enum class TextAlign : uint_fast8_t
@@ -29,6 +39,8 @@ namespace Firework
     class __firework_componentcore2d_api Text final : public Internal::Component2D
     {
         static GL::GeometryProgramHandle program;
+        static GL::TextureSamplerHandle characterDataSampler;
+        static GL::StaticMeshHandle unitSquare;
 
         static void renderInitialize();
 
@@ -36,17 +48,29 @@ namespace Firework
         struct CharacterRenderData
         {
             uint32_t accessCount;
-            GL::StaticMeshHandle internalMesh;
+            size_t beg, size;
+            float asc, desc, xInit, adv;
         };
         struct RenderData
         {
+            // Main Thread
             uint32_t accessCount;
             PackageSystem::TrueTypeFontPackageFile* file;
             robin_hood::unordered_map<int, CharacterRenderData*> characters;
             std::vector<std::pair<CharacterRenderData*, GL::RenderTransform>> charactersForRender;
 
+            robin_hood::unordered_map<int, std::vector<Internal::CharacterPoint>> characterData;
+            bool dirty = true;
+            
             void trackCharacters(const std::vector<CharacterData>& text);
             void untrackCharacters(const std::vector<CharacterData>& text);
+            
+            // Render Thread
+            GL::Texture2DHandle characterDataTexture;
+            size_t characterDataTextureCapacity;
+
+            GL::Texture2DHandle characterDataBufferOffsetsTexture;
+            size_t characterDataBufferOffsetsTextureCapacity;
         };
         static robin_hood::unordered_map<PackageSystem::TrueTypeFontPackageFile*, RenderData*> textFonts;
         RenderData* data = nullptr;
@@ -86,6 +110,7 @@ namespace Firework
         {
             CharacterRenderData* character = nullptr;
             float xOffset = 0.0f;
+            float width = 0.0f;
         };
         struct PositionedLine
         {

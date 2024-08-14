@@ -26,7 +26,7 @@ namespace Firework
     {
         std::string windowName = "Program";
         bool windowResizeable = true;
-        Mathematics::Vector2Int resolution = Mathematics::Vector2Int(800, 600);
+        Mathematics::Vector2Int resolution = Mathematics::Vector2Int(1280, 720);
     };
 
     /// @brief Static class containing functionality relevant to the currently running program.

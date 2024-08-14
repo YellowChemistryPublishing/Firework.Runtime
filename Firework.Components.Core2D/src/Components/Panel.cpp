@@ -40,11 +40,7 @@ void Panel::renderInitialize()
             throw "unimplemented";
         }
         
-        struct PanelVertex
-        {
-            float x = 0.0f, y = 0.0f, z = 0.0f;
-        };
-        PanelVertex unitSquareVerts[]
+        Vector3 unitSquareVerts[]
         {
             { -1.0f, -1.0f, 1.0f },
             { -1.0f, 1.0f, 1.0f },

@@ -159,7 +159,7 @@ int CoreEngine::execute(int argc, char* argv[])
 
 void CoreEngine::resetDisplayData()
 {
-    if (!(CoreEngine::displMd = SDL_GetDesktopDisplayMode(1)))
+    if (!(CoreEngine::displMd = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay())))
         Debug::logError("Failed to get desktop display mode: ", SDL_GetError());
     Application::mainThreadQueue.enqueue([w = CoreEngine::displMd->w, h = CoreEngine::displMd->h, rr = CoreEngine::displMd->refresh_rate]
     {
@@ -489,7 +489,7 @@ void CoreEngine::internalWindowLoop()
         goto EarlyReturn;
     }
 
-    if (!(CoreEngine::displMd = SDL_GetDesktopDisplayMode(1)))
+    if (!(CoreEngine::displMd = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay())))
     {
         Debug::logError("Failed to get desktop display details: ", SDL_GetError());
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -510,7 +510,7 @@ void CoreEngine::internalWindowLoop()
         Application::_initializationOptions.resolution.y,
         SDL_WINDOW_HIGH_PIXEL_DENSITY
     );
-    if (wind == nullptr)
+    if (!wind)
     {
         Debug::logError("Could not create window: ", SDL_GetError(), ".");
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -529,7 +529,7 @@ void CoreEngine::internalWindowLoop()
             func::function<void()>& job;
         } resizeData { .job = job };
 
-        SDL_AddEventWatch([](void* _data, SDL_Event* event) -> int
+        int (*eventWatcher)(void*, SDL_Event*) = [](void* _data, SDL_Event* event) -> int
         // These few lines of code were literal years in the making. It formed part of my journey in learning C++.
         // I hope you fucking like your pretty rendering while resizing you straw assholes.
         {
@@ -564,7 +564,8 @@ void CoreEngine::internalWindowLoop()
             }
 
             return 0;
-        }, &resizeData);
+        };
+        SDL_AddEventWatch(eventWatcher, &resizeData);
 
         if (Application::_initializationOptions.windowResizeable)
             SDL_SetWindowResizable(CoreEngine::wind, SDL_TRUE);
@@ -633,13 +634,13 @@ void CoreEngine::internalWindowLoop()
                     switch (ev.key.repeat)
                     {
                     case true:
-                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.keysym.sym)]
+                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
                         {
                             EngineEvent::OnKeyRepeat(key);
                         });
                         break;
                     case false:
-                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.keysym.sym)]
+                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
                         {
                             Input::heldKeyInputs[(size_t)key] = true;
                             EngineEvent::OnKeyDown(key);
@@ -648,7 +649,7 @@ void CoreEngine::internalWindowLoop()
                     }
                     break;
                 case SDL_EVENT_KEY_UP:
-                    Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.keysym.sym)]
+                    Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
                     {
                         Input::heldKeyInputs[(size_t)key] = false;
                         EngineEvent::OnKeyUp(key);
@@ -680,6 +681,8 @@ void CoreEngine::internalWindowLoop()
 
         SDL_DestroyWindow(CoreEngine::wind);
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
+
+        SDL_DelEventWatch(eventWatcher, &resizeData);
     }
 
     EarlyReturn:
@@ -724,19 +727,19 @@ void CoreEngine::internalRenderLoop()
 
     void* nwh = nullptr, *ndt = nullptr;
     #if defined(SDL_PLATFORM_WIN32)
-    nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
     #elif defined(SDL_PLATFORM_MACOS)
-    nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
     #elif defined(SDL_PLATFORM_LINUX)
     if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) 
     {
-        ndt = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+        ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
         nwh = (void*)SDL_GetNumberProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
     }
     else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0)
     {
-        ndt = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL);
-        nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
+        ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL);
+        nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
     }
     else
     {
@@ -750,7 +753,7 @@ void CoreEngine::internalRenderLoop()
         goto EarlyReturn;
     }
     #elif defined(SDL_PLATFORM_IOS)
-    nwh = SDL_GetProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL);
+    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL);
     #endif
 
     if (!nwh)

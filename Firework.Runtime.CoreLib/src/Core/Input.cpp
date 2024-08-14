@@ -13,32 +13,32 @@ Key Input::convertFromSDLKey(SDL_Keycode code)
 {
 	switch (code)
 	{
-	case SDLK_a: return Key::LetterA;
-	case SDLK_b: return Key::LetterB;
-	case SDLK_c: return Key::LetterC;
-	case SDLK_d: return Key::LetterD;
-	case SDLK_e: return Key::LetterE;
-	case SDLK_f: return Key::LetterF;
-	case SDLK_g: return Key::LetterG;
-	case SDLK_h: return Key::LetterH;
-	case SDLK_i: return Key::LetterI;
-	case SDLK_j: return Key::LetterJ;
-	case SDLK_k: return Key::LetterK;
-	case SDLK_l: return Key::LetterL;
-	case SDLK_m: return Key::LetterM;
-	case SDLK_n: return Key::LetterN;
-	case SDLK_o: return Key::LetterO;
-	case SDLK_p: return Key::LetterP;
-	case SDLK_q: return Key::LetterQ;
-	case SDLK_r: return Key::LetterR;
-	case SDLK_s: return Key::LetterS;
-	case SDLK_t: return Key::LetterT;
-	case SDLK_u: return Key::LetterU;
-	case SDLK_v: return Key::LetterV;
-	case SDLK_w: return Key::LetterW;
-	case SDLK_x: return Key::LetterX;
-	case SDLK_y: return Key::LetterY;
-	case SDLK_z: return Key::LetterZ;
+	case SDLK_A: return Key::LetterA;
+	case SDLK_B: return Key::LetterB;
+	case SDLK_C: return Key::LetterC;
+	case SDLK_D: return Key::LetterD;
+	case SDLK_E: return Key::LetterE;
+	case SDLK_F: return Key::LetterF;
+	case SDLK_G: return Key::LetterG;
+	case SDLK_H: return Key::LetterH;
+	case SDLK_I: return Key::LetterI;
+	case SDLK_J: return Key::LetterJ;
+	case SDLK_K: return Key::LetterK;
+	case SDLK_L: return Key::LetterL;
+	case SDLK_M: return Key::LetterM;
+	case SDLK_N: return Key::LetterN;
+	case SDLK_O: return Key::LetterO;
+	case SDLK_P: return Key::LetterP;
+	case SDLK_Q: return Key::LetterQ;
+	case SDLK_R: return Key::LetterR;
+	case SDLK_S: return Key::LetterS;
+	case SDLK_T: return Key::LetterT;
+	case SDLK_U: return Key::LetterU;
+	case SDLK_V: return Key::LetterV;
+	case SDLK_W: return Key::LetterW;
+	case SDLK_X: return Key::LetterX;
+	case SDLK_Y: return Key::LetterY;
+	case SDLK_Z: return Key::LetterZ;
 
 	case SDLK_1: return Key::Number1;
 	case SDLK_2: return Key::Number2;

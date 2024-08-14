@@ -14,6 +14,8 @@ namespace Firework
 
         struct __firework_gl_api RenderTransform
         {
+            Mathematics::Matrix4x4 tf;
+            
             void translate(Mathematics::Vector3 vec);
             void rotate(Mathematics::Vector3 vec);
             void rotate(Mathematics::Quaternion rot);
@@ -22,7 +24,6 @@ namespace Firework
             friend class Firework::GL::Renderer;
             friend class Firework::GL::LitObjectHandle;
         private:
-            Mathematics::Matrix4x4 tf;
             float normalMatrix[3][3];
 
             void regenerateNormalMatrix();

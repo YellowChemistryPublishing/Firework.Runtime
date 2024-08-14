@@ -4,9 +4,13 @@
 
 #include <concepts>
 #include <map>
+#include <limits>
 #include <tuple> // Do not reorder alphabetical, required by <mapbox/earcut.hpp>
 #include <mapbox/earcut.hpp>
 #include <stb_truetype.h>
+
+#define TYPEFACE_GLYPH_INIT_POINT std::numeric_limits<float>::max()
+#define TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR std::numeric_limits<float>::min()
 
 namespace mapbox::util
 {
@@ -53,9 +57,41 @@ namespace Firework
             // Not in header because STBTT_free not linked in.
             __firework_typography_api ~GlyphOutline();
 
+            template <typename PointType>
+            requires requires (PointType p)
+            {
+                { p.x } -> std::convertible_to<float>;
+                { p.y } -> std::convertible_to<float>;
+                { p.xCtrl } -> std::convertible_to<float>;
+                { p.yCtrl } -> std::convertible_to<float>;
+            }
+            inline std::vector<PointType> createCurveBuffer()
+            {
+                std::vector<PointType> ret;
+                for (int j = 0; j < this->vertsSize; j++)
+                {
+                    auto& p = this->verts[j];
+                    switch (p.type)
+                    {
+                    [[unlikely]] case STBTT_vmove:
+                        ret.push_back(PointType { .x = float(p.x), .y = float(p.y), .xCtrl = TYPEFACE_GLYPH_INIT_POINT, .yCtrl = TYPEFACE_GLYPH_INIT_POINT });
+                        break;
+                    case STBTT_vcubic:
+                        // Fallthrough and produce garbage for now.
+                        // TODO: Convert cubic beziers to their quadratic approximations.
+                    case STBTT_vcurve:
+                        ret.push_back(PointType { .x = float(p.x), .y = float(p.y), .xCtrl = float(p.cx), .yCtrl = float(p.cy) });
+                        break;
+                    case STBTT_vline:
+                        ret.push_back(PointType { .x = float(p.x), .y = float(p.y), .xCtrl = TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR, .yCtrl = TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR });
+                        break;
+                    }
+                }
+                return ret;
+            }
             template <typename VertType>
             requires requires (VertType v) { { v.x } -> std::convertible_to<float>; { v.y } -> std::convertible_to<float>; }
-            std::pair<std::vector<VertType>, std::vector<uint16_t>> createGeometryBuffers()
+            inline std::pair<std::vector<VertType>, std::vector<uint16_t>> createGeometryBuffers()
             {
                 constexpr auto pointsAreClockwise = [](stbtt_vertex* points, size_t pointsSize) -> bool
                 {
