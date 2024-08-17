@@ -105,17 +105,25 @@ float isPixelColored(float x, float y)
 }
 vec4 antiAliasedColor(float x, float y, float xRatio, float yRatio)
 {
-    vec3 ret = vec3(0.0, 0.0, 0.0);
-    for (int j = -u_antialiasing; j <= u_antialiasing; j++)
+    float ret = 0.0;
+    if (u_antialiasing == 0)
     {
-        for (int i = -u_antialiasing; i <= u_antialiasing; i++)
-        {
-            float shouldColor = isPixelColored(x + float(i) / float(u_antialiasing) * xRatio / 2.0, y + float(j) / float(u_antialiasing) * yRatio / 2.0);
-            ret += vec3(shouldColor, shouldColor, shouldColor);
-        }
+        float shouldColor = isPixelColored(x, y);
+        ret = shouldColor;
     }
-    ret /= float((u_antialiasing * 2 + 1) * (u_antialiasing * 2 + 1));
-    return vec4(ret, 1.0);
+    else
+    {
+        for (int j = -u_antialiasing; j <= u_antialiasing; j++)
+        {
+            for (int i = -u_antialiasing; i <= u_antialiasing; i++)
+            {
+                float shouldColor = isPixelColored(x + float(i) / float(u_antialiasing) * xRatio / 2.0, y + float(j) / float(u_antialiasing) * yRatio / 2.0);
+                ret += shouldColor;
+            }
+        }
+        ret /= float((u_antialiasing * 2 + 1) * (u_antialiasing * 2 + 1));
+    }
+    return vec4(1.0, 1.0, 1.0, ret);
 }
 bool eq(vec3 a, vec3 b)
 {
@@ -144,6 +152,9 @@ void main()
     //     eq(lookAbove.xyz, vec3(0.0, 0.0, 0.0)))))
     //     gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
     // else
-        gl_FragColor = antiAliasedColor(x, y, xRatio, yRatio);
+    vec4 color = antiAliasedColor(x, y, xRatio, yRatio);
+    if (color.w == 0.0)
+        discard;
+    else gl_FragColor = color; 
     //     gl_FragColor = vec4(texelFetch(s_characterData, ivec2(0, 0), 0).xy, 1.0, 1.0);
 }

@@ -1,5 +1,7 @@
 #include "Input.h"
 
+#include <Core/Application.h>
+#include <Core/CoreEngine.h>
 #include <EntityComponentSystem/EngineEvent.h>
 
 using namespace Firework;
@@ -102,3 +104,18 @@ Mathematics::Vector2Int Input::internalMouseMotion;
 
 bool Input::heldMouseInputs[(size_t)MouseButton::Count] { false };
 bool Input::heldKeyInputs[(size_t)Key::Count] { false };
+
+void Input::beginQueryTextInput()
+{
+	Application::queueJobForWindowThread([]
+	{
+		SDL_StartTextInput(CoreEngine::wind);
+	});
+}
+void Input::endQueryTextInput()
+{
+	Application::queueJobForWindowThread([]
+	{
+		SDL_StopTextInput(CoreEngine::wind);
+	});
+}

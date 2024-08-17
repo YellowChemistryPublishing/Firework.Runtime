@@ -29,24 +29,6 @@ namespace Firework
         /// @note Physics thread only.
         static FuncPtrEvent<> OnPhysicsTick;
 
-        /// @brief Event raised when a key is pressed down.
-        /// @param key ```Firework::Key```
-        /// @note Main thread only.
-        static FuncPtrEvent<Key> OnKeyDown;
-        /// @brief Event raised when a key remains held during the current frame.
-        /// @param key ```Firework::Key```
-        /// @note Main thread only.
-        static FuncPtrEvent<Key> OnKeyHeld;
-        /// @brief Event raised when a key repeat is triggered when a key is held down.
-        /// @param key ```Firework::Key```
-        /// @note Main thread only.
-        static FuncPtrEvent<Key> OnKeyRepeat;
-        /// @brief Event raised when a key is let go.
-        /// @note Main thread only.
-        static FuncPtrEvent<Key> OnKeyUp;
-        /// @brief Event raised when a mouse button is pressed down.
-        /// @param button ```Firework::MouseButton```
-        /// @note Main thread only.
         static FuncPtrEvent<MouseButton> OnMouseDown;
         /// @brief Event raised when a mouse button remains held during the current frame.
         /// @param button ```Firework::MouseButton```
@@ -65,6 +47,30 @@ namespace Firework
         /// @note Main thread only.
         static FuncPtrEvent<Mathematics::Vector2> OnMouseScroll;
 
+        /// @brief Event raised when a key is pressed down.
+        /// @param key ```Firework::Key```
+        /// @note Main thread only.
+        static FuncPtrEvent<Key> OnKeyDown;
+        /// @brief Event raised when a key remains held during the current frame.
+        /// @param key ```Firework::Key```
+        /// @note Main thread only.
+        static FuncPtrEvent<Key> OnKeyHeld;
+        /// @brief Event raised when a key repeat is triggered when a key is held down.
+        /// @param key ```Firework::Key```
+        /// @note Main thread only.
+        static FuncPtrEvent<Key> OnKeyRepeat;
+        /// @brief Event raised when a key is let go.
+        /// @note Main thread only.
+        static FuncPtrEvent<Key> OnKeyUp;
+        /// @brief Event raised when a mouse button is pressed down.
+        /// @param button ```Firework::MouseButton```
+        /// @note Main thread only.
+
+        /// @brief Event raised when text input is received.
+        /// @param text ```const std::u32string&```.
+        /// @note Main thread only.
+        static FuncPtrEvent<const std::u32string&> OnTextInput;
+        
         /// @brief Event raised when the window is resized.
         /// @param from ```Firework::Mathematics::Vector2Int```. The previous size of the window. Retrieve the current window size with ```Firework::Window::pixelWidth()``` and ```Firework::Window::pixelHeight()```.
         /// @note Main thread only.

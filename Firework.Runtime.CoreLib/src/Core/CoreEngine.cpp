@@ -656,6 +656,35 @@ void CoreEngine::internalWindowLoop()
                     });
                     break;
                     #pragma endregion
+                case SDL_EVENT_TEXT_INPUT:
+                    {
+                        std::u32string input;
+                        for (auto it = ev.text.text; *it; ++it)
+                        {
+                            char8_t c = *it;
+                            if ((c & 0b11110000) == 0b11110000) // 4 bytes.
+                            {
+                                char32_t cAppend = (char32_t)(c & 0b00000111) << 18 | (char32_t)(*(++it) & 0b00111111) << 12 | (char32_t)(*(++it) & 0b00111111) << 6 | (char32_t)(*(++it) & 0b00111111);
+                                input.push_back(cAppend);
+                            }
+                            else if ((c & 0b11100000) == 0b11100000) // 3 bytes.
+                            {
+                                char32_t cAppend = (char32_t)(c & 0b00001111) << 12 | (char32_t)(*(++it) & 0b00111111) << 6 | (char32_t)(*(++it) & 0b00111111);
+                                input.push_back(cAppend);
+                            }
+                            else if ((c & 0b11000000) == 0b11000000) // 2 bytes.
+                            {
+                                char32_t cAppend = (char32_t)(c & 0b00011111) << 6 | (char32_t)(*(++it) & 0b00111111);
+                                input.push_back(cAppend);
+                            }
+                            else input.push_back((char32_t)c); // 1 byte.
+                        }
+                        Application::mainThreadQueue.enqueue([input = std::move(input)]
+                        {
+                            EngineEvent::OnTextInput(input);
+                        });
+                    }
+                    break;
                 case SDL_EVENT_WINDOW_MOVED:
                     break;
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
@@ -703,8 +732,8 @@ void CoreEngine::internalRenderLoop()
     {
         #if _WIN32
         RendererBackend::Vulkan,
-        RendererBackend::OpenGL,
         RendererBackend::Direct3D12,
+        RendererBackend::OpenGL,
         RendererBackend::Direct3D11
         #else
         RendererBackend::Vulkan,

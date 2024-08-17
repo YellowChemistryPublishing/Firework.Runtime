@@ -196,6 +196,9 @@ namespace Firework
 			return Input::heldKeyInputs[(size_t)key];
 		}
 
+		static void beginQueryTextInput();
+		static void endQueryTextInput();
+
 		friend class Firework::Internal::CoreEngine;
 	};
 }

@@ -53,18 +53,16 @@ void Text::RenderData::trackCharacters(const std::vector<CharacterData>& text)
         {
             GlyphOutline glyph = this->file->fontHandle().getGlyphOutline(it->glyphIndex);
             if (glyph.verts) [[likely]]
-            {
                 this->characterData.insert(robin_hood::pair<int, std::vector<CharacterPoint>>(it->glyphIndex, glyph.createCurveBuffer<CharacterPoint>()));
-                this->characters.insert(robin_hood::pair<int, CharacterRenderData*>(it->glyphIndex, new CharacterRenderData
-                {
-                    1, 0, 0,
-                    float(this->file->fontHandle().ascent),
-                    float(this->file->fontHandle().descent),
-                    0.0f,
-                    float(this->file->fontHandle().getGlyphMetrics(it->glyphIndex).advanceWidth)
-                }));
-                this->dirty = true;
-            }
+            this->characters.insert(robin_hood::pair<int, CharacterRenderData*>(it->glyphIndex, new CharacterRenderData
+            {
+                1, 0, 0,
+                float(this->file->fontHandle().ascent),
+                float(this->file->fontHandle().descent),
+                0.0f,
+                float(this->file->fontHandle().getGlyphMetrics(it->glyphIndex).advanceWidth)
+            }));
+            this->dirty = true;
         }
     }
 }
@@ -93,6 +91,11 @@ Text::~Text()
 {
     if (this->data) [[likely]]
     {
+        CoreEngine::queueRenderJobForFrame([_this = (const Text*)this, data = this->data]
+        {
+            auto it = data->charactersForRender.find(_this);
+        });
+        
         this->data->untrackCharacters(this->textData);
         --this->data->accessCount;
         if (this->data->accessCount == 0)
@@ -138,19 +141,25 @@ void Text::setFontFile(TrueTypeFontPackageFile* value)
         else
         {
             this->data = Text::textFonts.insert(robin_hood::pair<TrueTypeFontPackageFile*, RenderData*>(value, new RenderData { 1, value })).first->second;
-            this->data->trackCharacters(this->textData);
 
             CoreEngine::queueRenderJobForFrame([data = this->data]
             {
                 data->characterDataTexture = Texture2DHandle::createDynamic(1, COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY, false, 1, bgfx::TextureFormat::RGBA32F);
                 data->characterDataTextureCapacity = COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY;
-                
-                data->characterDataBufferOffsetsTexture = Texture2DHandle::createDynamic(1, COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY, false, 1, bgfx::TextureFormat::RGBA32F);
-                data->characterDataBufferOffsetsTextureCapacity = (COMPONENT_TEXT_CHARACTER_DATA_OFFSETS_MIN_CAPACITY + 3) / 4;
             });
         }
+    
+        this->updateTextData();
+        this->data->trackCharacters(this->textData);
     }
-    else this->data = nullptr;
+    else
+    {
+        CoreEngine::queueRenderJobForFrame([_this = (const Text*)this, data = this->data]
+        {
+            auto it = data->charactersForRender.find(_this);
+        });
+        this->data = nullptr;
+    }
     
     this->dirty = true;
     this->recalculateCharacterPositions();
@@ -164,30 +173,20 @@ void Text::setFontSize(uint32_t value)
 }
 void Text::setText(std::u32string value)
 {
+    this->_text = std::move(value);
+    
     if (this->data) [[likely]]
     {
-        this->_text = std::move(value);
         std::vector<CharacterData> oldTextData = std::move(this->textData);
 
-        this->textData.clear();
-        this->textData.reserve(this->_text.size());
-        Typography::Font& font = this->data->file->fontHandle();
-        for (auto it = this->_text.begin(); it != this->_text.end(); ++it)
-        {
-            int glyphIndex = font.getGlyphIndex(*it);
-            this->textData.push_back
-            ({
-                glyphIndex,
-                font.getGlyphMetrics(glyphIndex)
-            });
-        }
+        this->updateTextData();
 
         this->data->trackCharacters(this->textData);
         this->data->untrackCharacters(oldTextData);
+        
+        this->dirty = true;
+        this->recalculateCharacterPositions();
     }
-    
-    this->dirty = true;
-    this->recalculateCharacterPositions();
 }
 void Text::setHorizontalAlign(TextAlign value)
 {
@@ -230,6 +229,185 @@ void Text::setVerticalAlign(TextAlign value)
     
     this->dirty = true;
     this->recalculateCharacterPositions();
+}
+
+void Text::updateTextData()
+{
+    this->textData.clear();
+    this->textData.reserve(this->_text.size());
+    Typography::Font& font = this->data->file->fontHandle();
+    for (auto it = this->_text.begin(); it != this->_text.end(); ++it)
+    {
+        int glyphIndex = font.getGlyphIndex(*it);
+        this->textData.push_back
+        ({
+            glyphIndex,
+            font.getGlyphMetrics(glyphIndex)
+        });
+    }
+}
+void Text::recalculateCharacterPositions()
+{
+    if (this->data && !this->_text.empty()) [[likely]]
+    {
+        const RectTransform* const thisRect = this->rectTransform();
+        const RectFloat rect = thisRect->rect;
+
+        const float rectWidth = (rect.right - rect.left);
+        const float rectHeight = (rect.top - rect.bottom);
+        const float asc = this->data->file->fontHandle().ascent;
+        const float lineHeight = asc - this->data->file->fontHandle().descent;
+        const float glyphScale = float(this->_fontSize) / lineHeight;
+        const float lineHeightScaled = lineHeight * glyphScale;
+        const float lineDiff = (this->data->file->fontHandle().lineGap + lineHeight) * glyphScale;
+
+        float leftAdjSpaceWidth = 0.0f;
+        std::vector<float> advanceLengths;
+        float curXPos = 0.0f;
+        float curYPos = 0.0f;
+
+        this->_positionedText.clear();
+        this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
+
+        auto appendNewLineToPositionedText = [&]
+        {
+            this->_positionedText.back().width = curXPos;
+            curYPos += lineDiff;
+            this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
+            curXPos = 0.0f;
+            leftAdjSpaceWidth = 0.0f;
+        };
+
+        size_t beg = 0;
+        size_t end;
+
+        // Horrific code that avoids multiple calls of find_first_*.
+        // I don't even know if this was optimal.
+        if
+        (
+            size_t _end = this->_text.find_first_of(U" \t\r\n", 0);
+            _end < (end = this->_text.find_first_not_of(U" \t\r\n", 0))
+        )
+        {
+            end = _end;
+            goto HandleWord;
+        }
+        else goto HandleSpace;
+
+        // I am going to hell.
+        HandleWord:
+        {
+            for (size_t i = beg; i < end; i++)
+                advanceLengths.push_back(float(this->textData[i].metrics.advanceWidth) * glyphScale);
+
+            float wordLen = std::accumulate(advanceLengths.begin(), advanceLengths.end(), 0.0f);
+            if (curXPos + leftAdjSpaceWidth + wordLen > rectWidth) [[unlikely]]
+            {
+                if (wordLen > rectWidth) [[unlikely]]
+                // Draw a word split across lines. This is used when a word is longer than the width of a line.
+                {
+                    if (curXPos + leftAdjSpaceWidth > rectWidth) [[unlikely]]
+                    {
+                        if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                            goto ExitTextHandling;
+                        appendNewLineToPositionedText();
+                    }
+                    else curXPos += leftAdjSpaceWidth;
+                    for (size_t i = beg; i < end; i++)
+                    {
+                        if (curXPos + advanceLengths[i - beg] > rectWidth) [[unlikely]]
+                        {
+                            if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                                goto ExitTextHandling;
+                            appendNewLineToPositionedText();
+                        }
+                        assert(this->data->characters.count(this->textData[i].glyphIndex) > 0);
+                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
+                        curXPos += advanceLengths[i - beg];
+                    }
+                }
+                else // We can fit the whole word in a new line.
+                {
+                    // Nevermind we can't.
+                    if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                        goto ExitTextHandling;
+                    
+                    // Otherwise we can.
+                    curYPos += lineDiff;
+                    this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
+                    curXPos = 0.0f;
+                    for (size_t i = beg; i < end; i++)
+                    {
+                        // Character should never be missing from dictionary.
+                        assert(this->data->characters.count(this->textData[i].glyphIndex) > 0);
+                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
+                        curXPos += advanceLengths[i - beg];
+                    }
+                }
+            }
+            else // Draw a word in one line. This makes the assumption that the whole word will fit within a line.
+            {
+                curXPos += leftAdjSpaceWidth;
+                for (size_t i = beg; i < end; i++)
+                {
+                    assert(this->data->characters.count(this->textData[i].glyphIndex) > 0);
+                    this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
+                    curXPos += advanceLengths[i - beg];
+                }
+            }
+
+            advanceLengths.clear();
+            leftAdjSpaceWidth = 0.0f;
+        }
+        beg = end;
+        if (end != this->_text.size()) [[likely]]
+        {
+            size_t _end = this->_text.find_first_not_of(U" \t\r\n", beg + 1);
+            end = (_end == std::u32string::npos ? this->_text.size() : _end);
+            goto HandleSpace;
+        }
+        else goto ExitTextHandling;
+
+        HandleSpace:
+        {
+            for (size_t i = beg; i < end; i++)
+            {
+                switch (this->_text[i])
+                {
+                    case U' ':
+                        leftAdjSpaceWidth += this->textData[i].metrics.advanceWidth * glyphScale;
+                        goto PushSpace;
+                    case U'\t':
+                        leftAdjSpaceWidth += this->textData[i].metrics.advanceWidth * glyphScale * 8;
+                        
+                        PushSpace:
+                        if (curXPos + leftAdjSpaceWidth > rectWidth)
+                        {
+                            if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                                goto ExitTextHandling;
+                            appendNewLineToPositionedText();
+                        }
+                        break;
+                    case U'\r':
+                        break;
+                    case U'\n':
+                    if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                        goto ExitTextHandling;
+                    appendNewLineToPositionedText();
+                    break;
+                }
+            }
+        }
+        beg = end;
+        if (end != this->_text.size()) [[likely]]
+        {
+            size_t _end = this->_text.find_first_of(U" \t\r\n", beg + 1);
+            end = (_end == std::u32string::npos ? this->_text.size() : _end);
+            goto HandleWord;
+        }
+
+        ExitTextHandling:;
+    }
 }
 
 uint32_t Text::calculateBestFitFontSize()
@@ -575,167 +753,6 @@ float Text::calculateBestFitHeight()
     else return 0;
 }
 
-void Text::recalculateCharacterPositions()
-{
-    if (this->data && !this->_text.empty()) [[likely]]
-    {
-        const RectTransform* const thisRect = this->rectTransform();
-        const RectFloat rect = thisRect->rect;
-
-        const float rectWidth = (rect.right - rect.left);
-        const float rectHeight = (rect.top - rect.bottom);
-        const float asc = this->data->file->fontHandle().ascent;
-        const float lineHeight = asc - this->data->file->fontHandle().descent;
-        const float glyphScale = float(this->_fontSize) / lineHeight;
-        const float lineHeightScaled = lineHeight * glyphScale;
-        const float lineDiff = (this->data->file->fontHandle().lineGap + lineHeight) * glyphScale;
-
-        float leftAdjSpaceWidth = 0.0f;
-        std::vector<float> advanceLengths;
-        float curXPos = 0.0f;
-        float curYPos = 0.0f;
-
-        this->_positionedText.clear();
-        this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
-
-        auto appendNewLineToPositionedText = [&]
-        {
-            this->_positionedText.back().width = curXPos;
-            curYPos += lineDiff;
-            this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
-            curXPos = 0.0f;
-            leftAdjSpaceWidth = 0.0f;
-        };
-
-        size_t beg = 0;
-        size_t end;
-
-        // Horrific code that avoids multiple calls of find_first_*.
-        // I don't even know if this was optimal.
-        if
-        (
-            size_t _end = this->_text.find_first_of(U" \t\r\n", 0);
-            _end < (end = this->_text.find_first_not_of(U" \t\r\n", 0))
-        )
-        {
-            end = _end;
-            goto HandleWord;
-        }
-        else goto HandleSpace;
-
-        // I am going to hell.
-        HandleWord:
-        {
-            for (size_t i = beg; i < end; i++)
-                advanceLengths.push_back(float(this->textData[i].metrics.advanceWidth) * glyphScale);
-
-            float wordLen = std::accumulate(advanceLengths.begin(), advanceLengths.end(), 0.0f);
-            if (curXPos + leftAdjSpaceWidth + wordLen > rectWidth) [[unlikely]]
-            {
-                if (wordLen > rectWidth) [[unlikely]]
-                // Draw a word split across lines. This is used when a word is longer than the width of a line.
-                {
-                    if (curXPos + leftAdjSpaceWidth > rectWidth) [[unlikely]]
-                    {
-                        if (curYPos + lineDiff + lineHeightScaled > rectHeight)
-                            goto ExitTextHandling;
-                        appendNewLineToPositionedText();
-                    }
-                    else curXPos += leftAdjSpaceWidth;
-                    for (size_t i = beg; i < end; i++)
-                    {
-                        if (curXPos + advanceLengths[i - beg] > rectWidth) [[unlikely]]
-                        {
-                            if (curYPos + lineDiff + lineHeightScaled > rectHeight)
-                                goto ExitTextHandling;
-                            appendNewLineToPositionedText();
-                        }
-                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
-                        curXPos += advanceLengths[i - beg];
-                    }
-                }
-                else // We can fit the whole word in a new line.
-                {
-                    // Nevermind we can't.
-                    if (curYPos + lineDiff + lineHeightScaled > rectHeight)
-                        goto ExitTextHandling;
-                    
-                    // Otherwise we can.
-                    curYPos += lineDiff;
-                    this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
-                    curXPos = 0.0f;
-                    for (size_t i = beg; i < end; i++)
-                    {
-                        // Character should never be missing from dictionary.
-                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
-                        curXPos += advanceLengths[i - beg];
-                    }
-                }
-            }
-            else // Draw a word in one line. This makes the assumption that the whole word will fit within a line.
-            {
-                curXPos += leftAdjSpaceWidth;
-                for (size_t i = beg; i < end; i++)
-                {
-                    this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
-                    curXPos += advanceLengths[i - beg];
-                }
-            }
-
-            advanceLengths.clear();
-            leftAdjSpaceWidth = 0.0f;
-        }
-        beg = end;
-        if (end != this->_text.size()) [[likely]]
-        {
-            size_t _end = this->_text.find_first_not_of(U" \t\r\n", beg + 1);
-            end = (_end == std::u32string::npos ? this->_text.size() : _end);
-            goto HandleSpace;
-        }
-        else goto ExitTextHandling;
-
-        HandleSpace:
-        {
-            for (size_t i = beg; i < end; i++)
-            {
-                switch (this->_text[i])
-                {
-                    case U' ':
-                        leftAdjSpaceWidth += this->textData[i].metrics.advanceWidth * glyphScale;
-                        goto PushSpace;
-                    case U'\t':
-                        leftAdjSpaceWidth += this->textData[i].metrics.advanceWidth * glyphScale * 8;
-                        
-                        PushSpace:
-                        if (curXPos + leftAdjSpaceWidth > rectWidth)
-                        {
-                            if (curYPos + lineDiff + lineHeightScaled > rectHeight)
-                                goto ExitTextHandling;
-                            appendNewLineToPositionedText();
-                        }
-                        break;
-                    case U'\r':
-                        break;
-                    case U'\n':
-                    if (curYPos + lineDiff + lineHeightScaled > rectHeight)
-                        goto ExitTextHandling;
-                    appendNewLineToPositionedText();
-                    break;
-                }
-            }
-        }
-        beg = end;
-        if (end != this->_text.size()) [[likely]]
-        {
-            size_t _end = this->_text.find_first_of(U" \t\r\n", beg + 1);
-            end = (_end == std::u32string::npos ? this->_text.size() : _end);
-            goto HandleWord;
-        }
-
-        ExitTextHandling:;
-    }
-}
-
 void Text::renderInitialize()
 {
     CoreEngine::queueRenderJobForFrame([]
@@ -890,9 +907,12 @@ void Text::renderOffload()
                     charactersForRender.push_back(std::make_pair(it2->character, transform));
                 }
             }
-            CoreEngine::queueRenderJobForFrame([data = this->data, charactersForRender = std::move(charactersForRender)]
+            CoreEngine::queueRenderJobForFrame([_this = (const Text*)this, data = this->data, charactersForRender = std::move(charactersForRender)]
             {
-                data->charactersForRender = std::move(charactersForRender);
+                auto it = data->charactersForRender.find(_this);
+                if (it == data->charactersForRender.end())
+                    data->charactersForRender.emplace(std::make_pair(_this, std::move(charactersForRender)));
+                else it->second = std::move(charactersForRender);
             }, true);
 
             this->dirty = false;
@@ -900,24 +920,28 @@ void Text::renderOffload()
         
         CoreEngine::queueRenderJobForFrame([data = this->data]
         {
-            for (auto it = data->charactersForRender.begin(); it != data->charactersForRender.end(); ++it)
+            for (auto it1 = data->charactersForRender.begin(); it1 != data->charactersForRender.end(); ++it1)
             {
-                FixedWidthInt<sizeof(float)> beg = it->first->beg, size = it->first->size;
-                float offsetAndConstantData[4] = { reinterpret_cast<float&>(beg), reinterpret_cast<float&>(size), TYPEFACE_GLYPH_INIT_POINT, TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR };
-                Text::program.setUniform("u_characterOffsetAndConstantData", offsetAndConstantData);
-                float glyphMetricsData[4] = { it->first->asc, it->first->desc, it->first->xInit, it->first->adv };
-                Text::program.setUniform("u_characterGlyphMetricsData", glyphMetricsData);
-                FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
-                float postProcessingData[4] = { it->second.tf.data[0][0], it->second.tf.data[1][1], reinterpret_cast<float&>(aa), 0.0f };
-                Text::program.setUniform("u_postProcessingData", postProcessingData);
-                Renderer::setDrawTexture(0, data->characterDataTexture, Text::characterDataSampler);
-                Renderer::setDrawTransform(it->second);
-                Renderer::submitDraw
-                (
-                    1, Text::unitSquare, Text::program,
-                    BGFX_STATE_CULL_CW |
-                    BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A
-                );
+                for (auto it2 = it1->second.begin(); it2 != it1->second.end(); ++it2)
+                {
+                    FixedWidthInt<sizeof(float)> beg = it2->first->beg, size = it2->first->size;
+                    float offsetAndConstantData[4] = { reinterpret_cast<float&>(beg), reinterpret_cast<float&>(size), TYPEFACE_GLYPH_INIT_POINT, TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR };
+                    Text::program.setUniform("u_characterOffsetAndConstantData", offsetAndConstantData);
+                    float glyphMetricsData[4] = { it2->first->asc, it2->first->desc, it2->first->xInit, it2->first->adv };
+                    Text::program.setUniform("u_characterGlyphMetricsData", glyphMetricsData);
+                    FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
+                    float postProcessingData[4] = { it2->second.tf.data[0][0], it2->second.tf.data[1][1], reinterpret_cast<float&>(aa), 0.0f };
+                    Text::program.setUniform("u_postProcessingData", postProcessingData);
+                    Renderer::setDrawTexture(0, data->characterDataTexture, Text::characterDataSampler);
+                    Renderer::setDrawTransform(it2->second);
+                    Renderer::submitDraw
+                    (
+                        1, Text::unitSquare, Text::program,
+                        BGFX_STATE_CULL_CW   |
+                        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                        BGFX_STATE_BLEND_ALPHA
+                    );
+                }
             }
         }, false);
     }

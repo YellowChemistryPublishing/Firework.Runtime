@@ -13,7 +13,7 @@
 
 #define COMPONENT_TEXT_CHARACTER_DATA_MIN_CAPACITY 256
 #define COMPONENT_TEXT_CHARACTER_DATA_OFFSETS_MIN_CAPACITY 16
-#define COMPONENT_TEXT_ANTI_ALIAS 2
+#define COMPONENT_TEXT_ANTI_ALIAS 4
 
 namespace Firework
 {
@@ -56,21 +56,22 @@ namespace Firework
             // Main Thread
             uint32_t accessCount;
             PackageSystem::TrueTypeFontPackageFile* file;
-            robin_hood::unordered_map<int, CharacterRenderData*> characters;
-            std::vector<std::pair<CharacterRenderData*, GL::RenderTransform>> charactersForRender;
-
+            //                        v Glyph Index
+            //                             v Glyph Outline
             robin_hood::unordered_map<int, std::vector<Internal::CharacterPoint>> characterData;
+            //                        v Glyph Index
+            //                             v Render Data
+            robin_hood::unordered_map<int, CharacterRenderData*> characters;
             bool dirty = true;
             
             void trackCharacters(const std::vector<CharacterData>& text);
             void untrackCharacters(const std::vector<CharacterData>& text);
             
             // Render Thread
+            robin_hood::unordered_map<const Text*, std::vector<std::pair<CharacterRenderData*, GL::RenderTransform>>> charactersForRender;
+
             GL::Texture2DHandle characterDataTexture;
             size_t characterDataTextureCapacity;
-
-            GL::Texture2DHandle characterDataBufferOffsetsTexture;
-            size_t characterDataBufferOffsetsTextureCapacity;
         };
         static robin_hood::unordered_map<PackageSystem::TrueTypeFontPackageFile*, RenderData*> textFonts;
         RenderData* data = nullptr;
@@ -104,6 +105,7 @@ namespace Firework
         void setHorizontalAlign(TextAlign value);
         void setVerticalAlign(TextAlign value);
 
+        void updateTextData();
         void recalculateCharacterPositions();
     public:
         struct PositionedCharacter
