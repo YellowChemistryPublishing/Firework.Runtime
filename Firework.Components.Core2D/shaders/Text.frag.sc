@@ -5,8 +5,8 @@ $input v_texcoord0
 SAMPLER2D(s_characterData, 0);
 
 uniform vec4 u_characterOffsetAndConstantData;
-#define u_characterOffset_beg floatBitsToInt(u_characterOffsetAndConstantData.x)
-#define u_characterOffset_size floatBitsToInt(u_characterOffsetAndConstantData.y)
+#define u_characterOffset_beg int(u_characterOffsetAndConstantData.x)
+#define u_characterOffset_size int(u_characterOffsetAndConstantData.y)
 #define u_typefaceGlyphInitPoint u_characterOffsetAndConstantData.z
 #define u_typefaceGlyphLineSegmentLinear u_characterOffsetAndConstantData.w
 
@@ -19,7 +19,7 @@ uniform vec4 u_characterGlyphMetricsData;
 uniform vec4 u_postProcessingData;
 #define u_width u_postProcessingData.x
 #define u_height u_postProcessingData.y
-#define u_antialiasing floatBitsToInt(u_postProcessingData.z)
+#define u_antialiasing int(u_postProcessingData.z)
 
 float isPixelColored(float x, float y)
 {
@@ -106,28 +106,16 @@ float isPixelColored(float x, float y)
 vec4 antiAliasedColor(float x, float y, float xRatio, float yRatio)
 {
     float ret = 0.0;
-    if (u_antialiasing == 0)
+    for (int j = -u_antialiasing; j <= u_antialiasing; j++)
     {
-        float shouldColor = isPixelColored(x, y);
-        ret = shouldColor;
-    }
-    else
-    {
-        for (int j = -u_antialiasing; j <= u_antialiasing; j++)
+        for (int i = -u_antialiasing; i <= u_antialiasing; i++)
         {
-            for (int i = -u_antialiasing; i <= u_antialiasing; i++)
-            {
-                float shouldColor = isPixelColored(x + float(i) / float(u_antialiasing) * xRatio / 2.0, y + float(j) / float(u_antialiasing) * yRatio / 2.0);
-                ret += shouldColor;
-            }
+            float shouldColor = isPixelColored(x + float(i) * 2.0 / (float(u_antialiasing) * 2.0 + 1.0) * xRatio / 2.0, y + (float(j) * 2.0) / (float(u_antialiasing) * 2.0 + 1.0) * yRatio / 2.0);
+            ret += shouldColor;
         }
-        ret /= float((u_antialiasing * 2 + 1) * (u_antialiasing * 2 + 1));
     }
+    ret /= float((u_antialiasing * 2 + 1) * (u_antialiasing * 2 + 1));
     return vec4(1.0, 1.0, 1.0, ret);
-}
-bool eq(vec3 a, vec3 b)
-{
-    return a.x == b.x && a.y == b.y && a.z == b.z;
 }
 
 // FIXME: Doesn't work in OpenGL mode.
@@ -138,23 +126,8 @@ void main()
     float xRatio = (u_characterGlyphMetric_advance - u_characterGlyphMetric_xInit) / u_width;
     float yRatio = (u_characterGlyphMetric_ascent - u_characterGlyphMetric_descent) / u_height;
     
-    // Prevent small text from being incoherent blur.
-    // Nevermind it doesn't work very well.
-    // vec4 centre = antiAliasedColor(x, y, xRatio, yRatio);
-    // vec4 checkBefore = antiAliasedColor(x - xRatio, y, xRatio, yRatio);
-    // vec4 lookahead = antiAliasedColor(x + xRatio, y, xRatio, yRatio);
-    // vec4 checkBelow = antiAliasedColor(x, y - xRatio, xRatio, yRatio);
-    // vec4 lookAbove = antiAliasedColor(x, y + xRatio, xRatio, yRatio);
-    // if (!eq(centre.xyz, vec3(0.0, 0.0, 0.0)) &&
-    //     ((eq(checkBefore.xyz, vec3(0.0, 0.0, 0.0)) &&
-    //     eq(lookahead.xyz, vec3(0.0, 0.0, 0.0))) ||
-    //     (eq(checkBelow.xyz, vec3(0.0, 0.0, 0.0)) &&
-    //     eq(lookAbove.xyz, vec3(0.0, 0.0, 0.0)))))
-    //     gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-    // else
     vec4 color = antiAliasedColor(x, y, xRatio, yRatio);
     if (color.w == 0.0)
         discard;
-    else gl_FragColor = color; 
-    //     gl_FragColor = vec4(texelFetch(s_characterData, ivec2(0, 0), 0).xy, 1.0, 1.0);
+    else gl_FragColor = color;
 }

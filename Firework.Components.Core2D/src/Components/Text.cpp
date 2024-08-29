@@ -6,6 +6,7 @@
 #include <Mathematics.h>
 #include <Core/CoreEngine.h>
 #include <Core/Debug.h>
+#include <Core/Display.h>
 #include <Components/RectTransform.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <GL/Renderer.h>
@@ -94,6 +95,8 @@ Text::~Text()
         CoreEngine::queueRenderJobForFrame([_this = (const Text*)this, data = this->data]
         {
             auto it = data->charactersForRender.find(_this);
+            if (it != data->charactersForRender.end())
+                data->charactersForRender.erase(it);
         });
         
         this->data->untrackCharacters(this->textData);
@@ -152,11 +155,13 @@ void Text::setFontFile(TrueTypeFontPackageFile* value)
         this->updateTextData();
         this->data->trackCharacters(this->textData);
     }
-    else
+    else if (this->data)
     {
         CoreEngine::queueRenderJobForFrame([_this = (const Text*)this, data = this->data]
         {
             auto it = data->charactersForRender.find(_this);
+            if (it != data->charactersForRender.end())
+                data->charactersForRender.erase(it);
         });
         this->data = nullptr;
     }
@@ -918,29 +923,43 @@ void Text::renderOffload()
             this->dirty = false;
         }
         
-        CoreEngine::queueRenderJobForFrame([data = this->data]
+        CoreEngine::queueRenderJobForFrame([width = Window::pixelWidth(), height = Window::pixelHeight(), data = this->data]
         {
             for (auto it1 = data->charactersForRender.begin(); it1 != data->charactersForRender.end(); ++it1)
             {
                 for (auto it2 = it1->second.begin(); it2 != it1->second.end(); ++it2)
                 {
-                    FixedWidthInt<sizeof(float)> beg = it2->first->beg, size = it2->first->size;
-                    float offsetAndConstantData[4] = { reinterpret_cast<float&>(beg), reinterpret_cast<float&>(size), TYPEFACE_GLYPH_INIT_POINT, TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR };
-                    Text::program.setUniform("u_characterOffsetAndConstantData", offsetAndConstantData);
-                    float glyphMetricsData[4] = { it2->first->asc, it2->first->desc, it2->first->xInit, it2->first->adv };
-                    Text::program.setUniform("u_characterGlyphMetricsData", glyphMetricsData);
-                    FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
-                    float postProcessingData[4] = { it2->second.tf.data[0][0], it2->second.tf.data[1][1], reinterpret_cast<float&>(aa), 0.0f };
-                    Text::program.setUniform("u_postProcessingData", postProcessingData);
-                    Renderer::setDrawTexture(0, data->characterDataTexture, Text::characterDataSampler);
-                    Renderer::setDrawTransform(it2->second);
-                    Renderer::submitDraw
-                    (
-                        1, Text::unitSquare, Text::program,
-                        BGFX_STATE_CULL_CW   |
-                        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
-                        BGFX_STATE_BLEND_ALPHA
-                    );
+                    Vector2 tl(0.0f, 1.0f), tr(1.0f, 1.0f), bl(0.0f, 0.0f), br(1.0f, 0.0f);
+                    Vector4 tl4 = it2->second.tf * Vector4(tl.x, tl.y, 0.0f, 1.0f);
+                    Vector4 tr4 = it2->second.tf * Vector4(tr.x, tr.y, 0.0f, 1.0f);
+                    Vector4 bl4 = it2->second.tf * Vector4(bl.x, bl.y, 0.0f, 1.0f);
+                    Vector4 br4 = it2->second.tf * Vector4(br.x, br.y, 0.0f, 1.0f);
+                    tl = Vector2(tl4.x, tl4.y);
+                    tr = Vector2(tr4.x, tr4.y);
+                    bl = Vector2(bl4.x, bl4.y);
+                    br = Vector2(br4.x, br4.y);
+                    // top, right bottom left
+                    RectFloat boundingBox = RectFloat(std::max({ tl.y, tr.y, bl.y, br.y }), std::max({ tl.x, tr.x, bl.x, br.x }), std::min({ tl.y, tr.y, bl.y, br.y }), std::min({ tl.x, tr.x, bl.x, br.x }));
+                    if (!(boundingBox.right < -width / 2 || boundingBox.left > width / 2 || boundingBox.top < -height / 2 || boundingBox.bottom > height / 2))
+                    {
+                        FixedWidthInt<sizeof(float)> beg = it2->first->beg, size = it2->first->size;
+                        float offsetAndConstantData[4] = { float(beg), float(size), TYPEFACE_GLYPH_INIT_POINT, TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR };
+                        Text::program.setUniform("u_characterOffsetAndConstantData", offsetAndConstantData);
+                        float glyphMetricsData[4] = { it2->first->asc, it2->first->desc, it2->first->xInit, it2->first->adv };
+                        Text::program.setUniform("u_characterGlyphMetricsData", glyphMetricsData);
+                        FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
+                        float postProcessingData[4] = { it2->second.tf.data[0][0], it2->second.tf.data[1][1], float(aa), 0.0f };
+                        Text::program.setUniform("u_postProcessingData", postProcessingData);
+                        Renderer::setDrawTexture(0, data->characterDataTexture, Text::characterDataSampler);
+                        Renderer::setDrawTransform(it2->second);
+                        Renderer::submitDraw
+                        (
+                            1, Text::unitSquare, Text::program,
+                            BGFX_STATE_CULL_CW   | BGFX_STATE_MSAA    |
+                            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                            BGFX_STATE_BLEND_ALPHA
+                        );
+                    }
                 }
             }
         }, false);
