@@ -18,7 +18,10 @@ namespace Firework
 {
 	class Application;
 	class Debug;
+
 	class Window;
+	class Cursor;
+
 	class Input;
 
 	namespace Internal
@@ -98,7 +101,10 @@ namespace Firework
 
 			friend class Firework::Application;
 			friend class Firework::Debug;
+
 			friend class Firework::Window;
+			friend class Firework::Cursor;
+
 			friend class Firework::Input;
 		};
 	}

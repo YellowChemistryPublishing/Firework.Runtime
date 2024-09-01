@@ -171,7 +171,7 @@ namespace Firework
 		{
 			return Input::internalMousePosition;
 		}
-		/// @brief Retrieve the mouse motion this frame in pixel units, with the centre of the Window as (0, 0).
+		/// @brief Retrieve the mouse motion this frame in pixel units.
 		/// @return Amount mouse has moved this frame.
 		/// @note Main thread only.
 		inline static Mathematics::Vector2Int mouseMotion()

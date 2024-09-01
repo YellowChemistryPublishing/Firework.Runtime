@@ -3,6 +3,7 @@
 #include "Firework.Runtime.CoreLib.Exports.h"
 
 #include <Mathematics.h>
+#include <Library/Property.h>
 
 namespace Firework
 {
@@ -10,6 +11,8 @@ namespace Firework
     {
         class CoreEngine;
     }
+
+    class Cursor;
 
     class __firework_corelib_api Window final
     {
@@ -44,6 +47,7 @@ namespace Firework
         static void setResolution(Mathematics::Vector2Int resolution);
 
         friend class Firework::Internal::CoreEngine;
+        friend class Firework::Cursor;
     };
     
     class __firework_corelib_api Screen final
@@ -73,6 +77,27 @@ namespace Firework
         {
             return Screen::screenRefreshRate;
         }
+
+        friend class Firework::Internal::CoreEngine;
+    };
+
+    enum class CursorLockState
+    {
+        None,
+        Hidden,
+        Confined
+    };
+
+    class __firework_corelib_api Cursor final
+    {
+        static bool _visible;
+        static CursorLockState _lockState;
+
+        static void setVisible(bool value);
+        static void setLockState(CursorLockState value);
+    public:
+        static Property<bool, bool> visible;
+        static Property<CursorLockState, CursorLockState> lockState;
 
         friend class Firework::Internal::CoreEngine;
     };

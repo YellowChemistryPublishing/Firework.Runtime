@@ -14,7 +14,7 @@ void Packager::packageFolder(fs::path folder, fs::path outFile)
 {
     fs::path outDir(outFile.parent_path());
     if (!fs::exists(outDir))
-        fs::create_directory(outDir);
+        fs::create_directories(outDir);
     std::ofstream package(fs::path(outFile), std::ios::binary);
 
     for (auto& path : fs::recursive_directory_iterator(folder))

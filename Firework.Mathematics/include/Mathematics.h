@@ -388,7 +388,7 @@ namespace Firework
 			{
 				return this->x == 0.0f && this->y == 0.0f && this->z == 0.0f;
 			}
-			constexpr bool isVectorQuaternion() const noexcept
+			constexpr bool isVector() const noexcept
 			{
 				return this->w == 0.0f;
 			}

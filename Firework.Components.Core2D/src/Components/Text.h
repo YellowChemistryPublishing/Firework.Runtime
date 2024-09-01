@@ -39,7 +39,7 @@ namespace Firework
     class __firework_componentcore2d_api Text final : public Internal::Component2D
     {
         static GL::GeometryProgramHandle program;
-        static GL::TextureSamplerHandle characterDataSampler;
+        static GL::TextureSamplerHandle sampler;
         static GL::StaticMeshHandle unitSquare;
 
         static void renderInitialize();

@@ -22,7 +22,7 @@ using namespace Firework::GL;
 using namespace Firework::PackageSystem;
 
 GeometryProgramHandle Text::program;
-TextureSamplerHandle Text::characterDataSampler;
+TextureSamplerHandle Text::sampler;
 StaticMeshHandle Text::unitSquare;
 robin_hood::unordered_map<PackageSystem::TrueTypeFontPackageFile*, Text::RenderData*> Text::textFonts;
 
@@ -803,7 +803,7 @@ void Text::renderInitialize()
             throw "unimplemented";
         }
 
-        Text::characterDataSampler = TextureSamplerHandle::create("s_characterData");
+        Text::sampler = TextureSamplerHandle::create("s_characterData");
 
         struct CharacterVertex
         {
@@ -836,6 +836,7 @@ void Text::renderInitialize()
     InternalEngineEvent::OnRenderShutdown += []
     {
         Text::unitSquare.destroy();
+        Text::sampler.destroy();
         Text::program.destroy();
     };
 }
@@ -950,7 +951,7 @@ void Text::renderOffload()
                         FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
                         float postProcessingData[4] = { it2->second.tf.data[0][0], it2->second.tf.data[1][1], float(aa), 0.0f };
                         Text::program.setUniform("u_postProcessingData", postProcessingData);
-                        Renderer::setDrawTexture(0, data->characterDataTexture, Text::characterDataSampler);
+                        Renderer::setDrawTexture(0, data->characterDataTexture, Text::sampler);
                         Renderer::setDrawTransform(it2->second);
                         Renderer::submitDraw
                         (

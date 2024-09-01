@@ -52,9 +52,25 @@ namespace Firework
             bgfx::DynamicVertexBufferHandle internalVertexBuffer;
             bgfx::DynamicIndexBufferHandle internalIndexBuffer;
         public:
+            inline DynamicMeshHandle() = default;
+            inline DynamicMeshHandle(std::nullptr_t) : internalVertexBuffer(BGFX_INVALID_HANDLE), internalIndexBuffer(BGFX_INVALID_HANDLE)
+            { }
+            
             static DynamicMeshHandle create(const void* vertexData, uint32_t vertexDataSize, VertexLayout vl, const uint16_t* indexData, uint32_t indexDataSize);
             void update(const void* vertexData, uint32_t vertexDataSize, const uint16_t* indexData, uint32_t indexDataSize, uint32_t fromVertex = 0, uint32_t fromIndex = 0);
             void destroy();
+
+            inline operator bool () const
+            {
+                return bgfx::isValid(this->internalVertexBuffer) && bgfx::isValid(this->internalIndexBuffer);
+            }
+            inline DynamicMeshHandle& operator=(const DynamicMeshHandle& other) = default;
+            inline DynamicMeshHandle& operator=(std::nullptr_t)
+            {
+                this->internalVertexBuffer = BGFX_INVALID_HANDLE;
+                this->internalIndexBuffer = BGFX_INVALID_HANDLE;
+                return *this;
+            }
 
             friend class Firework::GL::Renderer;
         };

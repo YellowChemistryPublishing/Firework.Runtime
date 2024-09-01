@@ -37,8 +37,8 @@ Camera::~Camera()
 
 void Camera::project()
 {
-    CoreEngine::queueRenderJobForFrame([pos = this->transform()->position(), rot = this->transform()->rotation()]
+    CoreEngine::queueRenderJobForFrame([pos = this->transform()->position(), rot = this->transform()->rotation(), near = this->near, far = this->far]
     {
-        Renderer::setViewPerspective(0, Window::pixelWidth(), Window::pixelHeight(), 60.0f, pos, rot, 0.0625f, 128.0f);
+        Renderer::setViewPerspective(0, Window::pixelWidth(), Window::pixelHeight(), 60.0f, pos, rot, near, far);
     }, false);
 }
