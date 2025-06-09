@@ -118,7 +118,6 @@ vec4 antiAliasedColor(float x, float y, float xRatio, float yRatio)
     return vec4(1.0, 1.0, 1.0, ret);
 }
 
-// FIXME: Doesn't work in OpenGL mode.
 void main()
 {
     float x = v_texcoord0.x * (u_characterGlyphMetric_advance - u_characterGlyphMetric_xInit) + u_characterGlyphMetric_xInit;

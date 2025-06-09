@@ -118,7 +118,9 @@ void Entity2D::insertAfter(Entity2D* entity)
     else
     {
         this->next = nullptr;
-        entity->attachedScene->back2D = this;
+        if (entity->_parent)
+            entity->_parent->childrenBack = this;
+        else entity->attachedScene->back2D = this;
     }
     entity->next = this;
     this->prev = entity;

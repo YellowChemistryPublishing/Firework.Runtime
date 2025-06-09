@@ -114,9 +114,13 @@ namespace Firework
             float xOffset = 0.0f;
             float width = 0.0f;
         };
-        struct PositionedLine
+        struct PositionedWord
         {
             std::vector<PositionedCharacter> characters;
+        };
+        struct PositionedLine
+        {
+            std::vector<PositionedWord> words;
             float width = 0.0f;
             float yOffset = 0.0f;
         };

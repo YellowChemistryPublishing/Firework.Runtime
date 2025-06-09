@@ -107,27 +107,12 @@ namespace Firework
             /// @param component ```Firework::Internal::Component2D*```
             /// @note Main thread only.
             static FuncPtrEvent<Component2D*> OnRenderOffloadForComponent2D;
+            static FuncPtrEvent<Component2D*> OnLateRenderOffloadForComponent2D;
             /// @internal
             /// @brief Low-level API. Event raised when a 3D component should be sent to render.
             /// @param component ```Firework::Internal::Component*```
             /// @note Main thread only.
             static FuncPtrEvent<Component*> OnRenderOffloadForComponent;
-            /// @internal
-            /// @brief Low-level API. Function called to clear the view area. Defaults to a sensible implementation.
-            /// @note Render thread only.
-            static void (*ClearViewArea)();
-            /// @internal
-            /// @brief Low-level API. Function called to set the view area. Defaults to a the dimensions of the window.
-            /// @note Render thread only.
-            static void (*ResetViewArea)(uint16_t w, uint16_t h);
-            /// @internal
-            /// @brief Low-level API. Function called to resize the backbuffer. Defaults to resetting to the dimensions of the window.
-            /// @note Render thread only.
-            static void (*ResetBackbuffer)(uint32_t w, uint32_t h);
-            /// @internal
-            /// @brief Low-level API. Function called to render the current frame. Defaults to ```Firework::GL::Renderer::drawFrame```.
-            /// @note Render thread only.
-            static void (*RenderFrame)();
             /// @internal
             /// @brief Low-level API. Event raised immediately before the render thread exits.
             /// @note Render thread only.

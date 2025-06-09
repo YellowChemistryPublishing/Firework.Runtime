@@ -80,25 +80,4 @@ namespace Firework
 
         friend class Firework::Internal::CoreEngine;
     };
-
-    enum class CursorLockState
-    {
-        None,
-        Hidden,
-        Confined
-    };
-
-    class __firework_corelib_api Cursor final
-    {
-        static bool _visible;
-        static CursorLockState _lockState;
-
-        static void setVisible(bool value);
-        static void setLockState(CursorLockState value);
-    public:
-        static Property<bool, bool> visible;
-        static Property<CursorLockState, CursorLockState> lockState;
-
-        friend class Firework::Internal::CoreEngine;
-    };
 }

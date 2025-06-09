@@ -70,7 +70,7 @@ void Panel::renderOffload()
     CoreEngine::queueRenderJobForFrame([t = renderTransformFromRectTransform(this->rectTransform()), color = this->_color]
     {
         float col[4] { (float)color.r / 255.0f, (float)color.g / 255.0f, (float)color.b / 255.0f, (float)color.a / 255.0f };
-        program.setUniform("u_color", col);
+        Panel::program.setUniform("u_color", col);
         Renderer::setDrawTransform(t);
         Renderer::submitDraw
         (
@@ -79,7 +79,7 @@ void Panel::renderOffload()
             (color.r == 0 ? 0 : BGFX_STATE_WRITE_R) |
             (color.g == 0 ? 0 : BGFX_STATE_WRITE_G) |
             (color.b == 0 ? 0 : BGFX_STATE_WRITE_B) |
-            (color.a == 0 ? 0 : BGFX_STATE_WRITE_A)
+            (color.a == 255 ? 0 : BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA)
         );
     }, false);
 }

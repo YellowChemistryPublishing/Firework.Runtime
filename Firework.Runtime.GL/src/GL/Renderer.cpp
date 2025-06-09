@@ -11,6 +11,8 @@
 using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
+std::vector<std::pair<void (*)(bgfx::ViewId, void*), void*>> Renderer::drawPassIntercepts;
+
 #if _DEBUG
 static struct Vertex
 {
@@ -98,7 +100,7 @@ bool Renderer::initialize(void* ndt, void* nwh, uint32_t width, uint32_t height,
     bx::mtxOrtho(proj, -float(width) / 2.0f, float(width) / 2.0f, -float(height) / 2.0f, float(height) / 2.0f, -1.0f, 2048.0f, 0, bgfx::getCaps()->homogeneousDepth);
     bgfx::setViewTransform(0, view, proj);
     bgfx::setViewRect(0, 0, 0, width, height);
-
+    
     return true;
 }
 void Renderer::shutdown()
@@ -155,6 +157,10 @@ void Renderer::setViewArea(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t wid
 {
     bgfx::setViewRect(id, x, y, width, height);
 }
+void Renderer::setViewDrawOrder(bgfx::ViewId id, bgfx::ViewMode::Enum order)
+{
+    bgfx::setViewMode(id, order);
+}
 void Renderer::resetBackbuffer(uint32_t width, uint32_t height, uint32_t flags, bgfx::TextureFormat::Enum format)
 {
     bgfx::reset(width, height, flags, format);
@@ -176,11 +182,32 @@ void Renderer::setDrawTexture(uint8_t stage, Texture2DHandle texture, TextureSam
 {
     bgfx::setTexture(stage, sampler.internalHandle, texture.internalHandle, flags);
 }
+void Renderer::setDrawStencil(uint32_t func, uint32_t back)
+{
+    bgfx::setStencil(func, back);
+}
+void Renderer::addDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*), void* data)
+{
+    Renderer::drawPassIntercepts.push_back(std::make_pair(intercept, data));
+}
+void Renderer::removeDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*))
+{
+    for (auto it = Renderer::drawPassIntercepts.begin(); it != Renderer::drawPassIntercepts.end(); ++it)
+    {
+        if (it->first == intercept)
+        {
+            Renderer::drawPassIntercepts.erase(it);
+            break;
+        }
+    }
+}
 void Renderer::submitDraw(bgfx::ViewId id, StaticMeshHandle mesh, GeometryProgramHandle program, uint64_t state, uint32_t blendFactor)
 {
     bgfx::setVertexBuffer(0, mesh.internalVertexBuffer);
     bgfx::setIndexBuffer(mesh.internalIndexBuffer);
     bgfx::setState(state, blendFactor);
+    for (auto&[intercept, data] : Renderer::drawPassIntercepts)
+        intercept(id, data);
     bgfx::submit(id, program.internalHandle);
 }
 void Renderer::submitDraw(bgfx::ViewId id, DynamicMeshHandle mesh, GeometryProgramHandle program, uint64_t state, uint32_t blendFactor)
@@ -188,6 +215,8 @@ void Renderer::submitDraw(bgfx::ViewId id, DynamicMeshHandle mesh, GeometryProgr
     bgfx::setVertexBuffer(0, mesh.internalVertexBuffer);
     bgfx::setIndexBuffer(mesh.internalIndexBuffer);
     bgfx::setState(state, blendFactor);
+    for (auto&[intercept, data] : Renderer::drawPassIntercepts)
+        intercept(id, data);
     bgfx::submit(id, program.internalHandle);
 }
 

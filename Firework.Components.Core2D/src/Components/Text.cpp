@@ -195,6 +195,7 @@ void Text::setText(std::u32string value)
 }
 void Text::setHorizontalAlign(TextAlign value)
 {
+    this->_horizontalAlign = value;
     switch (value)
     {
     case TextAlign::Justify:
@@ -216,6 +217,7 @@ void Text::setHorizontalAlign(TextAlign value)
 }
 void Text::setVerticalAlign(TextAlign value)
 {
+    this->_verticalAlign = value;
     switch (value)
     {
     case TextAlign::Justify:
@@ -314,20 +316,28 @@ void Text::recalculateCharacterPositions()
                     if (curXPos + leftAdjSpaceWidth > rectWidth) [[unlikely]]
                     {
                         if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                        {
+                            this->_positionedText.back().width = curXPos;
                             goto ExitTextHandling;
+                        }
                         appendNewLineToPositionedText();
                     }
                     else curXPos += leftAdjSpaceWidth;
+
+                    this->_positionedText.back().words.emplace_back();
                     for (size_t i = beg; i < end; i++)
                     {
                         if (curXPos + advanceLengths[i - beg] > rectWidth) [[unlikely]]
                         {
                             if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                            {
+                                this->_positionedText.back().width = curXPos;
                                 goto ExitTextHandling;
+                            }
                             appendNewLineToPositionedText();
                         }
                         assert(this->data->characters.count(this->textData[i].glyphIndex) > 0);
-                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
+                        this->_positionedText.back().words.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
                         curXPos += advanceLengths[i - beg];
                     }
                 }
@@ -335,17 +345,22 @@ void Text::recalculateCharacterPositions()
                 {
                     // Nevermind we can't.
                     if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                    {
+                        this->_positionedText.back().width = curXPos;
                         goto ExitTextHandling;
+                    }
                     
                     // Otherwise we can.
                     curYPos += lineDiff;
                     this->_positionedText.push_back(PositionedLine { .yOffset = curYPos });
                     curXPos = 0.0f;
+
+                    this->_positionedText.back().words.emplace_back();
                     for (size_t i = beg; i < end; i++)
                     {
                         // Character should never be missing from dictionary.
                         assert(this->data->characters.count(this->textData[i].glyphIndex) > 0);
-                        this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
+                        this->_positionedText.back().words.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
                         curXPos += advanceLengths[i - beg];
                     }
                 }
@@ -353,10 +368,11 @@ void Text::recalculateCharacterPositions()
             else // Draw a word in one line. This makes the assumption that the whole word will fit within a line.
             {
                 curXPos += leftAdjSpaceWidth;
+                this->_positionedText.back().words.emplace_back();
                 for (size_t i = beg; i < end; i++)
                 {
                     assert(this->data->characters.count(this->textData[i].glyphIndex) > 0);
-                    this->_positionedText.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
+                    this->_positionedText.back().words.back().characters.push_back(PositionedCharacter { .character = this->data->characters[this->textData[i].glyphIndex], .xOffset = curXPos, .width = float(this->textData[i].metrics.advanceWidth) });
                     curXPos += advanceLengths[i - beg];
                 }
             }
@@ -371,7 +387,11 @@ void Text::recalculateCharacterPositions()
             end = (_end == std::u32string::npos ? this->_text.size() : _end);
             goto HandleSpace;
         }
-        else goto ExitTextHandling;
+        else
+        {
+            this->_positionedText.back().width = curXPos;
+            goto ExitTextHandling;
+        }
 
         HandleSpace:
         {
@@ -389,7 +409,10 @@ void Text::recalculateCharacterPositions()
                         if (curXPos + leftAdjSpaceWidth > rectWidth)
                         {
                             if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                            {
+                                this->_positionedText.back().width = curXPos;
                                 goto ExitTextHandling;
+                            }
                             appendNewLineToPositionedText();
                         }
                         break;
@@ -397,7 +420,10 @@ void Text::recalculateCharacterPositions()
                         break;
                     case U'\n':
                     if (curYPos + lineDiff + lineHeightScaled > rectHeight)
+                    {
+                        this->_positionedText.back().width = curXPos;
                         goto ExitTextHandling;
+                    }
                     appendNewLineToPositionedText();
                     break;
                 }
@@ -852,6 +878,7 @@ void Text::renderOffload()
         const float rot = thisRect->rotation;
         const float lineHeight = this->data->file->fontHandle().ascent - this->data->file->fontHandle().descent;
         const float glyphScale = float(this->_fontSize) / lineHeight;
+        const float lineDiff = (this->data->file->fontHandle().lineGap + lineHeight) * glyphScale;
 
         if (this->data->dirty)
         {
@@ -896,21 +923,24 @@ void Text::renderOffload()
             std::vector<std::pair<CharacterRenderData*, RenderTransform>> charactersForRender;
             for (auto it1 = this->_positionedText.begin(); it1 != this->_positionedText.end(); ++it1)
             {
-                for (auto it2 = it1->characters.begin(); it2 != it1->characters.end(); ++it2)
+                for (auto it2 = it1->words.begin(); it2 != it1->words.end(); ++it2)
                 {
-                    RenderTransform transform;
-                    transform.scale({ glyphScale * scale.x * it2->width, glyphScale * scale.y * lineHeight, 1.0f });
-                    transform.translate
-                    ({
-                        rect.left * scale.x + it2->xOffset, //+
-                        //this->getHorizontalAlignOffset(rectWidth - it1->width, float(it2 - it1->words.begin()) / (it1->words.size() > 1 ? it1->words.size() - 1 : 1)),
-                        (rect.top - lineHeight * glyphScale) * scale.y - it1->yOffset //-
-                        //this->getVerticalAlignOffset(rectHeight - lines.size() * lineDiff, float(it1 - lines.begin()) / (lines.size() > 1 ? lines.size() - 1 : 1)),
-                        ,0.0f
-                    });
-                    transform.rotate(Renderer::fromEuler({ 0.0f, 0.0f, -rot }));
-                    transform.translate({ pos.x, pos.y, 0.0f });
-                    charactersForRender.push_back(std::make_pair(it2->character, transform));
+                    for (auto it3 = it2->characters.begin(); it3 != it2->characters.end(); ++it3)
+                    {
+                        RenderTransform transform;
+                        transform.scale({ glyphScale * scale.x * it3->width, glyphScale * scale.y * lineHeight, 1.0f });
+                        transform.translate
+                        ({
+                            rect.left * scale.x + it3->xOffset +
+                            this->getHorizontalAlignOffset(rect.width() - it1->width, float(it2 - it1->words.begin()) / (it1->words.size() > 1 ? it1->words.size() - 1 : 1)),
+                            (rect.top - lineHeight * glyphScale) * scale.y - it1->yOffset -
+                            this->getVerticalAlignOffset(rect.width() - this->_positionedText.size() * lineDiff, float(it1 - this->_positionedText.begin()) / (this->_positionedText.size() > 1 ? this->_positionedText.size() - 1 : 1)),
+                            0.0f
+                        });
+                        transform.rotate(Renderer::fromEuler({ 0.0f, 0.0f, -rot }));
+                        transform.translate({ pos.x, pos.y, 0.0f });
+                        charactersForRender.push_back(std::make_pair(it3->character, transform));
+                    }
                 }
             }
             CoreEngine::queueRenderJobForFrame([_this = (const Text*)this, data = this->data, charactersForRender = std::move(charactersForRender)]
@@ -924,43 +954,45 @@ void Text::renderOffload()
             this->dirty = false;
         }
         
-        CoreEngine::queueRenderJobForFrame([width = Window::pixelWidth(), height = Window::pixelHeight(), data = this->data]
+        CoreEngine::queueRenderJobForFrame([width = Window::pixelWidth(), height = Window::pixelHeight(), _this = (const Text*)this, data = this->data]
         {
-            for (auto it1 = data->charactersForRender.begin(); it1 != data->charactersForRender.end(); ++it1)
+            auto renderData = data->charactersForRender.find(_this);
+
+            if (renderData == data->charactersForRender.end()) [[unlikely]]
+                return;
+
+            for (auto it = renderData->second.begin(); it != renderData->second.end(); ++it)
             {
-                for (auto it2 = it1->second.begin(); it2 != it1->second.end(); ++it2)
+                Vector2 tl(0.0f, 1.0f), tr(1.0f, 1.0f), bl(0.0f, 0.0f), br(1.0f, 0.0f);
+                Vector4 tl4 = it->second.tf * Vector4(tl.x, tl.y, 0.0f, 1.0f);
+                Vector4 tr4 = it->second.tf * Vector4(tr.x, tr.y, 0.0f, 1.0f);
+                Vector4 bl4 = it->second.tf * Vector4(bl.x, bl.y, 0.0f, 1.0f);
+                Vector4 br4 = it->second.tf * Vector4(br.x, br.y, 0.0f, 1.0f);
+                tl = Vector2(tl4.x, tl4.y);
+                tr = Vector2(tr4.x, tr4.y);
+                bl = Vector2(bl4.x, bl4.y);
+                br = Vector2(br4.x, br4.y);
+                // top, right bottom left
+                RectFloat boundingBox = RectFloat(std::max({ tl.y, tr.y, bl.y, br.y }), std::max({ tl.x, tr.x, bl.x, br.x }), std::min({ tl.y, tr.y, bl.y, br.y }), std::min({ tl.x, tr.x, bl.x, br.x }));
+                if (!(boundingBox.right < -width / 2 || boundingBox.left > width / 2 || boundingBox.top < -height / 2 || boundingBox.bottom > height / 2))
                 {
-                    Vector2 tl(0.0f, 1.0f), tr(1.0f, 1.0f), bl(0.0f, 0.0f), br(1.0f, 0.0f);
-                    Vector4 tl4 = it2->second.tf * Vector4(tl.x, tl.y, 0.0f, 1.0f);
-                    Vector4 tr4 = it2->second.tf * Vector4(tr.x, tr.y, 0.0f, 1.0f);
-                    Vector4 bl4 = it2->second.tf * Vector4(bl.x, bl.y, 0.0f, 1.0f);
-                    Vector4 br4 = it2->second.tf * Vector4(br.x, br.y, 0.0f, 1.0f);
-                    tl = Vector2(tl4.x, tl4.y);
-                    tr = Vector2(tr4.x, tr4.y);
-                    bl = Vector2(bl4.x, bl4.y);
-                    br = Vector2(br4.x, br4.y);
-                    // top, right bottom left
-                    RectFloat boundingBox = RectFloat(std::max({ tl.y, tr.y, bl.y, br.y }), std::max({ tl.x, tr.x, bl.x, br.x }), std::min({ tl.y, tr.y, bl.y, br.y }), std::min({ tl.x, tr.x, bl.x, br.x }));
-                    if (!(boundingBox.right < -width / 2 || boundingBox.left > width / 2 || boundingBox.top < -height / 2 || boundingBox.bottom > height / 2))
-                    {
-                        FixedWidthInt<sizeof(float)> beg = it2->first->beg, size = it2->first->size;
-                        float offsetAndConstantData[4] = { float(beg), float(size), TYPEFACE_GLYPH_INIT_POINT, TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR };
-                        Text::program.setUniform("u_characterOffsetAndConstantData", offsetAndConstantData);
-                        float glyphMetricsData[4] = { it2->first->asc, it2->first->desc, it2->first->xInit, it2->first->adv };
-                        Text::program.setUniform("u_characterGlyphMetricsData", glyphMetricsData);
-                        FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
-                        float postProcessingData[4] = { it2->second.tf.data[0][0], it2->second.tf.data[1][1], float(aa), 0.0f };
-                        Text::program.setUniform("u_postProcessingData", postProcessingData);
-                        Renderer::setDrawTexture(0, data->characterDataTexture, Text::sampler);
-                        Renderer::setDrawTransform(it2->second);
-                        Renderer::submitDraw
-                        (
-                            1, Text::unitSquare, Text::program,
-                            BGFX_STATE_CULL_CW   | BGFX_STATE_MSAA    |
-                            BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
-                            BGFX_STATE_BLEND_ALPHA
-                        );
-                    }
+                    FixedWidthInt<sizeof(float)> beg = it->first->beg, size = it->first->size;
+                    float offsetAndConstantData[4] = { float(beg), float(size), TYPEFACE_GLYPH_INIT_POINT, TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR };
+                    Text::program.setUniform("u_characterOffsetAndConstantData", offsetAndConstantData);
+                    float glyphMetricsData[4] = { it->first->asc, it->first->desc, it->first->xInit, it->first->adv };
+                    Text::program.setUniform("u_characterGlyphMetricsData", glyphMetricsData);
+                    FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
+                    float postProcessingData[4] = { it->second.tf.data[0][0], it->second.tf.data[1][1], float(aa), 0.0f };
+                    Text::program.setUniform("u_postProcessingData", postProcessingData);
+                    Renderer::setDrawTexture(0, data->characterDataTexture, Text::sampler);
+                    Renderer::setDrawTransform(it->second);
+                    Renderer::submitDraw
+                    (
+                        1, Text::unitSquare, Text::program,
+                        BGFX_STATE_CULL_CW   | BGFX_STATE_MSAA    |
+                        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                        BGFX_STATE_BLEND_ALPHA
+                    );
                 }
             }
         }, false);

@@ -1,4 +1,5 @@
 #include <Components/Image.h>
+#include <Components/Mask.h>
 #include <Components/Panel.h>
 #include <Components/Text.h>
 #include <Components/Button.h>
@@ -7,8 +8,15 @@
 #include <EntityComponentSystem/EntityManagement.h>
 #include <Library/TypeInfo.h>
 
+#include <Mathematics.h>
+#include <Components/RectTransform.h>
+#include <Core/CoreEngine.h>
+#include <EntityComponentSystem/EngineEvent.h>
+#include <GL/Renderer.h>
+
 using namespace Firework;
 using namespace Firework::Internal;
+using namespace Firework::GL;
 using namespace Firework::PackageSystem;
 
 namespace Firework::Internal
@@ -23,14 +31,25 @@ namespace Firework::Internal
 
             EngineEvent::OnInitialize += []
             {
+                Mask::renderInitialize();
                 Panel::renderInitialize();
                 Image::renderInitialize();
                 Text::renderInitialize();
+            };
+            EngineEvent::OnTick += []
+            {
+                CoreEngine::queueRenderJobForFrame([]
+                {
+                    Mask::currentRenderMaskValue = 0;
+                });
             };
             InternalEngineEvent::OnRenderOffloadForComponent2D += [](Component2D* component)
             {
                 switch (component->typeIndex())
                 {
+                case __typeid(Mask).qualifiedNameHash():
+                    static_cast<Mask*>(component)->renderOffload();
+                    break;
                 case __typeid(Panel).qualifiedNameHash():
                     static_cast<Panel*>(component)->renderOffload();
                     break;
@@ -42,6 +61,15 @@ namespace Firework::Internal
                     break;
                 case __typeid(ColorHighlightButton).qualifiedNameHash():
                     static_cast<ColorHighlightButton*>(component)->renderOffload();
+                    break;
+                }
+            };
+            InternalEngineEvent::OnLateRenderOffloadForComponent2D += [](Component2D* component)
+            {
+                switch (component->typeIndex())
+                {
+                case __typeid(Mask).qualifiedNameHash():
+                    static_cast<Mask*>(component)->lateRenderOffload();
                     break;
                 }
             };

@@ -9,6 +9,7 @@ project(Firework.Runtime)
 
 # Configuration options...
 option(FIREWORK_WINDOWS_COMPATIBILITY "Enable compatibility with Windows versions up to Windows XP. This option only has effect when compiling with MinGW." ON)
+option(FIREWORK_NO_CONSOLE "Build as a standalone program." ON)
 option(FIREWORK_BUILD_EXAMPLES "Build various examples." ON)
 option(FIREWORK_LOCAL_DBGINFO_PATHS "Use local paths embedded in program for debug information." OFF)
 option(FIREWORK_SANITIZE "Enable supported sanitizers." OFF)
@@ -312,9 +313,10 @@ target_include_directories(Firework.Runtime.GL
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/include"
     "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bx/include"
     PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/shaders/include"
+    "${CMAKE_CURRENT_LIST_DIR}/dependencies"
     "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bgfx/include"
     "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bimg/include"
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/shaders/include"
     "${CMAKE_CURRENT_LIST_DIR}/external/assimp/include"
     "${CMAKE_CURRENT_BINARY_DIR}/external/assimp/include"
 )
@@ -453,7 +455,7 @@ target_link_libraries(Firework.Runtime.CoreLib
     PRIVATE
     SDL3-static
 )
-if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
+if (FIREWORK_NO_CONSOLE AND FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
     if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "Clang")
         target_link_options(Firework.Runtime.CoreLib PUBLIC -mwindows)
     elseif (FIREWORK_COMPILER STREQUAL "MSVC")

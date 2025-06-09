@@ -55,6 +55,64 @@ namespace Firework
                 this->left + other.left
             };
         }
+        constexpr RectFloat operator-(const RectFloat& other) const noexcept
+        {
+            return RectFloat
+            {
+                this->top - other.top,
+                this->right - other.right,
+                this->bottom - other.bottom,
+                this->left - other.left
+            };
+        }
+        constexpr RectFloat operator*(const RectFloat& other) const noexcept
+        {
+            return RectFloat
+            {
+                this->top * other.top,
+                this->right * other.right,
+                this->bottom * other.bottom,
+                this->left * other.left
+            };
+        }
+        constexpr RectFloat operator*(float other) const noexcept
+        {
+            return RectFloat
+            {
+                this->top * other,
+                this->right * other,
+                this->bottom * other,
+                this->left * other
+            };
+        }
+        constexpr RectFloat operator/(float other) const noexcept
+        {
+            return RectFloat
+            {
+                this->top * other,
+                this->right * other,
+                this->bottom * other,
+                this->left * other
+            };
+        }
+
+        constexpr RectFloat& operator+=(const RectFloat& other) noexcept
+        {
+            return (*this = *this + other);
+        }
+        constexpr RectFloat& operator*=(const RectFloat& other) noexcept
+        {
+            return (*this = *this * other);
+        }
+
+        constexpr float width() const noexcept
+        {
+            return this->right - this->left;
+        }
+        constexpr float height() const noexcept
+        {
+            return this->top - this->bottom;
+        }
     };
 
     /// @brief The transform component of a 2D entity.
@@ -64,12 +122,15 @@ namespace Firework
 
         RectFloat _rect { 10, 10, -10, -10 };
         RectFloat _anchor { 0, 0, 0, 0 };
+        RectFloat _positionAnchor { 0, 0, 0, 0 };
 
         Mathematics::Vector2 _position { 0, 0 };
         float _rotation = 0;
         Mathematics::Vector2 _scale { 1, 1 };
 
         bool _dirty = true;
+
+        void setRect(const RectFloat& value);
 
         /// @internal
         /// @brief Internal API. Set the position of this transform.
@@ -126,7 +187,7 @@ namespace Firework
         const Property<const RectFloat&, const RectFloat&> rect
         {
             [this]() -> const RectFloat& { return this->_rect; },
-            [this](const RectFloat& value) { this->_rect = value; }
+            [this](const RectFloat& value) { this->setRect(value); }
         };
         /// @property
         /// @brief [Property] The anchor for the rectangle bounds of this transform.
@@ -137,6 +198,11 @@ namespace Firework
         {
             [this]() -> const RectFloat& { return this->_anchor; },
             [this](const RectFloat& value) { this->_anchor = value; }
+        };
+        const Property<const RectFloat&, const RectFloat&> positionAnchor
+        {
+            [this]() -> const RectFloat& { return this->_positionAnchor; },
+            [this](const RectFloat& value) { this->_positionAnchor = value; }
         };
 
         /// @property

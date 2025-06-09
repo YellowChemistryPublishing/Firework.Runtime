@@ -32,6 +32,7 @@ namespace Firework
 
         class __firework_gl_api Renderer final
         {
+            static std::vector<std::pair<void (*)(bgfx::ViewId, void*), void*>> drawPassIntercepts;
         public:
             Renderer() = delete;
 
@@ -58,8 +59,9 @@ namespace Firework
                 Mathematics::Quaternion rotation = { 1.0f, 0.0f, 0.0f, 0.0f },
                 float near = 0.0f, float far = 2048.0f
             );
-            static void setViewClear(bgfx::ViewId id, uint32_t rgbaColor = 0x000000ff, uint16_t flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, float depth = 1.0f, uint8_t stencil = 0);
+            static void setViewClear(bgfx::ViewId id, uint32_t rgbaColor = 0x000000ff, uint16_t flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL, float depth = 1.0f, uint8_t stencil = 0);
             static void setViewArea(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
+            static void setViewDrawOrder(bgfx::ViewId id, bgfx::ViewMode::Enum order);
             static void resetBackbuffer(uint32_t width, uint32_t height, uint32_t flags = BGFX_RESET_NONE, bgfx::TextureFormat::Enum format = bgfx::TextureFormat::Count);
 
             static void setDrawTransform(const RenderTransform& transform);
@@ -71,6 +73,9 @@ namespace Firework
             {
                 Renderer::setDrawTexture(stage, texture.gpuData, sampler, BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
             }
+            static void setDrawStencil(uint32_t func, uint32_t back = BGFX_STENCIL_NONE);
+            static void addDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*), void* data = nullptr);
+            static void removeDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*));
             static void submitDraw
             (
                 bgfx::ViewId id, StaticMeshHandle mesh, GeometryProgramHandle program,

@@ -58,6 +58,13 @@ namespace Firework
         inline static void foreachEntity(Func&& func)
         requires requires { func::function<void(Entity2D*)>(func); }
         {
+            auto recurse = [&](auto&& recurse, Entity2D* entity) -> void
+            {
+                func(entity);
+                for (auto it = entity->childrenFront; it != nullptr; it = it->next)
+                    recurse(recurse, it);
+            };
+
             for
             (
                 auto _it1 = SceneManager::existingScenes.begin();
@@ -74,7 +81,7 @@ namespace Firework
                         it2 != nullptr;
                         it2 = it2->next
                     )
-                    { func(it2); }
+                    { recurse(recurse, it2); }
                 }
             }
         }

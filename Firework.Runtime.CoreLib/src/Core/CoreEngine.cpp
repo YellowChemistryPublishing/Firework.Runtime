@@ -41,6 +41,7 @@
 #include <EntityComponentSystem/EngineEvent.h>
 #include <Firework/Config.h>
 #include <GL/Renderer.h>
+#include <GL/RenderPipeline.h>
 #include <Library/Hash.h>
 #include <Objects/Entity2D.h>
 
@@ -312,43 +313,20 @@ void CoreEngine::internalLoop()
             handled([] { EngineEvent::OnTick(); });
             handled([] { EngineEvent::OnLateTick(); });
 
-            for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)
-            {
-                Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
-                if (it1->active)
-                {
-                    constexpr auto recurse = [](auto&& recurse, Entity2D* entity) -> void
-                    {
-                        entity->rectTransform()->_dirty = false;
-                        for (auto it2 = entity->childrenFront; it2 != nullptr; it2 = it2->next)
-                            recurse(recurse, it2);
-                    };
-                    for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next)
-                        recurse(recurse, it2);
-                }
-            }
-
-            #pragma region Post-Tick
-            Input::internalMouseMotion = Vector2Int(0, 0);
-
-            while (CoreEngine::pendingPostTickQueue.try_dequeue(job))
-                job();
-            #pragma endregion
-
             #pragma region Render Offload
             // My code is held together with glue and duct tape. And not the good stuff either.
             if (Window::width != prevw || Window::height != prevh)
             {
                 CoreEngine::frameRenderJobs.push_back(RenderJob::create([w = Window::width, h = Window::height]
                 {
-                    InternalEngineEvent::ResetBackbuffer(w, h);
-                    InternalEngineEvent::ResetViewArea(w, h);
+                    RenderPipeline::resetBackbuffer(w, h);
+                    RenderPipeline::resetViewArea(w, h);
                 }));
                 prevw = Window::width; prevh = Window::height;
             }
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([]
             {
-                InternalEngineEvent::ClearViewArea();
+                RenderPipeline::clearViewArea();
             }, false));
 
             for (auto _it1 = SceneManager::existingScenes.rbegin(); _it1 != SceneManager::existingScenes.rend(); ++_it1)
@@ -380,8 +358,21 @@ void CoreEngine::internalLoop()
                                     component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x > Window::width / 2
                                 ))
                                 InternalEngineEvent::OnRenderOffloadForComponent2D(component->second);
-                            for (auto it2 = entity->childrenBack; it2 != nullptr; it2 = it2->prev)
-                                recurse(recurse, it2);
+                        }
+                        for (auto it2 = entity->childrenBack; it2 != nullptr; it2 = it2->prev)
+                            recurse(recurse, it2);
+                        for (auto it3 = EntityManager2D::existingComponents.begin(); it3 != EntityManager2D::existingComponents.end(); ++it3)
+                        {
+                            auto component = EntityManager2D::components.find(std::make_pair(entity, it3->first));
+                            if (component != EntityManager2D::components.end() && component->second->active &&
+                                !(
+                                    // FIXME: Doesn't account for rotation!
+                                    component->second->attachedRectTransform->_position.y + component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y < -Window::height / 2 ||
+                                    component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x < -Window::width / 2 ||
+                                    component->second->attachedRectTransform->_position.y + component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y > Window::height / 2 ||
+                                    component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x > Window::width / 2
+                                ))
+                                InternalEngineEvent::OnLateRenderOffloadForComponent2D(component->second);
                         }
                     };
                     for (auto it2 = it1->back2D; it2 != nullptr; it2 = it2->prev)
@@ -391,7 +382,7 @@ void CoreEngine::internalLoop()
             
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([]
             {
-                InternalEngineEvent::RenderFrame();
+                RenderPipeline::renderFrame();
                 frameInProgress.clear(std::memory_order_relaxed);
             }, false));
             if (frameInProgress.test(std::memory_order_relaxed))
@@ -420,6 +411,29 @@ void CoreEngine::internalLoop()
                     renderResizeLock.unlock();
                 }));
                 CoreEngine::frameRenderJobs.clear();
+            }
+            #pragma endregion
+
+            #pragma region Post-Tick
+            Input::internalMouseMotion = Vector2Int(0, 0);
+
+            while (CoreEngine::pendingPostTickQueue.try_dequeue(job))
+                job();
+                
+            for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)
+            {
+                Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
+                if (it1->active)
+                {
+                    constexpr auto recurse = [](auto&& recurse, Entity2D* entity) -> void
+                    {
+                        entity->rectTransform()->_dirty = false;
+                        for (auto it2 = entity->childrenFront; it2 != nullptr; it2 = it2->next)
+                            recurse(recurse, it2);
+                    };
+                    for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next)
+                        recurse(recurse, it2);
+                }
             }
             #pragma endregion
 
@@ -557,6 +571,36 @@ void CoreEngine::internalWindowLoop()
                     int prevw = Window::width, prevh = Window::height;
                     Window::width = w;
                     Window::height = h;
+
+                    RectFloat windowDelta = RectFloat
+                    {
+                        (float)(h - prevh) / 2.0f,
+                        (float)(w - prevw) / 2.0f,
+                        (float)(-h + prevh) / 2.0f,
+                        (float)(-w + prevw) / 2.0f,
+                    };
+                    
+                    for (auto _it1 = SceneManager::existingScenes.rbegin(); _it1 != SceneManager::existingScenes.rend(); ++_it1)
+                    {
+                        Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
+                        if (it1->active)
+                        {
+                            for (auto it2 = it1->back2D; it2 != nullptr; it2 = it2->prev)
+                            {
+                                it2->attachedRectTransform->setRect(it2->attachedRectTransform->_rect + windowDelta * it2->attachedRectTransform->_anchor);
+                                if (it2->attachedRectTransform->_positionAnchor != RectFloat(0, 0, 0, 0))
+                                {
+                                    it2->attachedRectTransform->setLocalPosition
+                                    (
+                                        it2->attachedRectTransform->getLocalPosition() +
+                                        Vector2(windowDelta.right, windowDelta.top) * Vector2(it2->attachedRectTransform->_positionAnchor.right, it2->attachedRectTransform->_positionAnchor.top) +
+                                        Vector2(windowDelta.left, windowDelta.bottom) * Vector2(it2->attachedRectTransform->_positionAnchor.left, it2->attachedRectTransform->_positionAnchor.bottom)
+                                    );
+                                }
+                            }
+                        }
+                    }
+
                     EngineEvent::OnWindowResize(Vector2Int { prevw, prevh });
                 });
                 
@@ -601,11 +645,12 @@ void CoreEngine::internalWindowLoop()
                 case SDL_EVENT_MOUSE_MOTION:
                     Application::mainThreadQueue.enqueue([posX = ev.motion.x, posY = ev.motion.y, motX = ev.motion.xrel, motY = ev.motion.yrel]
                     {
+                        Vector2Int from = Input::internalMousePosition;
                         Input::internalMousePosition.x = posX - Window::width / 2;
                         Input::internalMousePosition.y = -posY + Window::height / 2;
                         Input::internalMouseMotion.x += motX;
-                        Input::internalMouseMotion.y += motY;
-                        EngineEvent::OnMouseMove(Vector2Int(motX, -motY));
+                        Input::internalMouseMotion.y -= motY;
+                        EngineEvent::OnMouseMove(from);
                     });
                     break;
                 case SDL_EVENT_MOUSE_WHEEL:
@@ -731,9 +776,9 @@ void CoreEngine::internalRenderLoop()
     RendererBackend backendPriorityOrder[]
     {
         #if _WIN32
+        RendererBackend::OpenGL,
         RendererBackend::Vulkan,
         RendererBackend::Direct3D12,
-        RendererBackend::OpenGL,
         RendererBackend::Direct3D11
         #else
         RendererBackend::Vulkan,
@@ -797,8 +842,8 @@ void CoreEngine::internalRenderLoop()
         goto EarlyReturn;
     }
 
-    InternalEngineEvent::ResetViewArea(Window::width, Window::height);
-    InternalEngineEvent::ClearViewArea();
+    RenderPipeline::resetViewArea(Window::width, Window::height);
+    RenderPipeline::clearViewArea();
     
     CoreEngine::state.store(EngineState::RenderThreadReady, std::memory_order_relaxed); // Signal main thread.
 

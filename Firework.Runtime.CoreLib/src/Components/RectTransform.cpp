@@ -46,9 +46,39 @@ namespace Firework::Internal
     }
 }
 
+void RectTransform::setRect(const RectFloat& value)
+{
+    this->_dirty = true;
+
+    RectFloat delta = value - this->_rect;
+    this->_rect = value;
+
+    auto recurse = [&](auto&& recurse, Entity2D* entity, RectFloat delta) -> void
+    {
+        for (auto it = entity->childrenFront; it != nullptr; it = it->next)
+        {
+            it->attachedRectTransform->_dirty = true;
+            RectFloat localDelta = delta * it->attachedRectTransform->_anchor;
+            it->attachedRectTransform->_rect += localDelta;
+            if (it->attachedRectTransform->_positionAnchor != RectFloat(0, 0, 0, 0))
+            {
+                it->attachedRectTransform->setLocalPosition
+                (
+                    it->attachedRectTransform->getLocalPosition() +
+                    Vector2(delta.right, delta.top) * Vector2(it->attachedRectTransform->_positionAnchor.right, it->attachedRectTransform->_positionAnchor.top) +
+                    Vector2(delta.left, delta.bottom) * Vector2(it->attachedRectTransform->_positionAnchor.left, it->attachedRectTransform->_positionAnchor.bottom)
+                );
+            }
+            recurse(recurse, it, localDelta);
+        }
+    };
+    recurse(recurse, this->attachedEntity, delta);
+}
+
 void RectTransform::setPosition(Vector2 value)
 {
     this->_dirty = true;
+    
     Vector2 delta = value - this->_position;
     this->_position = value;
 
@@ -56,6 +86,7 @@ void RectTransform::setPosition(Vector2 value)
     {
         for (auto it = entity->childrenFront; it != nullptr; it = it->next)
         {
+            it->attachedRectTransform->_dirty = true;
             it->attachedRectTransform->_position += delta;
             setChildrenPositionRecursive(setChildrenPositionRecursive, it);
         }
@@ -65,6 +96,7 @@ void RectTransform::setPosition(Vector2 value)
 void RectTransform::setRotation(float value)
 {
     this->_dirty = true;
+
     float delta = value - this->_rotation;
     this->_rotation = value;
 
@@ -72,6 +104,7 @@ void RectTransform::setRotation(float value)
     {
         for (auto it = entity->childrenFront; it != nullptr; it = it->next)
         {
+            it->attachedRectTransform->_dirty = true;
             it->attachedRectTransform->_rotation += delta;
             rotatePointAround(it->attachedRectTransform->_position, this->_position, delta);
             setChildrenRotationRecursive(setChildrenRotationRecursive, it);
@@ -82,6 +115,7 @@ void RectTransform::setRotation(float value)
 void RectTransform::setScale(Vector2 value)
 {
     this->_dirty = true;
+
     Vector2 delta = value / this->_scale;
     this->_scale = value;
 
@@ -89,6 +123,7 @@ void RectTransform::setScale(Vector2 value)
     {
         for (auto it = entity->childrenFront; it != nullptr; it = it->next)
         {
+            it->attachedRectTransform->_dirty = true;
             it->attachedRectTransform->_scale *= delta;
             it->attachedRectTransform->_position = delta * (it->attachedRectTransform->_position - this->_position) + this->_position;
             setChildrenScaleRecursive(setChildrenScaleRecursive, it);
@@ -111,6 +146,7 @@ Vector2 RectTransform::getLocalPosition() const
 void RectTransform::setLocalPosition(Vector2 value)
 {
     this->_dirty = true;
+
     Entity2D* parent = this->attachedEntity->_parent;
     Vector2 delta;
     if (parent)
@@ -125,6 +161,7 @@ void RectTransform::setLocalPosition(Vector2 value)
     {
         for (auto it = entity->childrenFront; it != nullptr; it = it->next)
         {
+            it->attachedRectTransform->_dirty = true;
             it->attachedRectTransform->_position += delta;
             setChildrenPositionRecursive(setChildrenPositionRecursive, it);
         }
@@ -139,6 +176,7 @@ float RectTransform::getLocalRotation() const
 void RectTransform::setLocalRotation(float value)
 {
     this->_dirty = true;
+
     Entity2D* parent = this->attachedEntity->_parent;
     float delta;
     if (parent)
@@ -150,6 +188,7 @@ void RectTransform::setLocalRotation(float value)
     {
         for (auto it = entity->childrenFront; it != nullptr; it = it->next)
         {
+            it->attachedRectTransform->_dirty = true;
             it->attachedRectTransform->_rotation += delta;
             setChildrenRotationRecursive(setChildrenRotationRecursive, it);
             rotatePointAround(it->attachedRectTransform->_position, this->_position, delta);
@@ -165,6 +204,7 @@ Vector2 RectTransform::getLocalScale() const
 void RectTransform::setLocalScale(Vector2 value)
 {
     this->_dirty = true;
+
     Entity2D* parent = this->attachedEntity->_parent;
     Vector2 delta;
     if (parent)
@@ -176,6 +216,7 @@ void RectTransform::setLocalScale(Vector2 value)
     {
         for (auto it = entity->childrenFront; it != nullptr; it = it->next)
         {
+            it->attachedRectTransform->_dirty = true;
             it->attachedRectTransform->_scale *= delta;
             it->attachedRectTransform->_position = delta * (it->attachedRectTransform->_position - this->_position) + this->_position;
             setChildrenScaleRecursive(setChildrenScaleRecursive, it);
