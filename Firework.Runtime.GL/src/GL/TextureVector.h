@@ -84,7 +84,7 @@ namespace Firework::GL
         }
         inline TextureVector& operator=(TextureVector&& other)
         {
-            this->cpuData = std::move(other.data);
+            this->cpuData = std::move(other.cpuData);
             this->gpuData = other.gpuData;
             other.gpuData = nullptr;
         }

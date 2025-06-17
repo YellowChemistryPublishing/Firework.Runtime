@@ -1,4 +1,5 @@
 #include "CoreEngine.h"
+#include "SDL3/SDL_events.h"
 
 #include <algorithm>
 #include <chrono>
@@ -543,9 +544,9 @@ void CoreEngine::internalWindowLoop()
             func::function<void()>& job;
         } resizeData { .job = job };
 
-        int (*eventWatcher)(void*, SDL_Event*) = [](void* _data, SDL_Event* event) -> int
+        bool (*eventWatcher)(void*, SDL_Event*) = [](void* _data, SDL_Event* event) -> bool
         // These few lines of code were literal years in the making. It formed part of my journey in learning C++.
-        // I hope you fucking like your pretty rendering while resizing you straw assholes.
+        // I hope you like the rendering-while-resizing...
         {
             decltype(resizeData)& windowSizeData = *(decltype(resizeData)*)_data;
             
@@ -612,7 +613,7 @@ void CoreEngine::internalWindowLoop()
         SDL_AddEventWatch(eventWatcher, &resizeData);
 
         if (Application::_initializationOptions.windowResizeable)
-            SDL_SetWindowResizable(CoreEngine::wind, SDL_TRUE);
+            SDL_SetWindowResizable(CoreEngine::wind, true);
         
         CoreEngine::state.store(EngineState::RenderInit, std::memory_order_relaxed); // Spin off rendering thread.
 
@@ -756,7 +757,7 @@ void CoreEngine::internalWindowLoop()
         SDL_DestroyWindow(CoreEngine::wind);
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
-        SDL_DelEventWatch(eventWatcher, &resizeData);
+        SDL_RemoveEventWatch(eventWatcher, &resizeData);
     }
 
     EarlyReturn:

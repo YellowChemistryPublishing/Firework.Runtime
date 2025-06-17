@@ -62,16 +62,16 @@ void Cursor::setLockState(CursorLockState value)
         switch (value)
         {
         case CursorLockState::None:
-            SDL_SetWindowRelativeMouseMode(CoreEngine::wind, SDL_FALSE);
-            SDL_SetWindowMouseGrab(CoreEngine::wind, SDL_FALSE);
+            SDL_SetWindowRelativeMouseMode(CoreEngine::wind, false);
+            SDL_SetWindowMouseGrab(CoreEngine::wind, false);
             break;
         case CursorLockState::Hidden:
-            SDL_SetWindowRelativeMouseMode(CoreEngine::wind, SDL_TRUE);
-            SDL_SetWindowMouseGrab(CoreEngine::wind, SDL_FALSE);
+            SDL_SetWindowRelativeMouseMode(CoreEngine::wind, true);
+            SDL_SetWindowMouseGrab(CoreEngine::wind, false);
             break;
         case CursorLockState::Confined:
-            SDL_SetWindowRelativeMouseMode(CoreEngine::wind, SDL_FALSE);
-            SDL_SetWindowMouseGrab(CoreEngine::wind, SDL_TRUE);
+            SDL_SetWindowRelativeMouseMode(CoreEngine::wind, false);
+            SDL_SetWindowMouseGrab(CoreEngine::wind, true);
             break;
         }
     });
