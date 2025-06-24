@@ -7,7 +7,8 @@
 /// @see https://sourceforge.net/p/predef/wiki/Architectures/
 #if defined(__amd64__) || defined(__amd64) || defined(__x86_64__) || defined(__x86_64) || defined(_M_X64)
 #define FIREWORK_BUILD_ARCH FIREWORK_BUILD_ARCH_X86_64
-#elif defined(i386) || defined(__i386) || defined(__i386__) || defined(__IA32__) || defined(_M_IX86) || defined(__X86__) || defined(_X86_) || defined(__THW_INTEL__) || defined(__I86__) || defined(__INTEL__) || defined(__386)
+#elif defined(i386) || defined(__i386) || defined(__i386__) || defined(__IA32__) || defined(_M_IX86) || defined(__X86__) || defined(_X86_) || defined(__THW_INTEL__) || \
+    defined(__I86__) || defined(__INTEL__) || defined(__386)
 #define FIREWORK_BUILD_ARCH FIREWORK_BUILD_ARCH_X86
 #else
 #define FIREWORK_BUILD_ARCH FIREWORK_BUILD_ARCH_UNKNOWN
@@ -59,7 +60,7 @@
 #endif
 
 #ifndef FIREWORK_DEBUG_LOG_ASYNC
-#define FIREWORK_DEBUG_LOG_ASYNC 1
+#define FIREWORK_DEBUG_LOG_ASYNC 0
 #endif
 
 #ifndef FIREWORK_EXCEPTION_TRACE_DEPTH

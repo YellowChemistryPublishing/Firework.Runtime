@@ -114,6 +114,7 @@ elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" OR FIREWORK_COMPILER
     string(REPLACE " /EHs" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     string(REPLACE " /EHs" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} /Zc:__cplusplus /utf-8 /EHa)
+    list(APPEND CMAKE_CXX_FLAGS /utf-8) # Otherwise assimp adds conflicting /source-charset:utf-8.
 
     if (FIREWORK_SANITIZE)
         set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} /fsanitize=address)

@@ -26,14 +26,9 @@ inline int __fw_rt_handleInitializeAndExit(int argc, char* argv[])
     return EXIT_SUCCESS;
 }
 
-static_assert
-(
-    (static_cast<unsigned char>("💩"[0]) == 0xF0) &&
-    (static_cast<unsigned char>("💩"[1]) == 0x9F) &&
-    (static_cast<unsigned char>("💩"[2]) == 0x92) &&
-    (static_cast<unsigned char>("💩"[3]) == 0xA9),
-    "Source or compiler not UTF-8 compliant! Well this is bad... File bug report."
-);
+static_assert((static_cast<unsigned char>("💩"[0]) == 0xF0) && (static_cast<unsigned char>("💩"[1]) == 0x9F) && (static_cast<unsigned char>("💩"[2]) == 0x92) &&
+                  (static_cast<unsigned char>("💩"[3]) == 0xA9),
+              "Source or compiler not UTF-8 compliant! Well this is bad... File bug report.");
 
 namespace Firework::Internal
 {
@@ -44,13 +39,13 @@ inline int SDL_RunApp(int argc, char* argv[], SDL_main_func mainFunction, void* 
     return Firework::Internal::__fw_rt_fwd_main_invoc(argc, argv, mainFunction, reserved);
 }
 
-#define main(...) \
-__main(__VA_ARGS__); \
- \
-int __entryPoint(int argc, char* argv[]) \
-{ \
-    [[maybe_unused]] int ret = ::__main(__VA_OPT__(argc) __VA_OPT__(,) __VA_OPT__(argv)); \
-    return !ret ? ::__fw_rt_handleInitializeAndExit(argc, argv) : ret; \
-} \
- \
-int __main(__VA_ARGS__)
+#define main(...)                                                                              \
+    __main(__VA_ARGS__);                                                                       \
+                                                                                               \
+    int __entryPoint(int argc, char* argv[])                                                   \
+    {                                                                                          \
+        [[maybe_unused]] int ret = ::__main(__VA_OPT__(argc) __VA_OPT__(, ) __VA_OPT__(argv)); \
+        return !ret ? ::__fw_rt_handleInitializeAndExit(argc, argv) : ret;                     \
+    }                                                                                          \
+                                                                                               \
+    int __main(__VA_ARGS__)

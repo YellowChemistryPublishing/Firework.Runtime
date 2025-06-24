@@ -82,11 +82,11 @@ int CoreEngine::execute(int argc, char* argv[])
     }
 #endif
 
-    if (!(SDL_Init(SDL_INIT_EVENTS | SDL_INIT_HAPTIC
+    if (!SDL_Init(SDL_INIT_EVENTS | SDL_INIT_HAPTIC
 #if !__EMSCRIPTEN__
-                   | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK
+                  | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK
 #endif
-                   ) == 0))
+                  ))
     {
         Debug::logError("Runtime failed to initialize! Error: ", SDL_GetError(), '.');
         return EXIT_FAILURE;
@@ -502,7 +502,7 @@ void CoreEngine::internalWindowLoop()
 #endif
     }
 
-    if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) [[unlikely]]
+    if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) [[unlikely]]
     {
         Debug::logError("Display initialisation failed! Error: ", SDL_GetError(), ".\n");
         goto EarlyReturn;

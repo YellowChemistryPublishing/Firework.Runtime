@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <module/sys.Mathematics>
+#include <numbers>
 
 #include <GL/Renderer.h>
 #include <Objects/Entity2D.h>
@@ -10,7 +11,7 @@ using namespace Firework;
 using namespace Firework::Internal;
 using namespace Firework::GL;
 
-constexpr static void rotatePointAround(sysm::vector2& point, const sysm::vector2& rotateAround, float angle)
+inline static void rotatePointAround(sysm::vector2& point, const sysm::vector2& rotateAround, float angle)
 {
     float s = std::sinf(-angle * std::numbers::pi_v<float> / 180.0f);
     float c = std::cosf(-angle * std::numbers::pi_v<float> / 180.0f);
@@ -21,7 +22,7 @@ constexpr static void rotatePointAround(sysm::vector2& point, const sysm::vector
     point.x = x * c - y * s + rotateAround.x;
     point.y = x * s + y * c + rotateAround.y;
 };
-constexpr static void rotatePointAroundOrigin(sysm::vector2& point, float angle)
+inline static void rotatePointAroundOrigin(sysm::vector2& point, float angle)
 {
     return rotatePointAround(point, sysm::vector2::zero, angle);
 };
