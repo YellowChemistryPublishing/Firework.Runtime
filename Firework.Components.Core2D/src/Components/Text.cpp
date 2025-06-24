@@ -868,8 +868,8 @@ void Text::renderOffload()
     if (this->data && !this->_text.empty()) [[likely]]
     {
         const RectTransform* const thisRect = this->rectTransform();
-        const Vector2 pos = thisRect->position;
-        const Vector2 scale = thisRect->scale;
+        const sysm::vector2 pos = thisRect->position;
+        const sysm::vector2 scale = thisRect->scale;
         const RectFloat rect = thisRect->rect;
 
         const float rot = thisRect->rotation;
@@ -960,25 +960,25 @@ void Text::renderOffload()
 
             for (auto it = renderData->second.begin(); it != renderData->second.end(); ++it)
             {
-                Vector2 tl(0.0f, 1.0f), tr(1.0f, 1.0f), bl(0.0f, 0.0f), br(1.0f, 0.0f);
+                sysm::vector2 tl(0.0f, 1.0f), tr(1.0f, 1.0f), bl(0.0f, 0.0f), br(1.0f, 0.0f);
                 sysm::vector4 tl4 = it->second.tf * sysm::vector4(tl.x, tl.y, 0.0f, 1.0f);
                 sysm::vector4 tr4 = it->second.tf * sysm::vector4(tr.x, tr.y, 0.0f, 1.0f);
                 sysm::vector4 bl4 = it->second.tf * sysm::vector4(bl.x, bl.y, 0.0f, 1.0f);
                 sysm::vector4 br4 = it->second.tf * sysm::vector4(br.x, br.y, 0.0f, 1.0f);
-                tl = Vector2(tl4.x, tl4.y);
-                tr = Vector2(tr4.x, tr4.y);
-                bl = Vector2(bl4.x, bl4.y);
-                br = Vector2(br4.x, br4.y);
+                tl = sysm::vector2(tl4.x, tl4.y);
+                tr = sysm::vector2(tr4.x, tr4.y);
+                bl = sysm::vector2(bl4.x, bl4.y);
+                br = sysm::vector2(br4.x, br4.y);
                 // top, right bottom left
                 RectFloat boundingBox = RectFloat(std::max({ tl.y, tr.y, bl.y, br.y }), std::max({ tl.x, tr.x, bl.x, br.x }), std::min({ tl.y, tr.y, bl.y, br.y }), std::min({ tl.x, tr.x, bl.x, br.x }));
-                if (!(boundingBox.right < -width / 2 || boundingBox.left > width / 2 || boundingBox.top < -height / 2 || boundingBox.bottom > height / 2))
+                if (!(boundingBox.right < -width / 2_u32 || boundingBox.left > width / 2_u32 || boundingBox.top < -height / 2_u32 || boundingBox.bottom > height / 2_u32))
                 {
-                    FixedWidthInt<sizeof(float)> beg = it->first->beg, size = it->first->size;
+                    sys::unsigned_integer_underlying<sizeof(float)> beg = it->first->beg, size = it->first->size;
                     float offsetAndConstantData[4] = { float(beg), float(size), TYPEFACE_GLYPH_INIT_POINT, TYPEFACE_GLYPH_LINE_SEGMENT_LINEAR };
                     Text::program.setUniform("u_characterOffsetAndConstantData", offsetAndConstantData);
                     float glyphMetricsData[4] = { it->first->asc, it->first->desc, it->first->xInit, it->first->adv };
                     Text::program.setUniform("u_characterGlyphMetricsData", glyphMetricsData);
-                    FixedWidthInt<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
+                    sys::unsigned_integer_underlying<sizeof(float)> aa = COMPONENT_TEXT_ANTI_ALIAS;
                     float postProcessingData[4] = { it->second.tf.data[0][0], it->second.tf.data[1][1], float(aa), 0.0f };
                     Text::program.setUniform("u_postProcessingData", postProcessingData);
                     Renderer::setDrawTexture(0, data->characterDataTexture, Text::sampler);

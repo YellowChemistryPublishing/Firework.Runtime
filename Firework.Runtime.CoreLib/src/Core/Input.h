@@ -311,8 +311,8 @@ namespace Firework
     /// @brief Static class containing functionality relevant to input processing.
     class __firework_corelib_api Input final
     {
-        static sysm::vector2i32 internalMousePosition;
-        static sysm::vector2i32 internalMouseMotion;
+        static sysm::vector2 internalMousePosition;
+        static sysm::vector2 internalMouseMotion;
 
         static bool heldMouseInputs[(size_t)MouseButton::Count];
         static bool heldKeyInputs[(size_t)Key::Count];
@@ -334,14 +334,14 @@ namespace Firework
         /// @brief Retrieve the mouse position in pixel units, with the centre of the Window as (0, 0).
         /// @return Mouse position.
         /// @note Main thread only.
-        inline static sysm::vector2i32 mousePosition()
+        inline static sysm::vector2 mousePosition()
         {
             return Input::internalMousePosition;
         }
         /// @brief Retrieve the mouse motion this frame in pixel units.
         /// @return Amount mouse has moved this frame.
         /// @note Main thread only.
-        inline static sysm::vector2i32 mouseMotion()
+        inline static sysm::vector2 mouseMotion()
         {
             return Input::internalMouseMotion;
         }

@@ -8,7 +8,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
 std::list<Camera*> Camera::all;
@@ -39,6 +38,6 @@ void Camera::project()
 {
     CoreEngine::queueRenderJobForFrame([pos = this->transform()->position(), rot = this->transform()->rotation(), near = this->near, far = this->far]
     {
-        Renderer::setViewPerspective(0, Window::pixelWidth(), Window::pixelHeight(), 60.0f, pos, rot, near, far);
+        Renderer::setViewPerspective(0, float(+Window::pixelWidth()), float(+Window::pixelHeight()), 60.0f, pos, rot, near, far);
     }, false);
 }

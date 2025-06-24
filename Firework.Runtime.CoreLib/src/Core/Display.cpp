@@ -6,19 +6,19 @@
 using namespace Firework;
 using namespace Firework::Internal;
 
-int Window::width;
-int Window::height;
+i32 Window::width;
+i32 Window::height;
 bool Window::resizing = false;
 
-int Screen::width;
-int Screen::height;
-int Screen::screenRefreshRate;
+i32 Screen::width;
+i32 Screen::height;
+i32 Screen::screenRefreshRate;
 
-void Window::setResolution(Vector2Int resolution)
+void Window::setResolution(sysm::vector2i32 resolution)
 {
     Application::queueJobForWindowThread([resolution]() -> void
     {
         // ```Window::width``` and ```Window::height``` are updated when the window resize event is handled.
-        SDL_SetWindowSize(CoreEngine::wind, resolution.x, resolution.y);
+        SDL_SetWindowSize(CoreEngine::wind, +resolution.x, +resolution.y);
     });
 }

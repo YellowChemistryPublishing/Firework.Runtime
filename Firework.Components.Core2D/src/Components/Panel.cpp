@@ -8,7 +8,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
 StaticMeshHandle Panel::unitSquare;

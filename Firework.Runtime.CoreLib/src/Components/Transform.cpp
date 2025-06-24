@@ -6,7 +6,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
 constexpr static auto rotatePointAround = [](sysm::vector3& point, const sysm::vector3& rotateAround, const sysm::quaternion& rot) -> void

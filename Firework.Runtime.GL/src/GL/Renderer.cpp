@@ -203,6 +203,6 @@ void Renderer::drawFrame()
 
 sysm::quaternion Renderer::fromEuler(sysm::vector3 vec)
 {
-    bx::sysm::quaternion ret = bx::fromEuler({ vec.x, vec.y, vec.z });
+    bx::Quaternion ret = bx::fromEuler({ vec.x, vec.y, vec.z });
     return { ret.x, ret.y, ret.z, ret.w };
 }

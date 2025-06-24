@@ -21,7 +21,7 @@ namespace Firework
         /// @param transform RectTransform to convert.
         /// @return RenderTransform representing the same transform to supply to renderer.
         /// @note Thread-safe.
-        __firework_corelib_api extern GL::RenderTransform renderTransformFromRectTransform(RectTransform* const transform);
+        __firework_corelib_api extern GL::RenderTransform renderTransformFromRectTransform(const RectTransform* const transform);
     } // namespace Internal
 
     /// @brief Describes the bounds of a rectangle, with int32_t.

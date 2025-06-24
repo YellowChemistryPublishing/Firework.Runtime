@@ -46,7 +46,6 @@ namespace Firework::Internal
                 case __typeid(Panel).qualifiedNameHash(): static_cast<Panel*>(component)->renderOffload(); break;
                 case __typeid(Image).qualifiedNameHash(): static_cast<Image*>(component)->renderOffload(); break;
                 case __typeid(Text).qualifiedNameHash(): static_cast<Text*>(component)->renderOffload(); break;
-                case __typeid(ColorHighlightButton).qualifiedNameHash(): static_cast<ColorHighlightButton*>(component)->renderOffload(); break;
                 }
             };
             InternalEngineEvent::OnLateRenderOffloadForComponent2D += [](Component2D* component)

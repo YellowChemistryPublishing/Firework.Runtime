@@ -6,7 +6,6 @@
 #include <Firework.Core.hpp>
 
 using namespace Firework;
-using namespace Firework::Mathematics;
 using namespace Firework::PackageSystem;
 
 Entity2D* title;
@@ -53,7 +52,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
         Debug::printHierarchy();
     };
-    EngineEvent::OnWindowResize += []([[maybe_unused]] Vector2Int from)
+    EngineEvent::OnWindowResize += []([[maybe_unused]] sysm::vector2i32 from)
     {
         background->rectTransform()->rect = RectFloat { (float)Window::pixelHeight() / 2.0f, (float)Window::pixelWidth() / 2.0f, -(float)Window::pixelHeight() / 2.0f, -(float)Window::pixelWidth() / 2.0f };
 

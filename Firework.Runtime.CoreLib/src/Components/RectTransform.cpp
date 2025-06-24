@@ -8,7 +8,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
 constexpr static void rotatePointAround(sysm::vector2& point, const sysm::vector2& rotateAround, float angle)
@@ -27,18 +26,15 @@ constexpr static void rotatePointAroundOrigin(sysm::vector2& point, float angle)
     return rotatePointAround(point, sysm::vector2::zero, angle);
 };
 
-namespace Firework::Internal
+RenderTransform Firework::Internal::renderTransformFromRectTransform(const RectTransform* const transform)
 {
-    RenderTransform renderTransformFromRectTransform(const RectTransform* const transform)
-    {
-        RenderTransform ret;
-        ret.scale({ transform->rect().width() / 2.0f * transform->scale().x, transform->rect().height() / 2.0f * transform->scale().y, 0 });
-        ret.translate({ (transform->rect().right + transform->rect().left) / 2.0f, (transform->rect().top + transform->rect().bottom) / 2.0f, 0.0f });
-        ret.rotate(Renderer::fromEuler({ 0, 0, -transform->rotation() }));
-        ret.translate({ transform->position().x, transform->position().y, 0.0f });
-        return ret;
-    }
-} // namespace Firework::Internal
+    RenderTransform ret;
+    ret.scale({ transform->rect().width() / 2.0f * transform->scale().x, transform->rect().height() / 2.0f * transform->scale().y, 0 });
+    ret.translate({ (transform->rect().right + transform->rect().left) / 2.0f, (transform->rect().top + transform->rect().bottom) / 2.0f, 0.0f });
+    ret.rotate(Renderer::fromEuler({ 0, 0, -transform->rotation() }));
+    ret.translate({ transform->position().x, transform->position().y, 0.0f });
+    return ret;
+}
 
 void RectTransform::setRect(const RectFloat& value)
 {
@@ -246,5 +242,5 @@ bool RectTransform::queryPointIn(const sysm::vector2& point)
     float dABAM = sysm::dot(vAB, vAM);
     float dBCBM = sysm::dot(vBC, vBM);
 
-    return 0.0f <= dABAM && dABAM <= Math::dot(vAB, vAB) && 0.0f <= dBCBM && dBCBM <= Math::dot(vBC, vBC);
+    return 0.0f <= dABAM && dABAM <= sysm::dot(vAB, vAB) && 0.0f <= dBCBM && dBCBM <= sysm::dot(vBC, vBC);
 }

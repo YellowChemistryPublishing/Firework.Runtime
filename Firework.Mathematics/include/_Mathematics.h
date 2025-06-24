@@ -10,7 +10,7 @@ namespace Firework
 {
 	namespace Mathematics
 	{
-		struct Vector2Int;
+		struct sysm::vector2i32;
 		
 		struct Vector2
 		{
@@ -89,7 +89,7 @@ namespace Firework
 				return (*this = *this / other);
 			}
 
-			constexpr explicit operator Vector2Int () const noexcept;
+			constexpr explicit operator sysm::vector2i32 () const noexcept;
 			inline operator std::string () const
 			{
 				return std::string("(").append(std::to_string(this->x)).append(", ").append(std::to_string(this->y)).append(")");
@@ -103,80 +103,80 @@ namespace Firework
 		inline constexpr Vector2 Vector2::zero(0.0f, 0.0f);
 		inline constexpr Vector2 Vector2::one(1.0f, 1.0f);
 		
-		struct Vector2Int
+		struct sysm::vector2i32
 		{
-			static const Vector2Int zero;
-			static const Vector2Int one;
+			static const sysm::vector2i32 zero;
+			static const sysm::vector2i32 one;
 
 			int32_t x = 0, y = 0;
 
-			constexpr Vector2Int() noexcept = default;
-			constexpr Vector2Int(int32_t init) noexcept : x(init), y(init)
+			constexpr sysm::vector2i32() noexcept = default;
+			constexpr sysm::vector2i32(int32_t init) noexcept : x(init), y(init)
 			{ }
-			constexpr Vector2Int(int32_t x, int32_t y) noexcept : x(x), y(y)
+			constexpr sysm::vector2i32(int32_t x, int32_t y) noexcept : x(x), y(y)
 			{ }
 
-			constexpr bool operator==(const Vector2Int& other) const noexcept = default;
+			constexpr bool operator==(const sysm::vector2i32& other) const noexcept = default;
 
-			constexpr Vector2Int operator+() const noexcept
+			constexpr sysm::vector2i32 operator+() const noexcept
 			{
 				return *this;
 			}
-			constexpr Vector2Int operator-() const noexcept
+			constexpr sysm::vector2i32 operator-() const noexcept
 			{
-				return Vector2Int(-this->x, -this->y);
+				return sysm::vector2i32(-this->x, -this->y);
 			}
 
-			constexpr Vector2Int operator+(const Vector2Int& other) const noexcept
+			constexpr sysm::vector2i32 operator+(const sysm::vector2i32& other) const noexcept
 			{
-				return Vector2Int(this->x + other.x, this->y + other.y);
+				return sysm::vector2i32(this->x + other.x, this->y + other.y);
 			}
-			constexpr Vector2Int operator-(const Vector2Int& other) const noexcept
+			constexpr sysm::vector2i32 operator-(const sysm::vector2i32& other) const noexcept
 			{
-				return Vector2Int(this->x - other.x, this->y - other.y);
+				return sysm::vector2i32(this->x - other.x, this->y - other.y);
 			}
-			constexpr Vector2Int operator*(const Vector2Int& other) const noexcept
+			constexpr sysm::vector2i32 operator*(const sysm::vector2i32& other) const noexcept
 			{
-				return Vector2Int(this->x * other.x, this->y * other.y);
+				return sysm::vector2i32(this->x * other.x, this->y * other.y);
 			}
-			constexpr Vector2Int operator*(int32_t other) const noexcept
+			constexpr sysm::vector2i32 operator*(int32_t other) const noexcept
 			{
-				return Vector2Int(this->x * other, this->y * other);
+				return sysm::vector2i32(this->x * other, this->y * other);
 			}
-			friend constexpr Vector2Int operator*(int32_t lhs, const Vector2Int& rhs) noexcept
+			friend constexpr sysm::vector2i32 operator*(int32_t lhs, const sysm::vector2i32& rhs) noexcept
 			{
-				return Vector2Int(lhs * rhs.x, lhs * rhs.y);
+				return sysm::vector2i32(lhs * rhs.x, lhs * rhs.y);
 			}
-			constexpr Vector2Int operator/(const Vector2Int& other) const noexcept
+			constexpr sysm::vector2i32 operator/(const sysm::vector2i32& other) const noexcept
 			{
-				return Vector2Int(this->x / other.x, this->y / other.y);
+				return sysm::vector2i32(this->x / other.x, this->y / other.y);
 			}
-			constexpr Vector2Int operator/(int32_t other) const noexcept
+			constexpr sysm::vector2i32 operator/(int32_t other) const noexcept
 			{
-				return Vector2Int(this->x / other, this->y / other);
+				return sysm::vector2i32(this->x / other, this->y / other);
 			}
 			
-			constexpr Vector2Int& operator+=(const Vector2Int& other) noexcept
+			constexpr sysm::vector2i32& operator+=(const sysm::vector2i32& other) noexcept
 			{
 				return (*this = *this + other);
 			}
-			constexpr Vector2Int& operator-=(const Vector2Int& other) noexcept
+			constexpr sysm::vector2i32& operator-=(const sysm::vector2i32& other) noexcept
 			{
 				return (*this = *this - other);
 			}
-			constexpr Vector2Int& operator*=(const Vector2Int& other) noexcept
+			constexpr sysm::vector2i32& operator*=(const sysm::vector2i32& other) noexcept
 			{
 				return (*this = *this * other);
 			}
-			constexpr Vector2Int& operator*=(int32_t other) noexcept
+			constexpr sysm::vector2i32& operator*=(int32_t other) noexcept
 			{
 				return (*this = *this * other);
 			}
-			constexpr Vector2Int& operator/=(const Vector2Int& other) noexcept
+			constexpr sysm::vector2i32& operator/=(const sysm::vector2i32& other) noexcept
 			{
 				return (*this = *this / other);
 			}
-			constexpr Vector2Int& operator/=(int32_t other) noexcept
+			constexpr sysm::vector2i32& operator/=(int32_t other) noexcept
 			{
 				return (*this = *this / other);
 			}
@@ -186,20 +186,20 @@ namespace Firework
 			{
 				return std::string("(").append(std::to_string(this->x)).append(", ").append(std::to_string(this->y)).append(")");
 			}
-			inline friend std::ostream& operator<<(std::ostream& lhs, const Vector2Int& rhs)
+			inline friend std::ostream& operator<<(std::ostream& lhs, const sysm::vector2i32& rhs)
 			{
 				return lhs << static_cast<std::string>(rhs);
 			}
 		};
 
-		inline constexpr Vector2Int Vector2Int::zero(0, 0);
-		inline constexpr Vector2Int Vector2Int::one(1, 1);
+		inline constexpr sysm::vector2i32 sysm::vector2i32::zero(0, 0);
+		inline constexpr sysm::vector2i32 sysm::vector2i32::one(1, 1);
 
-		constexpr Vector2::operator Vector2Int() const noexcept
+		constexpr Vector2::operator sysm::vector2i32() const noexcept
 		{
-			return Vector2Int(int32_t(this->x + 0.5f), int32_t(this->y + 0.5f));
+			return sysm::vector2i32(int32_t(this->x + 0.5f), int32_t(this->y + 0.5f));
 		}
-		constexpr Vector2Int::operator Vector2() const noexcept
+		constexpr sysm::vector2i32::operator Vector2() const noexcept
 		{
 			return Vector2((float)this->x, (float)this->y);
 		}
@@ -642,7 +642,7 @@ namespace Firework
 
 		#pragma region Typedefs
 		typedef Vector2 vec2;
-		typedef Vector2Int vec2i;
+		typedef sysm::vector2i32 vec2i;
 
 		typedef Vector3 vec3;
 
@@ -656,7 +656,7 @@ namespace Firework
 		class Math
 		{
 			using Vector2 = sysm::vector2;
-			using Vector2Int = sysm::vector2i32;
+			using sysm::vector2i32 = sysm::vector2i32;
 			using Vector3 = Firework::Mathematics::Vector3;
 			using Quaternion = sysm::quaternion;
 		public:
@@ -666,7 +666,7 @@ namespace Firework
 			{
 				return sqrtf(v.x * v.x + v.y + v.y);
 			}
-			inline static float abs(const Vector2Int& v) noexcept
+			inline static float abs(const sysm::vector2i32& v) noexcept
 			{
 				return sqrtf((float)v.x * (float)v.x + (float)v.y + (float)v.y);
 			}
@@ -702,7 +702,7 @@ namespace Firework
 			{
 				return lhs.x * rhs.x + lhs.y * rhs.y;
 			}
-			constexpr static int32_t dot(const Vector2Int& lhs, const Vector2Int& rhs) noexcept
+			constexpr static int32_t dot(const sysm::vector2i32& lhs, const sysm::vector2i32& rhs) noexcept
 			{
 				return lhs.x * rhs.x + lhs.y * rhs.y;
 			}

@@ -39,9 +39,9 @@ namespace Firework
         /// @note Main thread only.
         static FuncPtrEvent<MouseButton> OnMouseUp;
         /// @brief Event raised when the cursor is moved.
-        /// @param from ```sysm::vector2i32```. The previous position of the cursor. Retrieve the current position of the cursor with ```Firework::Input::mousePosition()```.
+        /// @param from ```sysm::vector2```. The previous position of the cursor. Retrieve the current position of the cursor with ```Firework::Input::mousePosition()```.
         /// @note Main thread only.
-        static FuncPtrEvent<sysm::vector2i32> OnMouseMove;
+        static FuncPtrEvent<sysm::vector2> OnMouseMove;
         /// @brief Event raised when the mouse scrolls.
         /// @param scroll ```sysm::vector2```. The scroll amount in the x and y directions.
         /// @note Main thread only.

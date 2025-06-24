@@ -6,7 +6,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 
 #define thisTransform this->attachedTransform
 

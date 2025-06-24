@@ -25,8 +25,10 @@
 #include <span>
 #if _WIN32
 #define NOMINMAX 1
-#include <VersionHelpers.h>
+// clang-format off: Order is important.
 #include <windows.h>
+#include <VersionHelpers.h>
+// clang-format on
 #endif
 
 #include <Core/Application.h>
@@ -62,7 +64,7 @@ moodycamel::ConcurrentQueue<func::function<void()>> CoreEngine::pendingPostTickQ
 moodycamel::ConcurrentQueue<RenderJob> CoreEngine::renderQueue;
 std::vector<RenderJob> CoreEngine::frameRenderJobs;
 std::atomic_flag frameInProgress = ATOMIC_FLAG_INIT;
-Firework::SpinLock renderResizeLock;
+std::mutex renderResizeLock;
 
 int CoreEngine::execute(int argc, char* argv[])
 {
@@ -278,9 +280,9 @@ void CoreEngine::internalLoop()
     Uint64 perfFreq = SDL_GetPerformanceFrequency();
     float targetDeltaTime = Application::secondsPerFrame;
     float deltaTime = -1.0f;
-    float prevw = Window::width, prevh = Window::height;
+    float prevw = +Window::width, prevh = +Window::height;
 
-    EngineEvent::OnWindowResize(Vector2Int { Window::width, Window::height });
+    EngineEvent::OnWindowResize(sysm::vector2i32 { Window::width, Window::height });
 
     while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::ExitRequested)
     {
@@ -313,11 +315,11 @@ void CoreEngine::internalLoop()
             {
                 CoreEngine::frameRenderJobs.push_back(RenderJob::create([w = Window::width, h = Window::height]
                 {
-                    RenderPipeline::resetBackbuffer(w, h);
-                    RenderPipeline::resetViewArea(w, h);
+                    RenderPipeline::resetBackbuffer(+u32(w), +u32(h));
+                    RenderPipeline::resetViewArea(+u32(w), +u32(h));
                 }));
-                prevw = Window::width;
-                prevh = Window::height;
+                prevw = +Window::width;
+                prevh = +Window::height;
             }
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([] { RenderPipeline::clearViewArea(); }, false));
 
@@ -346,16 +348,16 @@ void CoreEngine::internalLoop()
                                     // FIXME: Doesn't account for rotation!
                                     component->second->attachedRectTransform->_position.y +
                                             component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y <
-                                        -Window::height / 2 ||
+                                        -Window::height / 2_u32 ||
                                     component->second->attachedRectTransform->_position.x +
                                             component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x <
-                                        -Window::width / 2 ||
+                                        -Window::width / 2_u32 ||
                                     component->second->attachedRectTransform->_position.y +
                                             component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y >
-                                        Window::height / 2 ||
+                                        Window::height / 2_u32 ||
                                     component->second->attachedRectTransform->_position.x +
                                             component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x >
-                                        Window::width / 2))
+                                        Window::width / 2_u32))
                                 InternalEngineEvent::OnRenderOffloadForComponent2D(component->second);
                         }
                         for (auto it2 = entity->childrenBack; it2 != nullptr; it2 = it2->prev) recurse(recurse, it2);
@@ -367,16 +369,16 @@ void CoreEngine::internalLoop()
                                     // FIXME: Doesn't account for rotation!
                                     component->second->attachedRectTransform->_position.y +
                                             component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y <
-                                        -Window::height / 2 ||
+                                        -Window::height / 2_u32 ||
                                     component->second->attachedRectTransform->_position.x +
                                             component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x <
-                                        -Window::width / 2 ||
+                                        -Window::width / 2_u32 ||
                                     component->second->attachedRectTransform->_position.y +
                                             component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y >
-                                        Window::height / 2 ||
+                                        Window::height / 2_u32 ||
                                     component->second->attachedRectTransform->_position.x +
                                             component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x >
-                                        Window::width / 2))
+                                        Window::width / 2_u32))
                                 InternalEngineEvent::OnLateRenderOffloadForComponent2D(component->second);
                         }
                     };
@@ -421,7 +423,7 @@ void CoreEngine::internalLoop()
 #pragma endregion
 
 #pragma region Post-Tick
-            Input::internalMouseMotion = Vector2Int(0, 0);
+            Input::internalMouseMotion = sysm::vector2::zero;
 
             while (CoreEngine::pendingPostTickQueue.try_dequeue(job)) job();
 
@@ -520,8 +522,8 @@ void CoreEngine::internalWindowLoop()
     Window::width = Application::_initializationOptions.resolution.x;
     Window::height = Application::_initializationOptions.resolution.y;
 
-    CoreEngine::wind = SDL_CreateWindow(Application::_initializationOptions.windowName.c_str(), Application::_initializationOptions.resolution.x,
-                                        Application::_initializationOptions.resolution.y, SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    CoreEngine::wind = SDL_CreateWindow(Application::_initializationOptions.windowName.c_str(), +Application::_initializationOptions.resolution.x,
+                                        +Application::_initializationOptions.resolution.y, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!wind)
     {
         Debug::logError("Could not create window: ", SDL_GetError(), ".");
@@ -537,7 +539,7 @@ void CoreEngine::internalWindowLoop()
         {
             int32_t w, h;
             bool shouldUnlock = false;
-            SpinLock shouldUnlockLock;
+            std::mutex shouldUnlockLock;
             func::function<void()>& job;
         } resizeData { .job = job };
 
@@ -564,7 +566,7 @@ void CoreEngine::internalWindowLoop()
                 Application::mainThreadQueue.enqueue([w, h]
                 {
                     Window::resizing = true;
-                    int prevw = Window::width, prevh = Window::height;
+                    i32 prevw = Window::width, prevh = Window::height;
                     Window::width = w;
                     Window::height = h;
 
@@ -587,16 +589,16 @@ void CoreEngine::internalWindowLoop()
                                 {
                                     it2->attachedRectTransform->setLocalPosition(
                                         it2->attachedRectTransform->getLocalPosition() +
-                                        Vector2(windowDelta.right, windowDelta.top) *
-                                            Vector2(it2->attachedRectTransform->_positionAnchor.right, it2->attachedRectTransform->_positionAnchor.top) +
-                                        Vector2(windowDelta.left, windowDelta.bottom) *
-                                            Vector2(it2->attachedRectTransform->_positionAnchor.left, it2->attachedRectTransform->_positionAnchor.bottom));
+                                        sysm::vector2(windowDelta.right, windowDelta.top) *
+                                            sysm::vector2(it2->attachedRectTransform->_positionAnchor.right, it2->attachedRectTransform->_positionAnchor.top) +
+                                        sysm::vector2(windowDelta.left, windowDelta.bottom) *
+                                            sysm::vector2(it2->attachedRectTransform->_positionAnchor.left, it2->attachedRectTransform->_positionAnchor.bottom));
                                 }
                             }
                         }
                     }
 
-                    EngineEvent::OnWindowResize(Vector2Int { prevw, prevh });
+                    EngineEvent::OnWindowResize(sysm::vector2i32 { prevw, prevh });
                 });
 
                 renderResizeLock.lock();
@@ -638,16 +640,16 @@ void CoreEngine::internalWindowLoop()
                 case SDL_EVENT_MOUSE_MOTION:
                     Application::mainThreadQueue.enqueue([posX = ev.motion.x, posY = ev.motion.y, motX = ev.motion.xrel, motY = ev.motion.yrel]
                     {
-                        Vector2Int from = Input::internalMousePosition;
-                        Input::internalMousePosition.x = posX - Window::width / 2;
-                        Input::internalMousePosition.y = -posY + Window::height / 2;
+                        sysm::vector2 from = Input::internalMousePosition;
+                        Input::internalMousePosition.x = posX - Window::width / 2_u32;
+                        Input::internalMousePosition.y = -posY + Window::height / 2_u32;
                         Input::internalMouseMotion.x += motX;
                         Input::internalMouseMotion.y -= motY;
                         EngineEvent::OnMouseMove(from);
                     });
                     break;
                 case SDL_EVENT_MOUSE_WHEEL:
-                    Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y] { EngineEvent::OnMouseScroll(Vector2(scrX, scrY)); });
+                    Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y] { EngineEvent::OnMouseScroll(sysm::vector2(scrX, scrY)); });
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                     Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
@@ -812,13 +814,13 @@ BreakAll:;
         goto EarlyReturn;
     }
 
-    if (!Renderer::initialize(ndt, nwh, Window::width, Window::height, initBackend))
+    if (!Renderer::initialize(ndt, nwh, +u32(Window::width), +u32(Window::height), initBackend))
     {
         Debug::logError("Failed to initialize renderer!");
         goto EarlyReturn;
     }
 
-    RenderPipeline::resetViewArea(Window::width, Window::height);
+    RenderPipeline::resetViewArea(+u16(Window::width), +u16(Window::height));
     RenderPipeline::clearViewArea();
 
     CoreEngine::state.store(EngineState::RenderThreadReady, std::memory_order_relaxed); // Signal main thread.

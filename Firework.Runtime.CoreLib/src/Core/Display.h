@@ -17,8 +17,8 @@ namespace Firework
 
     class __firework_corelib_api Window final
     {
-        static int width;
-        static int height;
+        static i32 width;
+        static i32 height;
         static bool resizing;
     public:
         /// @brief Retrieve whether the window is resizing this frame.
@@ -31,14 +31,14 @@ namespace Firework
         /// @brief Retrieve the width of the window.
         /// @return Width of the window in pixels.
         /// @note Main thread only.
-        inline static int pixelWidth()
+        inline static i32 pixelWidth()
         {
             return Window::width;
         }
         /// @brief Retrieve the height of the window.
         /// @return Height of the window in pixels.
         /// @note Main thread only.
-        inline static int pixelHeight()
+        inline static i32 pixelHeight()
         {
             return Window::height;
         }
@@ -53,28 +53,28 @@ namespace Firework
 
     class __firework_corelib_api Screen final
     {
-        static int width;
-        static int height;
-        static int screenRefreshRate;
+        static i32 width;
+        static i32 height;
+        static i32 screenRefreshRate;
     public:
         /// @brief Retrieve the width of the primary display.
         /// @return Width of the display in pixels.
         /// @note Main thread only.
-        inline static int pixelWidth()
+        inline static i32 pixelWidth()
         {
             return Screen::width;
         }
         /// @brief Retrieve the height of the primary display.
         /// @return Height of the display in pixels.
         /// @note Main thread only.
-        inline static int pixelHeight()
+        inline static i32 pixelHeight()
         {
             return Screen::height;
         }
         /// @brief Retrieve the refresh rate of the primary dislay.
         /// @return Refresh rate of the display in Hz.
         /// @note Main thread only.
-        inline static int refreshRate()
+        inline static i32 refreshRate()
         {
             return Screen::screenRefreshRate;
         }

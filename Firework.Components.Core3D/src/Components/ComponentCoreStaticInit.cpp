@@ -3,8 +3,6 @@
 #include <EntityComponentSystem/EngineEvent.h>
 #include <Library/TypeInfo.h>
 
-using namespace Firework::Mathematics;
-
 namespace Firework::Internal
 {
     static struct ComponentCoreStaticInit

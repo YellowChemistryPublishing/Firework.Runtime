@@ -4,7 +4,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
 FuncPtrEvent<> EngineEvent::OnInitialize;
@@ -15,8 +14,8 @@ FuncPtrEvent<> EngineEvent::OnPhysicsTick;
 FuncPtrEvent<MouseButton> EngineEvent::OnMouseDown;
 FuncPtrEvent<MouseButton> EngineEvent::OnMouseHeld;
 FuncPtrEvent<MouseButton> EngineEvent::OnMouseUp;
-FuncPtrEvent<Vector2Int> EngineEvent::OnMouseMove;
-FuncPtrEvent<Vector2> EngineEvent::OnMouseScroll;
+FuncPtrEvent<sysm::vector2> EngineEvent::OnMouseMove;
+FuncPtrEvent<sysm::vector2> EngineEvent::OnMouseScroll;
 
 FuncPtrEvent<Key> EngineEvent::OnKeyDown;
 FuncPtrEvent<Key> EngineEvent::OnKeyHeld;
@@ -25,7 +24,7 @@ FuncPtrEvent<Key> EngineEvent::OnKeyUp;
 
 FuncPtrEvent<const std::u32string&> EngineEvent::OnTextInput;
 
-FuncPtrEvent<Vector2Int> EngineEvent::OnWindowResize;
+FuncPtrEvent<sysm::vector2i32> EngineEvent::OnWindowResize;
 
 FuncPtrEvent<> EngineEvent::OnAcquireFocus;
 FuncPtrEvent<> EngineEvent::OnLoseFocus;

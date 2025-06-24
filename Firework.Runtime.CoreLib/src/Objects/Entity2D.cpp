@@ -39,7 +39,7 @@ Entity2D::Entity2D(Entity2D* parent) : attachedRectTransform(new RectTransform()
     }
     this->attachedScene = mainScene;
 }
-Entity2D::Entity2D(const Vector2& localPosition, float localRotation, Entity2D* parent) : attachedRectTransform(new RectTransform())
+Entity2D::Entity2D(const sysm::vector2& localPosition, float localRotation, Entity2D* parent) : attachedRectTransform(new RectTransform())
 {
     this->attachedRectTransform->attachedEntity = this;
     this->attachedRectTransform->attachedRectTransform = this->attachedRectTransform;
@@ -57,7 +57,7 @@ Entity2D::Entity2D(const Vector2& localPosition, float localRotation, Entity2D* 
     }
     this->attachedScene = mainScene;
 }
-Entity2D::Entity2D(const Vector2& localPosition, float localRotation, const Vector2& scale, Entity2D* parent) : attachedRectTransform(new RectTransform())
+Entity2D::Entity2D(const sysm::vector2& localPosition, float localRotation, const sysm::vector2& scale, Entity2D* parent) : attachedRectTransform(new RectTransform())
 {
     this->attachedRectTransform->attachedEntity = this;
     this->attachedRectTransform->attachedRectTransform = this->attachedRectTransform;
