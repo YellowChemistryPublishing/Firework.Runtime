@@ -3,24 +3,19 @@
 #include <bx/math.h>
 
 using namespace Firework;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
-void RenderTransform::translate(Mathematics::Vector3 vec)
+void RenderTransform::translate(sysm::vector3 vec)
 {
-    this->tf = Matrix4x4::translate(vec) * this->tf;
+    this->tf = sysm::matrix4x4::translate(vec) * this->tf;
 }
-void RenderTransform::rotate(Mathematics::Vector3 vec)
+void RenderTransform::rotate(sysm::quaternion rot)
 {
-    this->tf = Matrix4x4::rotate(vec) * this->tf;
+    this->tf = sysm::matrix4x4::rotate(rot) * this->tf;
 }
-void RenderTransform::rotate(Mathematics::Quaternion rot)
+void RenderTransform::scale(sysm::vector3 vec)
 {
-    this->tf = Matrix4x4::rotate(rot) * this->tf;
-}
-void RenderTransform::scale(Mathematics::Vector3 vec)
-{
-    this->tf = Matrix4x4::scale(vec) * this->tf;
+    this->tf = sysm::matrix4x4::scale(vec) * this->tf;
 }
 
 void RenderTransform::regenerateNormalMatrix()

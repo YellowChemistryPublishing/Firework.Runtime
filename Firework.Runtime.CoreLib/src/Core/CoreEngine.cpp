@@ -1,5 +1,4 @@
 #include "CoreEngine.h"
-#include "SDL3/SDL_events.h"
 
 #include <algorithm>
 #include <chrono>
@@ -26,11 +25,10 @@
 #include <span>
 #if _WIN32
 #define NOMINMAX 1
-#include <windows.h>
 #include <VersionHelpers.h>
+#include <windows.h>
 #endif
 
-#include <Mathematics.h>
 #include <Core/Application.h>
 #include <Core/Debug.h>
 #include <Core/Display.h>
@@ -38,18 +36,17 @@
 #include <Core/Input.h>
 #include <Core/PackageManager.h>
 #include <Core/Time.h>
-#include <EntityComponentSystem/SceneManagement.h>
 #include <EntityComponentSystem/EngineEvent.h>
+#include <EntityComponentSystem/SceneManagement.h>
 #include <Firework/Config.h>
-#include <GL/Renderer.h>
 #include <GL/RenderPipeline.h>
+#include <GL/Renderer.h>
 #include <Library/Hash.h>
 #include <Objects/Entity2D.h>
 
 namespace fs = std::filesystem;
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 using namespace Firework::PackageSystem;
 
@@ -72,7 +69,7 @@ int CoreEngine::execute(int argc, char* argv[])
     (void)argc;
     (void)argv;
 
-    #if _WIN32
+#if _WIN32
     if (IsWindowsVistaOrGreater())
     {
         HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -81,21 +78,18 @@ int CoreEngine::execute(int argc, char* argv[])
         dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING | ENABLE_PROCESSED_OUTPUT;
         SetConsoleMode(hOut, dwMode);
     }
-    #endif
+#endif
 
-    if (!(SDL_Init(
-        SDL_INIT_EVENTS |
-        SDL_INIT_HAPTIC
-        #if !__EMSCRIPTEN__
-        | SDL_INIT_GAMEPAD
-        | SDL_INIT_JOYSTICK
-        #endif
-        ) == 0))
+    if (!(SDL_Init(SDL_INIT_EVENTS | SDL_INIT_HAPTIC
+#if !__EMSCRIPTEN__
+                   | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK
+#endif
+                   ) == 0))
     {
         Debug::logError("Runtime failed to initialize! Error: ", SDL_GetError(), '.');
         return EXIT_FAILURE;
     }
-    
+
     fs::path p = fs::current_path();
     p.append("RuntimeInternal");
     std::wstring dir = p.wstring();
@@ -105,8 +99,9 @@ int CoreEngine::execute(int argc, char* argv[])
     uint16_t word = 0x0001;
     if (reinterpret_cast<uint8_t*>(&word)[0])
         PackageManager::endianness = Endianness::Little;
-    else PackageManager::endianness = Endianness::Big;
-        
+    else
+        PackageManager::endianness = Endianness::Big;
+
     fs::path corePackagePath(fs::current_path());
     corePackagePath.append("Runtime");
     corePackagePath.append("CorePackage.fwpkg");
@@ -116,36 +111,35 @@ int CoreEngine::execute(int argc, char* argv[])
         PackageManager::loadPackageIntoMemory(corePackagePath);
         Debug::logInfo("CorePackage loaded!");
     }
-    else Debug::logError("The CorePackage could not be found in the Runtime folder. Did you accidentally delete it?");
+    else
+        Debug::logError("The CorePackage could not be found in the Runtime folder. Did you accidentally delete it?");
 
     std::thread workerThread([]
     {
         func::function<void()> event;
         while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowThreadDone)
         {
-            while (Application::workerThreadQueue.try_dequeue(event))
-                event();
-        
-            #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+            while (Application::workerThreadQueue.try_dequeue(event)) event();
+
+#if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
             std::this_thread::yield();
-            #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+#elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            #endif
+#endif
         }
-        while (Application::workerThreadQueue.try_dequeue(event))
-            event();
+        while (Application::workerThreadQueue.try_dequeue(event)) event();
     });
     std::thread windowThread(internalWindowLoop);
     std::thread mainThread(internalLoop);
-    #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
     internalRenderLoop();
-    #else
+#else
     std::thread renderThread(internalRenderLoop);
-    #endif
+#endif
     mainThread.join();
-    #ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
     renderThread.join();
-    #endif
+#endif
     windowThread.join();
     workerThread.join();
 
@@ -175,7 +169,7 @@ void CoreEngine::internalLoop()
 {
     constexpr auto handled = []<typename Func>(Func&& func)
     {
-        #if __has_include(<cpptrace/cpptrace.hpp>)
+#if __has_include(<cpptrace/cpptrace.hpp>)
         auto fmtTrace = [](cpptrace::stacktrace ret) -> std::string
         {
             for (auto& frame : ret.frames)
@@ -187,11 +181,11 @@ void CoreEngine::internalLoop()
             }
             return ret.to_string();
         };
-        #endif
+#endif
 
         // __hwTry
         // {
-            func();
+        func();
         // }
         // __hwCatch (const cpptrace::exception_with_message& ex)
         // {
@@ -271,9 +265,9 @@ void CoreEngine::internalLoop()
     CoreEngine::state.store(EngineState::WindowInit, std::memory_order_relaxed); // Spin off window handling thread.
     while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadReady)
     {
-        #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
         emscripten_sleep(1);
-        #endif
+#endif
     }
     CoreEngine::state.store(EngineState::Playing, std::memory_order_relaxed);
 
@@ -285,7 +279,7 @@ void CoreEngine::internalLoop()
     float targetDeltaTime = Application::secondsPerFrame;
     float deltaTime = -1.0f;
     float prevw = Window::width, prevh = Window::height;
-    
+
     EngineEvent::OnWindowResize(Vector2Int { Window::width, Window::height });
 
     while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::ExitRequested)
@@ -295,10 +289,9 @@ void CoreEngine::internalLoop()
             job();
         else if (deltaTime >= targetDeltaTime)
         {
-            #pragma region Pre-Tick
-            while (CoreEngine::pendingPreTickQueue.try_dequeue(job))
-                job();
-                
+#pragma region Pre-Tick
+            while (CoreEngine::pendingPreTickQueue.try_dequeue(job)) job();
+
             for (uint_fast16_t i = 0; i < (uint_fast16_t)MouseButton::Count; i++)
             {
                 if (Input::heldMouseInputs[i])
@@ -309,12 +302,12 @@ void CoreEngine::internalLoop()
                 if (Input::heldKeyInputs[i])
                     EngineEvent::OnKeyHeld((Key)i);
             }
-            #pragma endregion
-            
+#pragma endregion
+
             handled([] { EngineEvent::OnTick(); });
             handled([] { EngineEvent::OnLateTick(); });
 
-            #pragma region Render Offload
+#pragma region Render Offload
             // My code is held together with glue and duct tape. And not the good stuff either.
             if (Window::width != prevw || Window::height != prevh)
             {
@@ -323,12 +316,10 @@ void CoreEngine::internalLoop()
                     RenderPipeline::resetBackbuffer(w, h);
                     RenderPipeline::resetViewArea(w, h);
                 }));
-                prevw = Window::width; prevh = Window::height;
+                prevw = Window::width;
+                prevh = Window::height;
             }
-            CoreEngine::frameRenderJobs.push_back(RenderJob::create([]
-            {
-                RenderPipeline::clearViewArea();
-            }, false));
+            CoreEngine::frameRenderJobs.push_back(RenderJob::create([] { RenderPipeline::clearViewArea(); }, false));
 
             for (auto _it1 = SceneManager::existingScenes.rbegin(); _it1 != SceneManager::existingScenes.rend(); ++_it1)
             {
@@ -353,34 +344,46 @@ void CoreEngine::internalLoop()
                             if (component != EntityManager2D::components.end() && component->second->active &&
                                 !(
                                     // FIXME: Doesn't account for rotation!
-                                    component->second->attachedRectTransform->_position.y + component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y < -Window::height / 2 ||
-                                    component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x < -Window::width / 2 ||
-                                    component->second->attachedRectTransform->_position.y + component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y > Window::height / 2 ||
-                                    component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x > Window::width / 2
-                                ))
+                                    component->second->attachedRectTransform->_position.y +
+                                            component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y <
+                                        -Window::height / 2 ||
+                                    component->second->attachedRectTransform->_position.x +
+                                            component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x <
+                                        -Window::width / 2 ||
+                                    component->second->attachedRectTransform->_position.y +
+                                            component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y >
+                                        Window::height / 2 ||
+                                    component->second->attachedRectTransform->_position.x +
+                                            component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x >
+                                        Window::width / 2))
                                 InternalEngineEvent::OnRenderOffloadForComponent2D(component->second);
                         }
-                        for (auto it2 = entity->childrenBack; it2 != nullptr; it2 = it2->prev)
-                            recurse(recurse, it2);
+                        for (auto it2 = entity->childrenBack; it2 != nullptr; it2 = it2->prev) recurse(recurse, it2);
                         for (auto it3 = EntityManager2D::existingComponents.begin(); it3 != EntityManager2D::existingComponents.end(); ++it3)
                         {
                             auto component = EntityManager2D::components.find(std::make_pair(entity, it3->first));
                             if (component != EntityManager2D::components.end() && component->second->active &&
                                 !(
                                     // FIXME: Doesn't account for rotation!
-                                    component->second->attachedRectTransform->_position.y + component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y < -Window::height / 2 ||
-                                    component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x < -Window::width / 2 ||
-                                    component->second->attachedRectTransform->_position.y + component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y > Window::height / 2 ||
-                                    component->second->attachedRectTransform->_position.x + component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x > Window::width / 2
-                                ))
+                                    component->second->attachedRectTransform->_position.y +
+                                            component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y <
+                                        -Window::height / 2 ||
+                                    component->second->attachedRectTransform->_position.x +
+                                            component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x <
+                                        -Window::width / 2 ||
+                                    component->second->attachedRectTransform->_position.y +
+                                            component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y >
+                                        Window::height / 2 ||
+                                    component->second->attachedRectTransform->_position.x +
+                                            component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x >
+                                        Window::width / 2))
                                 InternalEngineEvent::OnLateRenderOffloadForComponent2D(component->second);
                         }
                     };
-                    for (auto it2 = it1->back2D; it2 != nullptr; it2 = it2->prev)
-                        recurse(recurse, it2);
+                    for (auto it2 = it1->back2D; it2 != nullptr; it2 = it2->prev) recurse(recurse, it2);
                 }
             }
-            
+
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([]
             {
                 RenderPipeline::renderFrame();
@@ -395,10 +398,12 @@ void CoreEngine::internalLoop()
                         job.destroy();
                         return true;
                     }
-                    else return false;
+                    else
+                        return false;
                 });
             }
-            else frameInProgress.test_and_set(std::memory_order_relaxed);
+            else
+                frameInProgress.test_and_set(std::memory_order_relaxed);
             if (!CoreEngine::frameRenderJobs.empty())
             {
                 CoreEngine::renderQueue.enqueue(RenderJob::create([jobs = std::move(CoreEngine::frameRenderJobs)]
@@ -413,14 +418,13 @@ void CoreEngine::internalLoop()
                 }));
                 CoreEngine::frameRenderJobs.clear();
             }
-            #pragma endregion
+#pragma endregion
 
-            #pragma region Post-Tick
+#pragma region Post-Tick
             Input::internalMouseMotion = Vector2Int(0, 0);
 
-            while (CoreEngine::pendingPostTickQueue.try_dequeue(job))
-                job();
-                
+            while (CoreEngine::pendingPostTickQueue.try_dequeue(job)) job();
+
             for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)
             {
                 Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
@@ -429,14 +433,12 @@ void CoreEngine::internalLoop()
                     constexpr auto recurse = [](auto&& recurse, Entity2D* entity) -> void
                     {
                         entity->rectTransform()->_dirty = false;
-                        for (auto it2 = entity->childrenFront; it2 != nullptr; it2 = it2->next)
-                            recurse(recurse, it2);
+                        for (auto it2 = entity->childrenFront; it2 != nullptr; it2 = it2->next) recurse(recurse, it2);
                     };
-                    for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next)
-                        recurse(recurse, it2);
+                    for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next) recurse(recurse, it2);
                 }
             }
-            #pragma endregion
+#pragma endregion
 
             frameBegin = SDL_GetPerformanceCounter();
             targetDeltaTime = std::max(Application::secondsPerFrame - (deltaTime - targetDeltaTime), 0.0f);
@@ -444,23 +446,23 @@ void CoreEngine::internalLoop()
         }
         else
         {
-            #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+#if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
             std::this_thread::yield();
-            #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
-            std::this_thread::sleep_for(std::chrono::nanoseconds((uint64_t)((targetDeltaTime - ((float)(SDL_GetPerformanceCounter() - frameBegin) / (float)perfFreq)) * 1000000000.0f)));
-            #endif
+#elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+            std::this_thread::sleep_for(
+                std::chrono::nanoseconds((uint64_t)((targetDeltaTime - ((float)(SDL_GetPerformanceCounter() - frameBegin) / (float)perfFreq)) * 1000000000.0f)));
+#endif
         }
 
-        #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
         Debug::logTrace("Main loop end.");
         emscripten_sleep(std::max(unsigned(Application::secondsPerFrame * 1000.0f - 100.0f), 0u));
-        #endif
+#endif
     }
-    
+
     EngineEvent::OnQuit();
 
-    for (auto it = SceneManager::existingScenes.begin(); it != SceneManager::existingScenes.end(); ++it)
-        reinterpret_cast<Scene*>(it->data)->~Scene();
+    for (auto it = SceneManager::existingScenes.begin(); it != SceneManager::existingScenes.end(); ++it) reinterpret_cast<Scene*>(it->data)->~Scene();
     SceneManager::existingScenes.clear();
 
     while (Application::mainThreadQueue.try_dequeue(job));
@@ -483,9 +485,9 @@ void CoreEngine::internalLoop()
     // Wait for window handling thread to finish.
     while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowThreadDone)
     {
-        #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
         emscripten_sleep(1);
-        #endif
+#endif
     }
 }
 
@@ -493,9 +495,9 @@ void CoreEngine::internalWindowLoop()
 {
     while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowInit)
     {
-        #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
         emscripten_sleep(1);
-        #endif
+#endif
     }
 
     if (SDL_InitSubSystem(SDL_INIT_VIDEO) != 0) [[unlikely]]
@@ -518,13 +520,8 @@ void CoreEngine::internalWindowLoop()
     Window::width = Application::_initializationOptions.resolution.x;
     Window::height = Application::_initializationOptions.resolution.y;
 
-    CoreEngine::wind = SDL_CreateWindow
-    (
-        Application::_initializationOptions.windowName.c_str(),
-        Application::_initializationOptions.resolution.x,
-        Application::_initializationOptions.resolution.y,
-        SDL_WINDOW_HIGH_PIXEL_DENSITY
-    );
+    CoreEngine::wind = SDL_CreateWindow(Application::_initializationOptions.windowName.c_str(), Application::_initializationOptions.resolution.x,
+                                        Application::_initializationOptions.resolution.y, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!wind)
     {
         Debug::logError("Could not create window: ", SDL_GetError(), ".");
@@ -549,12 +546,10 @@ void CoreEngine::internalWindowLoop()
         // I hope you like the rendering-while-resizing...
         {
             decltype(resizeData)& windowSizeData = *(decltype(resizeData)*)_data;
-            
-            while (Application::windowThreadQueue.try_dequeue(windowSizeData.job))
-                windowSizeData.job();
 
-            if (std::lock_guard guard(windowSizeData.shouldUnlockLock);
-            windowSizeData.shouldUnlock)
+            while (Application::windowThreadQueue.try_dequeue(windowSizeData.job)) windowSizeData.job();
+
+            if (std::lock_guard guard(windowSizeData.shouldUnlockLock); windowSizeData.shouldUnlock)
             {
                 renderResizeLock.unlock();
                 windowSizeData.shouldUnlock = false;
@@ -573,14 +568,13 @@ void CoreEngine::internalWindowLoop()
                     Window::width = w;
                     Window::height = h;
 
-                    RectFloat windowDelta = RectFloat
-                    {
+                    RectFloat windowDelta = RectFloat {
                         (float)(h - prevh) / 2.0f,
                         (float)(w - prevw) / 2.0f,
                         (float)(-h + prevh) / 2.0f,
                         (float)(-w + prevw) / 2.0f,
                     };
-                    
+
                     for (auto _it1 = SceneManager::existingScenes.rbegin(); _it1 != SceneManager::existingScenes.rend(); ++_it1)
                     {
                         Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
@@ -591,12 +585,12 @@ void CoreEngine::internalWindowLoop()
                                 it2->attachedRectTransform->setRect(it2->attachedRectTransform->_rect + windowDelta * it2->attachedRectTransform->_anchor);
                                 if (it2->attachedRectTransform->_positionAnchor != RectFloat(0, 0, 0, 0))
                                 {
-                                    it2->attachedRectTransform->setLocalPosition
-                                    (
+                                    it2->attachedRectTransform->setLocalPosition(
                                         it2->attachedRectTransform->getLocalPosition() +
-                                        Vector2(windowDelta.right, windowDelta.top) * Vector2(it2->attachedRectTransform->_positionAnchor.right, it2->attachedRectTransform->_positionAnchor.top) +
-                                        Vector2(windowDelta.left, windowDelta.bottom) * Vector2(it2->attachedRectTransform->_positionAnchor.left, it2->attachedRectTransform->_positionAnchor.bottom)
-                                    );
+                                        Vector2(windowDelta.right, windowDelta.top) *
+                                            Vector2(it2->attachedRectTransform->_positionAnchor.right, it2->attachedRectTransform->_positionAnchor.top) +
+                                        Vector2(windowDelta.left, windowDelta.bottom) *
+                                            Vector2(it2->attachedRectTransform->_positionAnchor.left, it2->attachedRectTransform->_positionAnchor.bottom));
                                 }
                             }
                         }
@@ -604,7 +598,7 @@ void CoreEngine::internalWindowLoop()
 
                     EngineEvent::OnWindowResize(Vector2Int { prevw, prevh });
                 });
-                
+
                 renderResizeLock.lock();
             }
 
@@ -614,17 +608,15 @@ void CoreEngine::internalWindowLoop()
 
         if (Application::_initializationOptions.windowResizeable)
             SDL_SetWindowResizable(CoreEngine::wind, true);
-        
+
         CoreEngine::state.store(EngineState::RenderInit, std::memory_order_relaxed); // Spin off rendering thread.
 
         SDL_Event ev;
         while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadDone)
         {
-            while (Application::windowThreadQueue.try_dequeue(job))
-                job();
-            
-            if (SDL_PeepEvents(&ev, 1, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST) &&
-                ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
+            while (Application::windowThreadQueue.try_dequeue(job)) job();
+
+            if (SDL_PeepEvents(&ev, 1, SDL_PEEKEVENT, SDL_EVENT_FIRST, SDL_EVENT_LAST) && ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
             {
                 assert(ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED);
 
@@ -642,7 +634,7 @@ void CoreEngine::internalWindowLoop()
             {
                 switch (ev.type)
                 {
-                    #pragma region Mouse Events
+#pragma region Mouse Events
                 case SDL_EVENT_MOUSE_MOTION:
                     Application::mainThreadQueue.enqueue([posX = ev.motion.x, posY = ev.motion.y, motX = ev.motion.xrel, motY = ev.motion.yrel]
                     {
@@ -655,10 +647,7 @@ void CoreEngine::internalWindowLoop()
                     });
                     break;
                 case SDL_EVENT_MOUSE_WHEEL:
-                    Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y]
-                    {
-                        EngineEvent::OnMouseScroll(Vector2(scrX, scrY));
-                    });
+                    Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y] { EngineEvent::OnMouseScroll(Vector2(scrX, scrY)); });
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                     Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
@@ -674,17 +663,12 @@ void CoreEngine::internalWindowLoop()
                         EngineEvent::OnMouseUp(button);
                     });
                     break;
-                    #pragma endregion
-                    #pragma region Key Events
+#pragma endregion
+#pragma region Key Events
                 case SDL_EVENT_KEY_DOWN:
                     switch (ev.key.repeat)
                     {
-                    case true:
-                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
-                        {
-                            EngineEvent::OnKeyRepeat(key);
-                        });
-                        break;
+                    case true: Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)] { EngineEvent::OnKeyRepeat(key); }); break;
                     case false:
                         Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
                         {
@@ -701,7 +685,7 @@ void CoreEngine::internalWindowLoop()
                         EngineEvent::OnKeyUp(key);
                     });
                     break;
-                    #pragma endregion
+#pragma endregion
                 case SDL_EVENT_TEXT_INPUT:
                     {
                         std::u32string input;
@@ -710,7 +694,8 @@ void CoreEngine::internalWindowLoop()
                             char8_t c = *it;
                             if ((c & 0b11110000) == 0b11110000) // 4 bytes.
                             {
-                                char32_t cAppend = (char32_t)(c & 0b00000111) << 18 | (char32_t)(*(++it) & 0b00111111) << 12 | (char32_t)(*(++it) & 0b00111111) << 6 | (char32_t)(*(++it) & 0b00111111);
+                                char32_t cAppend = (char32_t)(c & 0b00000111) << 18 | (char32_t)(*(++it) & 0b00111111) << 12 | (char32_t)(*(++it) & 0b00111111) << 6 |
+                                    (char32_t)(*(++it) & 0b00111111);
                                 input.push_back(cAppend);
                             }
                             else if ((c & 0b11100000) == 0b11100000) // 3 bytes.
@@ -723,35 +708,30 @@ void CoreEngine::internalWindowLoop()
                                 char32_t cAppend = (char32_t)(c & 0b00011111) << 6 | (char32_t)(*(++it) & 0b00111111);
                                 input.push_back(cAppend);
                             }
-                            else input.push_back((char32_t)c); // 1 byte.
+                            else
+                                input.push_back((char32_t)c); // 1 byte.
                         }
-                        Application::mainThreadQueue.enqueue([input = std::move(input)]
-                        {
-                            EngineEvent::OnTextInput(input);
-                        });
+                        Application::mainThreadQueue.enqueue([input = std::move(input)] { EngineEvent::OnTextInput(input); });
                     }
                     break;
-                case SDL_EVENT_WINDOW_MOVED:
-                    break;
+                case SDL_EVENT_WINDOW_MOVED: break;
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                case SDL_EVENT_QUIT:
-                    CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_relaxed);
-                    break;
+                case SDL_EVENT_QUIT: CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_relaxed); break;
                 }
             }
             else
             {
-                #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+#if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
                 std::this_thread::yield();
-                #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+#elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
-                #endif
+#endif
             }
 
-            #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
             Debug::logTrace("Event loop end.");
             emscripten_sleep(1);
-            #endif
+#endif
         }
 
         SDL_DestroyWindow(CoreEngine::wind);
@@ -760,7 +740,7 @@ void CoreEngine::internalWindowLoop()
         SDL_RemoveEventWatch(eventWatcher, &resizeData);
     }
 
-    EarlyReturn:
+EarlyReturn:
     CoreEngine::state.store(EngineState::WindowThreadDone, std::memory_order_relaxed); // Signal main thread.
 }
 
@@ -768,23 +748,18 @@ void CoreEngine::internalRenderLoop()
 {
     while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderInit)
     {
-        #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
         emscripten_sleep(1);
-        #endif
+#endif
     }
 
     RendererBackend initBackend = RendererBackend::Default;
-    RendererBackend backendPriorityOrder[]
-    {
-        #if _WIN32
-        RendererBackend::OpenGL,
-        RendererBackend::Vulkan,
-        RendererBackend::Direct3D12,
-        RendererBackend::Direct3D11
-        #else
-        RendererBackend::Vulkan,
-        RendererBackend::OpenGL
-        #endif
+    RendererBackend backendPriorityOrder[] {
+#if _WIN32
+        RendererBackend::OpenGL, RendererBackend::Vulkan, RendererBackend::Direct3D12, RendererBackend::Direct3D11
+#else
+        RendererBackend::Vulkan, RendererBackend::OpenGL
+#endif
     };
     std::vector<RendererBackend> backends = Renderer::platformBackends();
     for (auto targetBackend : std::span(backendPriorityOrder, sizeof(backendPriorityOrder) / sizeof(*backendPriorityOrder)))
@@ -798,15 +773,15 @@ void CoreEngine::internalRenderLoop()
             }
         }
     }
-    BreakAll:;
+BreakAll:;
 
-    void* nwh = nullptr, *ndt = nullptr;
-    #if defined(SDL_PLATFORM_WIN32)
+    void *nwh = nullptr, *ndt = nullptr;
+#if defined(SDL_PLATFORM_WIN32)
     nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
-    #elif defined(SDL_PLATFORM_MACOS)
+#elif defined(SDL_PLATFORM_MACOS)
     nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
-    #elif defined(SDL_PLATFORM_LINUX)
-    if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) 
+#elif defined(SDL_PLATFORM_LINUX)
+    if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0)
     {
         ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
         nwh = (void*)SDL_GetNumberProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
@@ -827,9 +802,9 @@ void CoreEngine::internalRenderLoop()
         Debug::logError("Failed to get Linux display!");
         goto EarlyReturn;
     }
-    #elif defined(SDL_PLATFORM_IOS)
+#elif defined(SDL_PLATFORM_IOS)
     nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL);
-    #endif
+#endif
 
     if (!nwh)
     {
@@ -845,7 +820,7 @@ void CoreEngine::internalRenderLoop()
 
     RenderPipeline::resetViewArea(Window::width, Window::height);
     RenderPipeline::clearViewArea();
-    
+
     CoreEngine::state.store(EngineState::RenderThreadReady, std::memory_order_relaxed); // Signal main thread.
 
     {
@@ -856,20 +831,21 @@ void CoreEngine::internalRenderLoop()
             {
                 if (renderQueue.size_approx() > GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required)
                     Debug::logInfo("Render queue overburdened, skipping render job id ", job.callFunction, ".\n");
-                else job();
+                else
+                    job();
                 job.destroy();
             }
-        
-            #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
-            std::this_thread::yield();
-            #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            #endif
 
-            #ifdef __EMSCRIPTEN__
+#if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
+            std::this_thread::yield();
+#elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+#endif
+
+#ifdef __EMSCRIPTEN__
             Debug::logTrace("Render loop end.");
             emscripten_sleep(1);
-            #endif
+#endif
         }
 
         // Cleanup.
@@ -885,6 +861,6 @@ void CoreEngine::internalRenderLoop()
     if (!(FIREWORK_BUILD_PLATFORM == FIREWORK_BUILD_PLATFORM_LINUX && initBackend == RendererBackend::OpenGL))
         Renderer::shutdown();
 
-    EarlyReturn:
+EarlyReturn:
     CoreEngine::state.store(EngineState::RenderThreadDone, std::memory_order_relaxed); // Signal window thread.
 }

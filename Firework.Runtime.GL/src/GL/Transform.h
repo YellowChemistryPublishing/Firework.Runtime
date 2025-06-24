@@ -2,31 +2,27 @@
 
 #include "Firework.Runtime.GL.Exports.h"
 
-#include <Mathematics.h>
 #include <cstring>
+#include <module/sys.Mathematics>
 
-namespace Firework
+namespace Firework::GL
 {
-    namespace GL
+    class Renderer;
+    class LitObjectHandle;
+
+    struct __firework_gl_api RenderTransform
     {
-        class Renderer;
-        class LitObjectHandle;
+        sysm::matrix4x4 tf;
 
-        struct __firework_gl_api RenderTransform
-        {
-            Mathematics::Matrix4x4 tf;
-            
-            void translate(Mathematics::Vector3 vec);
-            void rotate(Mathematics::Vector3 vec);
-            void rotate(Mathematics::Quaternion rot);
-            void scale(Mathematics::Vector3 vec);
+        void translate(sysm::vector3 vec);
+        void rotate(sysm::quaternion rot);
+        void scale(sysm::vector3 vec);
 
-            friend class Firework::GL::Renderer;
-            friend class Firework::GL::LitObjectHandle;
-        private:
-            float normalMatrix[3][3];
+        friend class Firework::GL::Renderer;
+        friend class Firework::GL::LitObjectHandle;
+    private:
+        float normalMatrix[3][3];
 
-            void regenerateNormalMatrix();
-        };
-    }
-}
+        void regenerateNormalMatrix();
+    };
+} // namespace Firework::GL

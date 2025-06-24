@@ -1,6 +1,5 @@
 #include "Mask.h"
 
-#include <Mathematics.h>
 #include <Components/RectTransform.h>
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/EngineEvent.h>
@@ -10,7 +9,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
 GL::StaticMeshHandle Mask::unitSquare;
@@ -43,7 +41,7 @@ void Mask::renderInitialize()
             throw "unimplemented";
         }
         
-        Vector3 unitSquareVerts[]
+        sysm::vector3 unitSquareVerts[]
         {
             { -1.0f, -1.0f, 1.0f },
             { -1.0f, 1.0f, 1.0f },

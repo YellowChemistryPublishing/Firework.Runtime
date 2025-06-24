@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <numbers>
 #include <ostream>
 #include <string>
 
@@ -654,16 +655,12 @@ namespace Firework
 
 		class Math
 		{
-			using Vector2 = Firework::Mathematics::Vector2;
-			using Vector2Int = Firework::Mathematics::Vector2Int;
+			using Vector2 = sysm::vector2;
+			using Vector2Int = sysm::vector2i32;
 			using Vector3 = Firework::Mathematics::Vector3;
-			using Quaternion = Firework::Mathematics::Quaternion;
+			using Quaternion = sysm::quaternion;
 		public:
 			Math() = delete;
-
-			constexpr static long double pi = 3.14159265358979323846264338327950288l;
-			constexpr static long double e = 2.71828182845904523536028747135266249l;
-			constexpr static long double tau = 6.28318530717958647692528676655900576l;
 
 			inline static float abs(const Vector2& v) noexcept
 			{
@@ -692,13 +689,13 @@ namespace Firework
 			requires std::floating_point<T>
 			constexpr static T deg2Rad(T degrees)
 			{
-				return (T)Math::pi / (T)180.0l * degrees;
+				return std::numbers::pi_v<T> / (T)180.0l * degrees;
 			}
 			template <typename T>
 			requires std::floating_point<T>
 			constexpr static T rad2Deg(T radians)
 			{
-				return radians * (T)180.0l / (T)Math::pi;
+				return radians * (T)180.0l / std::numbers::pi_v<T>;
 			}
 			
 			constexpr static float dot(const Vector2& lhs, const Vector2& rhs) noexcept

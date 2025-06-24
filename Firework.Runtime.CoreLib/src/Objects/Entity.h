@@ -2,18 +2,16 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
-#include <vector>
-#include <type_traits>
+#include <module/sys.Mathematics>
 #include <robin_hood.h>
+#include <type_traits>
+#include <vector>
 
-#include <Mathematics.h>
 #include <Core/Debug.h>
 #include <EntityComponentSystem/EntityManagement.h>
-#include <Objects/Component.h>
-#include <Library/ManagedArray.h>
 #include <Library/Hash.h>
 #include <Library/TypeInfo.h>
-
+#include <Objects/Component.h>
 #include <Objects/Entity.inc>
 
 namespace Firework
@@ -25,7 +23,7 @@ namespace Firework
         if (!EntityManager::components.contains(std::make_pair(this, __typeid(T).qualifiedNameHash())))
         {
             T* ret = new T();
-            
+
             EntityManager::components.emplace(std::make_pair(this, __typeid(T).qualifiedNameHash()), ret);
             ret->attachedEntity = this;
             ret->attachedTransform = this->attachedTransform;
@@ -34,7 +32,8 @@ namespace Firework
             auto it = EntityManager::existingComponents.find(__typeid(T).qualifiedNameHash());
             if (it != EntityManager::existingComponents.end())
                 ++it->second;
-            else EntityManager::existingComponents.emplace(__typeid(T).qualifiedNameHash(), 1);
+            else
+                EntityManager::existingComponents.emplace(__typeid(T).qualifiedNameHash(), 1);
 
             if constexpr (requires { ret->onCreate(); })
                 ret->onCreate();
@@ -73,6 +72,7 @@ namespace Firework
             delete it->second;
             EntityManager::components.erase(it);
         }
-        else Debug::logWarn("No identical component could be found on this Entity to be removed!");
+        else
+            Debug::logWarn("No identical component could be found on this Entity to be removed!");
     }
-}
+} // namespace Firework

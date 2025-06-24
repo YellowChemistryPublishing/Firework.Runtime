@@ -5,7 +5,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 
 int Window::width;
 int Window::height;

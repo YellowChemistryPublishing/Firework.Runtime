@@ -9,15 +9,15 @@ using namespace Firework::Internal;
 using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
-constexpr static auto rotatePointAround = [](Vector3& point, const Vector3& rotateAround, const Quaternion& rot) -> void
+constexpr static auto rotatePointAround = [](sysm::vector3& point, const sysm::vector3& rotateAround, const sysm::quaternion& rot) -> void
 {
-    Vector3 delta = point - rotateAround;
-    delta = (rot * Quaternion(0.0f, delta) * rot.conjugate()).vector();
+    sysm::vector3 delta = point - rotateAround;
+    delta = (rot * sysm::quaternion(0.0f, delta) * rot.conjugate()).vector();
     point = rotateAround + delta;
 };
-constexpr static auto rotatePointAroundOrigin = [](Vector3& point, const Quaternion& rot) -> void
+constexpr static auto rotatePointAroundOrigin = [](sysm::vector3& point, const sysm::quaternion& rot) -> void
 {
-    point = (rot * Quaternion(0.0f, point) * rot.conjugate()).vector();
+    point = (rot * sysm::quaternion(0.0f, point) * rot.conjugate()).vector();
 };
 
 namespace Firework::Internal
@@ -33,9 +33,9 @@ namespace Firework::Internal
     }
 }
 
-void Transform::setPosition(Vector3 value)
+void Transform::setPosition(sysm::vector3 value)
 {
-    Vector3 delta = value - this->_position;
+    sysm::vector3 delta = value - this->_position;
     this->_position = value;
 
     auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity* entity) -> void
@@ -48,9 +48,9 @@ void Transform::setPosition(Vector3 value)
     };
     setChildrenPositionRecursive(setChildrenPositionRecursive, this->attachedEntity);
 }
-void Transform::setRotation(Quaternion value)
+void Transform::setRotation(sysm::quaternion value)
 {
-    Quaternion delta = value * this->_rotation.conjugate().unit();
+    sysm::quaternion delta = value * this->_rotation.conjugate().unit();
     this->_rotation = value.unit();
 
     auto setChildrenRotationRecursive = [&, this](auto&& setChildrenRotationRecursive, Entity* entity) -> void
@@ -64,9 +64,9 @@ void Transform::setRotation(Quaternion value)
     };
     setChildrenRotationRecursive(setChildrenRotationRecursive, this->attachedEntity);
 }
-void Transform::setScale(Vector3 value)
+void Transform::setScale(sysm::vector3 value)
 {
-    Vector3 delta = value / this->_scale;
+    sysm::vector3 delta = value / this->_scale;
     this->_scale = value;
 
     auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity* entity) -> void
@@ -81,22 +81,22 @@ void Transform::setScale(Vector3 value)
     setChildrenScaleRecursive(setChildrenScaleRecursive, this->attachedEntity);
 }
 
-Vector3 Transform::getLocalPosition() const
+sysm::vector3 Transform::getLocalPosition() const
 {
     Entity* parent = this->attachedEntity->_parent;
     if (parent)
     {
-        Vector3 locPos = (this->_position - parent->attachedTransform->_position) / parent->attachedTransform->_scale;
+        sysm::vector3 locPos = (this->_position - parent->attachedTransform->_position) / parent->attachedTransform->_scale;
         assert(parent->attachedTransform->_rotation.norm2() == 1.0f && "Rotation quaterions are required to be normalized!");
         rotatePointAroundOrigin(locPos, parent->attachedTransform->_rotation.conjugate());
         return locPos;
     }
     else return this->_position;
 }
-void Transform::setLocalPosition(Vector3 value)
+void Transform::setLocalPosition(sysm::vector3 value)
 {
     Entity* parent = this->attachedEntity->_parent;
-    Vector3 delta;
+    sysm::vector3 delta;
     if (parent)
     {
         rotatePointAroundOrigin(value, parent->attachedTransform->_rotation);
@@ -115,16 +115,16 @@ void Transform::setLocalPosition(Vector3 value)
     };
     setChildrenPositionRecursive(setChildrenPositionRecursive, this->attachedEntity);
 }
-Quaternion Transform::getLocalRotation() const
+sysm::quaternion Transform::getLocalRotation() const
 {
     Entity* parent = this->attachedEntity->_parent;
     assert((parent || parent->attachedTransform->_rotation.norm2() == 1.0f) && "Rotation quaterions are required to be normalized!");
     return parent ? this->_rotation * parent->attachedTransform->_rotation.conjugate() : this->_rotation;
 }
-void Transform::setLocalRotation(Quaternion value)
+void Transform::setLocalRotation(sysm::quaternion value)
 {
     Entity* parent = this->attachedEntity->_parent;
-    Quaternion delta;
+    sysm::quaternion delta;
     assert(value.norm2() == 1.0f && this->_rotation.norm2() == 1.0f && "Rotation quaterions are required to be normalized!");
     if (parent)
     {
@@ -146,15 +146,15 @@ void Transform::setLocalRotation(Quaternion value)
     };
     setChildrenRotationRecursive(setChildrenRotationRecursive, this->attachedEntity);
 }
-Vector3 Transform::getLocalScale() const
+sysm::vector3 Transform::getLocalScale() const
 {
     Entity* parent = this->attachedEntity->_parent;
     return parent ? this->_scale / parent->attachedTransform->_scale : this->_scale;
 }
-void Transform::setLocalScale(Vector3 value)
+void Transform::setLocalScale(sysm::vector3 value)
 {
     Entity* parent = this->attachedEntity->_parent;
-    Vector3 delta;
+    sysm::vector3 delta;
     if (parent)
         delta = value * parent->attachedTransform->_scale / this->_scale;
     else delta = value / this->_scale;

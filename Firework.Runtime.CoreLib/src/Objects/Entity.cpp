@@ -41,7 +41,7 @@ Entity::Entity(Entity* parent) : attachedTransform(new Transform)
     }
     this->attachedScene = mainScene;
 }
-Entity::Entity(const Vector3& localPosition, const Quaternion& localRotation, Entity* parent) : attachedTransform(new Transform)
+Entity::Entity(const sysm::vector3& localPosition, const sysm::quaternion& localRotation, Entity* parent) : attachedTransform(new Transform)
 {
     this->attachedTransform->attachedEntity = this;
     this->attachedTransform->attachedTransform = this->attachedTransform;
@@ -59,7 +59,7 @@ Entity::Entity(const Vector3& localPosition, const Quaternion& localRotation, En
     }
     this->attachedScene = mainScene;
 }
-Entity::Entity(const Vector3& localPosition, const Quaternion& localRotation, const Vector3& scale, Entity* parent) : attachedTransform(new Transform)
+Entity::Entity(const sysm::vector3& localPosition, const sysm::quaternion& localRotation, const sysm::vector3& scale, Entity* parent) : attachedTransform(new Transform)
 {
     this->attachedTransform->attachedEntity = this;
     this->attachedTransform->attachedTransform = this->attachedTransform;

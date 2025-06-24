@@ -17,7 +17,6 @@
 
 #include <Core/Application.h>
 #include <Firework/Config.h>
-#include <Library/Lock.h>
 
 namespace Firework
 {

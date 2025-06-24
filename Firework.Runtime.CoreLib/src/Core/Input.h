@@ -2,203 +2,370 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+#include <SDL3/SDL_keycode.h>
+#include <SDL3/SDL_mouse.h>
+#include <module/sys.Mathematics>
 #include <queue>
 #include <robin_hood.h>
-#include <SDL3/SDL_mouse.h>
-#include <SDL3/SDL_keycode.h>
 #include <vector>
-
-#include <Mathematics.h>
 
 namespace Firework
 {
-	namespace Internal
-	{
-		class CoreEngine;
-	}
+    namespace Internal
+    {
+        class CoreEngine;
+    }
 
-	/// @brief Mouse buttons.
-	enum class MouseButton : uint_fast8_t
-	{
-		Left = 0,
-		Middle,
-		Right,
-		Special1,
-		Special2,
-		Count
-	};
-	/// @brief Keyboard keys.
-	enum class Key : uint_fast16_t
-	{
-		Unknown = 0,
+    /// @brief Mouse buttons.
+    enum class MouseButton : uint_fast8_t
+    {
+        Left = 0,
+        Middle,
+        Right,
+        Special1,
+        Special2,
+        Count
+    };
+    /// @brief Keyboard keys.
+    enum class Key : uint_fast16_t
+    {
+        Unknown = 0,
 
-		LetterA, LetterB, LetterC, LetterD,
-		LetterE, LetterF, LetterG, LetterH,
-		LetterI, LetterJ, LetterK, LetterL,
-		LetterM, LetterN, LetterO, LetterP,
-		LetterQ, LetterR, LetterS, LetterT,
-		LetterU, LetterV, LetterW, LetterX,
-		LetterY, LetterZ,
-		
-		Number1, Number2, Number3, Number4,
-		Number5, Number6, Number7, Number8,
-		Number9, Number0,
+        LetterA,
+        LetterB,
+        LetterC,
+        LetterD,
+        LetterE,
+        LetterF,
+        LetterG,
+        LetterH,
+        LetterI,
+        LetterJ,
+        LetterK,
+        LetterL,
+        LetterM,
+        LetterN,
+        LetterO,
+        LetterP,
+        LetterQ,
+        LetterR,
+        LetterS,
+        LetterT,
+        LetterU,
+        LetterV,
+        LetterW,
+        LetterX,
+        LetterY,
+        LetterZ,
 
-		Return, SecondaryReturn, Escape, CapsLock,
-		Space, Tab, Backspace,
+        Number1,
+        Number2,
+        Number3,
+        Number4,
+        Number5,
+        Number6,
+        Number7,
+        Number8,
+        Number9,
+        Number0,
 
-		Period, Comma, ExclamationMark, QuestionMark,
-		AtSign, Hashtag, Dollar, Percent,
-		Caret, Ampersand, Asterisk,
-		Colon, SemiColon, Underscore,
+        Return,
+        SecondaryReturn,
+        Escape,
+        CapsLock,
+        Space,
+        Tab,
+        Backspace,
 
-		Plus, Minus, Equals, GreaterThan, LessThan,
+        Period,
+        Comma,
+        ExclamationMark,
+        QuestionMark,
+        AtSign,
+        Hashtag,
+        Dollar,
+        Percent,
+        Caret,
+        Ampersand,
+        Asterisk,
+        Colon,
+        SemiColon,
+        Underscore,
 
-		SingleQuote, DoubleQuotes, BackQuote,
+        Plus,
+        Minus,
+        Equals,
+        GreaterThan,
+        LessThan,
 
-		LeftParenthesis, RightParenthesis,
-		LeftSquareBracket, RightSquareBracket,
-		ForwardSlash, BackSlash,
+        SingleQuote,
+        DoubleQuotes,
+        BackQuote,
 
-		Function1, Function2, Function3, Function4,
-		Function5, Function6, Function7, Function8,
-		Function9, Function10, Function11, Function12,
-		Function13, Function14, Function15, Function16,
-		Function17, Function18, Function19, Function20,
-		Function21, Function22, Function23, Function24,
+        LeftParenthesis,
+        RightParenthesis,
+        LeftSquareBracket,
+        RightSquareBracket,
+        ForwardSlash,
+        BackSlash,
 
-		PrintScreen, NumLock, ScrollLock, Home,
-		Pause, End, Insert, Delete,
-		PageUp, PageDown,
+        Function1,
+        Function2,
+        Function3,
+        Function4,
+        Function5,
+        Function6,
+        Function7,
+        Function8,
+        Function9,
+        Function10,
+        Function11,
+        Function12,
+        Function13,
+        Function14,
+        Function15,
+        Function16,
+        Function17,
+        Function18,
+        Function19,
+        Function20,
+        Function21,
+        Function22,
+        Function23,
+        Function24,
 
-		UpArrow, DownArrow, RightArrow, LeftArrow,
+        PrintScreen,
+        NumLock,
+        ScrollLock,
+        Home,
+        Pause,
+        End,
+        Insert,
+        Delete,
+        PageUp,
+        PageDown,
 
-		Numpad1, Numpad2, Numpad3, Numpad4,
-		Numpad5, Numpad6, Numpad7, Numpad8,
-		Numpad9, Numpad0, Numpad00, Numpad000,
-		
-		NumpadA, NumpadB, NumpadC, NumpadD,
-		NumpadE, NumpadF,
+        UpArrow,
+        DownArrow,
+        RightArrow,
+        LeftArrow,
 
-		NumpadEnter, NumpadPeriod, NumpadComma,
+        Numpad1,
+        Numpad2,
+        Numpad3,
+        Numpad4,
+        Numpad5,
+        Numpad6,
+        Numpad7,
+        Numpad8,
+        Numpad9,
+        Numpad0,
+        Numpad00,
+        Numpad000,
 
-		NumpadLeftParenthesis, NumpadRightParenthesis,
-		NumpadLeftBrace, NumpadRightBrace,
+        NumpadA,
+        NumpadB,
+        NumpadC,
+        NumpadD,
+        NumpadE,
+        NumpadF,
 
-		NumpadPlus, NumpadMinus, NumpadMultiply, NumpadDivide,
-		NumpadEquals, NumpadEqualsAS400, NumpadLessThan, NumpadGreaterThan,
+        NumpadEnter,
+        NumpadPeriod,
+        NumpadComma,
 
-		Application /* On Windows, its the Windows key. */, Power, Menu, Help,
+        NumpadLeftParenthesis,
+        NumpadRightParenthesis,
+        NumpadLeftBrace,
+        NumpadRightBrace,
 
-		Undo /* Again */, Redo, Cut, Copy, Paste,
+        NumpadPlus,
+        NumpadMinus,
+        NumpadMultiply,
+        NumpadDivide,
+        NumpadEquals,
+        NumpadEqualsAS400,
+        NumpadLessThan,
+        NumpadGreaterThan,
 
-		Select, Find, Prior,
-		Clear, ClearAgain, Cancel, Stop,
-		
-		Execute, EraseEaze, SystemRequest, Separator,
-		Out, Oper, CrSel, ExSel,
-		
-		MuteVolume, IncreaseVolume, DecreaseVolume,
+        Application /* On Windows, its the Windows key. */,
+        Power,
+        Menu,
+        Help,
 
-		ThousandsSeparator, DecimalSeparator,
-		CurrencyUnit, CurrencySubUnit,
+        Undo /* Again */,
+        Redo,
+        Cut,
+        Copy,
+        Paste,
 
-		NumpadPower, NumpadSpace, NumpadTab, NumpadBackspace,
-		NumpadExclamationMark, NumpadAtSign, NumpadHashtag, NumpadPercent,
-		NumpadAmpersand, NumpadDoubleAmpersand,
-		NumpadVerticalBar, NumpadDoubleVerticalBar,
-		NumpadClear, NumpadClearEntry,
-		NumpadBinary, NumpadOctal, NumpadDecimal, NumpadHexadecimal,
-		NumpadColon, NumpadXor,
+        Select,
+        Find,
+        Prior,
+        Clear,
+        ClearAgain,
+        Cancel,
+        Stop,
 
-		NumpadMemAdd, NumpadMemSubtract, NumpadMemMultiply, NumpadMemDivide,
-		NumpadPlusMinus, NumpadMemStore, NumpadMemRecall, NumpadMemClear,
-		
-		Control, LeftControl, RightControl,
-		Shift, LeftShift, RightShift,
-		Alt, LeftAlt, RightAlt,
-		GUI, LeftGUI, RightGUI,
+        Execute,
+        EraseEaze,
+        SystemRequest,
+        Separator,
+        Out,
+        Oper,
+        CrSel,
+        ExSel,
 
-		ModeSwitch,
+        MuteVolume,
+        IncreaseVolume,
+        DecreaseVolume,
 
-		MediaSelect, NextMedia, PreviousMedia,
-		PlayMedia, StopMedia, FastForwardMedia, RewindMedia,
-		MuteMedia,
+        ThousandsSeparator,
+        DecimalSeparator,
+        CurrencyUnit,
+        CurrencySubUnit,
 
-		Computer, WorldWideWeb, Calculator, Mail,
+        NumpadPower,
+        NumpadSpace,
+        NumpadTab,
+        NumpadBackspace,
+        NumpadExclamationMark,
+        NumpadAtSign,
+        NumpadHashtag,
+        NumpadPercent,
+        NumpadAmpersand,
+        NumpadDoubleAmpersand,
+        NumpadVerticalBar,
+        NumpadDoubleVerticalBar,
+        NumpadClear,
+        NumpadClearEntry,
+        NumpadBinary,
+        NumpadOctal,
+        NumpadDecimal,
+        NumpadHexadecimal,
+        NumpadColon,
+        NumpadXor,
 
-		AppCtrlKeypadHome, AppCtrlKeypadSearch, AppCtrlKeypadForward, AppCtrlKeypadBack,
-		AppCtrlKeypadStop, AppCtrlKeypadRefresh, AppCtrlKeypadBookmarks,
+        NumpadMemAdd,
+        NumpadMemSubtract,
+        NumpadMemMultiply,
+        NumpadMemDivide,
+        NumpadPlusMinus,
+        NumpadMemStore,
+        NumpadMemRecall,
+        NumpadMemClear,
 
-		IncreaseBrightness, DecreaseBrightness,
-		IncreaseKeyboardIlluminationToggle, DecreaseKeyboardIllumination,
-		KeyboardIlluminationToggle,
+        Control,
+        LeftControl,
+        RightControl,
+        Shift,
+        LeftShift,
+        RightShift,
+        Alt,
+        LeftAlt,
+        RightAlt,
+        GUI,
+        LeftGUI,
+        RightGUI,
 
-		DisplaySwitch, Eject, Sleep,
+        ModeSwitch,
 
-		App1, App2,
+        MediaSelect,
+        NextMedia,
+        PreviousMedia,
+        PlayMedia,
+        StopMedia,
+        FastForwardMedia,
+        RewindMedia,
+        MuteMedia,
 
-		Count
-	};
+        Computer,
+        WorldWideWeb,
+        Calculator,
+        Mail,
 
-	/// @brief Static class containing functionality relevant to input processing.
-	class __firework_corelib_api Input final
-	{
-		static Mathematics::Vector2Int internalMousePosition;
-		static Mathematics::Vector2Int internalMouseMotion;
+        AppCtrlKeypadHome,
+        AppCtrlKeypadSearch,
+        AppCtrlKeypadForward,
+        AppCtrlKeypadBack,
+        AppCtrlKeypadStop,
+        AppCtrlKeypadRefresh,
+        AppCtrlKeypadBookmarks,
 
-		static bool heldMouseInputs[(size_t)MouseButton::Count];
-		static bool heldKeyInputs[(size_t)Key::Count];
+        IncreaseBrightness,
+        DecreaseBrightness,
+        IncreaseKeyboardIlluminationToggle,
+        DecreaseKeyboardIllumination,
+        KeyboardIlluminationToggle,
 
-		/// @internal
-		/// @brief Internal API. SDL mouse code to Firework::MouseButton
-		/// @warning This won't return a valid Firework::MouseButton if you don't pass it a valid SDL_BUTTON_*.
-		/// @param code Button to convert. From SDL_BUTTON_*.
-		/// @return Firework::MouseButton representing the mouse button.
-		/// @note Thread-safe.
-		static MouseButton convertFromSDLMouse(uint_fast8_t code);
-		/// @internal
-		/// @brief Internal API. SDL key code to Firework::Key.
-		/// @param code SDL_Keycode to convert.
-		/// @return Firework::Key representing the keyboard key.
-		/// @note Thread-safe.
-		static Key convertFromSDLKey(SDL_Keycode code);
-	public:
-		/// @brief Retrieve the mouse position in pixel units, with the centre of the Window as (0, 0).
-		/// @return Mouse position.
-		/// @note Main thread only.
-		inline static Mathematics::Vector2Int mousePosition()
-		{
-			return Input::internalMousePosition;
-		}
-		/// @brief Retrieve the mouse motion this frame in pixel units.
-		/// @return Amount mouse has moved this frame.
-		/// @note Main thread only.
-		inline static Mathematics::Vector2Int mouseMotion()
-		{
-			return Input::internalMouseMotion;
-		}
+        DisplaySwitch,
+        Eject,
+        Sleep,
 
-		/// @brief Retrieve whether mouse button is pressed this frame.
-		/// @param button Mouse button to check.
-		/// @return Whether button is pressed.
-		/// @note Main thread only.
-		inline static bool mouseHeld(MouseButton button)
-		{
-			return Input::heldMouseInputs[(size_t)button];
-		}
-		/// @brief Retrieve whether key is pressed this frame.
-		/// @param key Key to check.
-		/// @return Whether key is pressed.
-		/// @note Main thread only.
-		inline static bool keyHeld(Key key)
-		{
-			return Input::heldKeyInputs[(size_t)key];
-		}
+        App1,
+        App2,
 
-		static void beginQueryTextInput();
-		static void endQueryTextInput();
+        Count
+    };
 
-		friend class Firework::Internal::CoreEngine;
-	};
-}
+    /// @brief Static class containing functionality relevant to input processing.
+    class __firework_corelib_api Input final
+    {
+        static sysm::vector2i32 internalMousePosition;
+        static sysm::vector2i32 internalMouseMotion;
+
+        static bool heldMouseInputs[(size_t)MouseButton::Count];
+        static bool heldKeyInputs[(size_t)Key::Count];
+
+        /// @internal
+        /// @brief Internal API. SDL mouse code to Firework::MouseButton
+        /// @warning This won't return a valid Firework::MouseButton if you don't pass it a valid SDL_BUTTON_*.
+        /// @param code Button to convert. From SDL_BUTTON_*.
+        /// @return Firework::MouseButton representing the mouse button.
+        /// @note Thread-safe.
+        static MouseButton convertFromSDLMouse(uint_fast8_t code);
+        /// @internal
+        /// @brief Internal API. SDL key code to Firework::Key.
+        /// @param code SDL_Keycode to convert.
+        /// @return Firework::Key representing the keyboard key.
+        /// @note Thread-safe.
+        static Key convertFromSDLKey(SDL_Keycode code);
+    public:
+        /// @brief Retrieve the mouse position in pixel units, with the centre of the Window as (0, 0).
+        /// @return Mouse position.
+        /// @note Main thread only.
+        inline static sysm::vector2i32 mousePosition()
+        {
+            return Input::internalMousePosition;
+        }
+        /// @brief Retrieve the mouse motion this frame in pixel units.
+        /// @return Amount mouse has moved this frame.
+        /// @note Main thread only.
+        inline static sysm::vector2i32 mouseMotion()
+        {
+            return Input::internalMouseMotion;
+        }
+
+        /// @brief Retrieve whether mouse button is pressed this frame.
+        /// @param button Mouse button to check.
+        /// @return Whether button is pressed.
+        /// @note Main thread only.
+        inline static bool mouseHeld(MouseButton button)
+        {
+            return Input::heldMouseInputs[(size_t)button];
+        }
+        /// @brief Retrieve whether key is pressed this frame.
+        /// @param key Key to check.
+        /// @return Whether key is pressed.
+        /// @note Main thread only.
+        inline static bool keyHeld(Key key)
+        {
+            return Input::heldKeyInputs[(size_t)key];
+        }
+
+        static void beginQueryTextInput();
+        static void endQueryTextInput();
+
+        friend class Firework::Internal::CoreEngine;
+    };
+} // namespace Firework

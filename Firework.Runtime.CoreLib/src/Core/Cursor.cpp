@@ -6,7 +6,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 
 CursorTexture::CursorTexture(BuiltinCursorTexture texture) :
 internalCursor(SDL_CreateSystemCursor((SDL_SystemCursor)texture)) // Hope this is thread-safe lol.

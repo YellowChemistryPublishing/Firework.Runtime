@@ -1,4 +1,3 @@
-#include "Mathematics.h"
 #include <Firework.Core.hpp>
 
 #include <Components/Camera.h>
@@ -46,7 +45,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         if (button == MouseButton::Left)
         {
             rot += Vector3((float)Input::mouseMotion().x * Time::deltaTime(), (float)Input::mouseMotion().y * Time::deltaTime(), 0);
-            player->transform()->rotation = Quaternion::fromEuler(rot);
+            player->transform()->rotation = sysm::quaternion::fromEuler(rot);
         }
     };
     EngineEvent::OnTick += []
@@ -74,7 +73,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     EngineEvent::OnKeyHeld += [](Key key)
     {
         vec3 v = Vector3::forward;
-        v.rotate(Quaternion::identity);
+        v.rotate(sysm::quaternion::identity);
         switch (key)
         {
         case Key::LetterW:

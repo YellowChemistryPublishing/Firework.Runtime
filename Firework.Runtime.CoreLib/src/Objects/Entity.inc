@@ -3,17 +3,16 @@
 #include "Firework.Runtime.CoreLib.Exports.h"
 
 #include <concepts>
-#include <vector>
-#include <type_traits>
+#include <module/sys.Mathematics>
 #include <robin_hood.h>
+#include <type_traits>
+#include <vector>
 
-#include <Mathematics.h>
 #include <Core/Debug.h>
 #include <EntityComponentSystem/EntityManagement.h>
-#include <Objects/Component.h>
-#include <Library/ManagedArray.h>
 #include <Library/Hash.h>
 #include <Library/TypeInfo.h>
+#include <Objects/Component.h>
 
 ///
 /// The documentation in this file is incomplete, because the API is work-in-progress.
@@ -27,7 +26,7 @@ namespace Firework
     class Entity;
     class EntityManager;
     class Debug;
-    
+
     namespace Internal
     {
         class CoreEngine;
@@ -45,8 +44,8 @@ namespace Firework
         Entity* childrenFront = nullptr;
         Entity* childrenBack = nullptr;
 
-        //size_t getIndex();
-        //void setIndex(size_t value);
+        // size_t getIndex();
+        // void setIndex(size_t value);
 
         void insertBefore(Entity* entity);
         void insertAfter(Entity* entity);
@@ -58,8 +57,8 @@ namespace Firework
 
         Entity();
         Entity(Entity* parent);
-        Entity(const Mathematics::Vector3& localPosition, const Mathematics::Quaternion& localRotation, Entity* parent = nullptr);
-        Entity(const Mathematics::Vector3& localPosition, const Mathematics::Quaternion& localRotation, const Mathematics::Vector3& scale, Entity* parent = nullptr);
+        Entity(const sysm::vector3& localPosition, const sysm::quaternion& localRotation, Entity* parent = nullptr);
+        Entity(const sysm::vector3& localPosition, const sysm::quaternion& localRotation, const sysm::vector3& scale, Entity* parent = nullptr);
         ~Entity() override;
 
         /// @brief Retrieves the 3D transform component associated with this entity.
@@ -68,17 +67,15 @@ namespace Firework
         {
             return this->attachedTransform;
         }
-        
-        const Property<Entity*, Entity*> parent
+
+        const Property<Entity*, Entity*> parent { [this]() -> Entity* { return this->_parent; }, [this](Entity* value)
         {
-            [this]() -> Entity* { return this->_parent; },
-            [this](Entity* value) { this->setParent(value); }
-        };
+            this->setParent(value);
+        } };
         inline std::vector<Entity*> children() const
         {
             std::vector<Entity*> ret;
-            for (auto it = this->childrenFront; it != nullptr; ++it)
-                ret.push_back(it);
+            for (auto it = this->childrenFront; it != nullptr; ++it) ret.push_back(it);
             return ret;
         }
 
@@ -124,4 +121,4 @@ namespace Firework
         friend class Firework::Internal::CoreEngine;
         friend class Firework::Debug;
     };
-}
+} // namespace Firework

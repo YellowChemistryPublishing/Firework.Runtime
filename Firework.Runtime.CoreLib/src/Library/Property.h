@@ -138,8 +138,8 @@ namespace Firework
             return this->getter();
         }
     private:
-        const func::function<GetterReturnType()> getter;
-        const func::function<void(SetterInputType)> setter;
+        [[no_unique_address]] const func::function<GetterReturnType()> getter;
+        [[no_unique_address]] const func::function<void(SetterInputType)> setter;
     };
     template <typename SetterInputType>
     struct Property<void, SetterInputType>
@@ -152,6 +152,6 @@ namespace Firework
             return this->setter(other);
         }
     private:
-        const func::function<void(SetterInputType)> setter;
+        [[no_unique_address]] const func::function<void(SetterInputType)> setter;
     };
 }

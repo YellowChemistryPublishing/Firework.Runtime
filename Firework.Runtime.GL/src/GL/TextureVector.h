@@ -3,7 +3,8 @@
 #include "Firework.Runtime.GL.Exports.h"
 #include <GL.Config.h>
 
-#include <Mathematics.h>
+#include <module/sys.Mathematics>
+
 #include <GL/Texture.h>
 
 namespace Firework::GL
@@ -11,7 +12,7 @@ namespace Firework::GL
     template <uint16_t Vec4Count>
     struct TextureVectorElement
     {
-        Mathematics::Vector4 elementData[Vec4Count];
+        sysm::vector4 elementData[Vec4Count];
     };
 
     template <uint16_t Vec4Count>

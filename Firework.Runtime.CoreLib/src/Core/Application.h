@@ -4,7 +4,8 @@
 
 #include <concurrentqueue.h>
 #include <function.h>
-#include <Mathematics.h>
+#include <module/sys.Mathematics>
+
 #include <Library/Property.h>
 
 namespace Firework
@@ -15,7 +16,7 @@ namespace Firework
     {
         class ShaderUtility;
         class CoreEngine;
-    }
+    } // namespace Internal
 
     namespace PackageSystem
     {
@@ -26,7 +27,7 @@ namespace Firework
     {
         std::string windowName = "Program";
         bool windowResizeable = true;
-        Mathematics::Vector2Int resolution = Mathematics::Vector2Int(1280, 720);
+        sysm::vector2i32 resolution = sysm::vector2i32(1280, 720);
     };
 
     /// @brief Static class containing functionality relevant to the currently running program.
@@ -37,7 +38,7 @@ namespace Firework
         static moodycamel::ConcurrentQueue<func::function<void()>> windowThreadQueue;
 
         static RuntimeInitializationOptions _initializationOptions;
-        
+
         static float secondsPerFrame;
     public:
         Application() = delete;
@@ -48,7 +49,7 @@ namespace Firework
         /// @param job Job to queue.
         /// @note Thread-safe.
         template <typename Func>
-		requires std::constructible_from<func::function<void()>, Func&&>
+        requires std::constructible_from<func::function<void()>, Func&&>
         inline static void queueJobForMainThread(Func&& job)
         {
             Application::mainThreadQueue.enqueue(job);
@@ -59,7 +60,7 @@ namespace Firework
         /// @param job Job to queue.
         /// @note Thread-safe.
         template <typename Func>
-		requires std::constructible_from<func::function<void()>, Func&&>
+        requires std::constructible_from<func::function<void()>, Func&&>
         inline static void queueJobForWorkerThread(Func&& job)
         {
             Application::workerThreadQueue.enqueue(job);
@@ -70,7 +71,7 @@ namespace Firework
         /// @param job Job to queue.
         /// @note Thread-safe.
         template <typename Func>
-		requires std::constructible_from<func::function<void()>, Func&&>
+        requires std::constructible_from<func::function<void()>, Func&&>
         inline static void queueJobForWindowThread(Func&& job)
         {
             Application::windowThreadQueue.enqueue(job);
@@ -110,4 +111,4 @@ namespace Firework
 
         friend class Firework::Internal::CoreEngine;
     };
-}
+} // namespace Firework

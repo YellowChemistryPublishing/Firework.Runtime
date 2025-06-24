@@ -1,6 +1,7 @@
 #include "RectTransform.h"
 
 #include <cmath>
+#include <module/sys.Mathematics>
 
 #include <GL/Renderer.h>
 #include <Objects/Entity2D.h>
@@ -10,10 +11,10 @@ using namespace Firework::Internal;
 using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
-constexpr static auto rotatePointAround = [](Vector2& point, const Vector2& rotateAround, float angle) -> void
+constexpr static void rotatePointAround(sysm::vector2& point, const sysm::vector2& rotateAround, float angle)
 {
-    float s = sinf(-angle * (float)Math::pi / 180.0f);
-    float c = cosf(-angle * (float)Math::pi / 180.0f);
+    float s = std::sinf(-angle * std::numbers::pi_v<float> / 180.0f);
+    float c = std::cosf(-angle * std::numbers::pi_v<float> / 180.0f);
 
     float x = point.x - rotateAround.x;
     float y = point.y - rotateAround.y;
@@ -21,30 +22,23 @@ constexpr static auto rotatePointAround = [](Vector2& point, const Vector2& rota
     point.x = x * c - y * s + rotateAround.x;
     point.y = x * s + y * c + rotateAround.y;
 };
-constexpr static auto rotatePointAroundOrigin = [](Vector2& point, float angle) -> void
+constexpr static void rotatePointAroundOrigin(sysm::vector2& point, float angle)
 {
-    float s = sinf(-angle * (float)Math::pi / 180.0f);
-    float c = cosf(-angle * (float)Math::pi / 180.0f);
-
-    float x = point.x;
-    float y = point.y;
-
-    point.x = x * c - y * s;
-    point.y = x * s + y * c;
+    return rotatePointAround(point, sysm::vector2::zero, angle);
 };
 
 namespace Firework::Internal
 {
-    RenderTransform renderTransformFromRectTransform(RectTransform* const transform)
+    RenderTransform renderTransformFromRectTransform(const RectTransform* const transform)
     {
         RenderTransform ret;
-        ret.scale({ (transform->rect().right - transform->rect().left) / 2.0f * transform->scale().x, (transform->rect().top - transform->rect().bottom) / 2.0f * transform->scale().y, 0 });
+        ret.scale({ transform->rect().width() / 2.0f * transform->scale().x, transform->rect().height() / 2.0f * transform->scale().y, 0 });
         ret.translate({ (transform->rect().right + transform->rect().left) / 2.0f, (transform->rect().top + transform->rect().bottom) / 2.0f, 0.0f });
         ret.rotate(Renderer::fromEuler({ 0, 0, -transform->rotation() }));
         ret.translate({ transform->position().x, transform->position().y, 0.0f });
         return ret;
     }
-}
+} // namespace Firework::Internal
 
 void RectTransform::setRect(const RectFloat& value)
 {
@@ -60,14 +54,12 @@ void RectTransform::setRect(const RectFloat& value)
             it->attachedRectTransform->_dirty = true;
             RectFloat localDelta = delta * it->attachedRectTransform->_anchor;
             it->attachedRectTransform->_rect += localDelta;
-            if (it->attachedRectTransform->_positionAnchor != RectFloat(0, 0, 0, 0))
+            if (it->attachedRectTransform->_positionAnchor != RectFloat(0.0f))
             {
-                it->attachedRectTransform->setLocalPosition
-                (
+                it->attachedRectTransform->setLocalPosition(
                     it->attachedRectTransform->getLocalPosition() +
-                    Vector2(delta.right, delta.top) * Vector2(it->attachedRectTransform->_positionAnchor.right, it->attachedRectTransform->_positionAnchor.top) +
-                    Vector2(delta.left, delta.bottom) * Vector2(it->attachedRectTransform->_positionAnchor.left, it->attachedRectTransform->_positionAnchor.bottom)
-                );
+                    sysm::vector2(delta.right, delta.top) * sysm::vector2(it->attachedRectTransform->_positionAnchor.right, it->attachedRectTransform->_positionAnchor.top) +
+                    sysm::vector2(delta.left, delta.bottom) * sysm::vector2(it->attachedRectTransform->_positionAnchor.left, it->attachedRectTransform->_positionAnchor.bottom));
             }
             recurse(recurse, it, localDelta);
         }
@@ -75,11 +67,11 @@ void RectTransform::setRect(const RectFloat& value)
     recurse(recurse, this->attachedEntity, delta);
 }
 
-void RectTransform::setPosition(Vector2 value)
+void RectTransform::setPosition(sysm::vector2 value)
 {
     this->_dirty = true;
-    
-    Vector2 delta = value - this->_position;
+
+    sysm::vector2 delta = value - this->_position;
     this->_position = value;
 
     auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity2D* entity) -> void
@@ -112,11 +104,11 @@ void RectTransform::setRotation(float value)
     };
     setChildrenRotationRecursive(setChildrenRotationRecursive, this->attachedEntity);
 }
-void RectTransform::setScale(Vector2 value)
+void RectTransform::setScale(sysm::vector2 value)
 {
     this->_dirty = true;
 
-    Vector2 delta = value / this->_scale;
+    sysm::vector2 delta = value / this->_scale;
     this->_scale = value;
 
     auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity2D* entity) -> void
@@ -132,29 +124,31 @@ void RectTransform::setScale(Vector2 value)
     setChildrenScaleRecursive(setChildrenScaleRecursive, this->attachedEntity);
 }
 
-Vector2 RectTransform::getLocalPosition() const
+sysm::vector2 RectTransform::getLocalPosition() const
 {
     Entity2D* parent = this->attachedEntity->_parent;
     if (parent)
     {
-        Vector2 locPos = (this->_position - parent->attachedRectTransform->_position) / parent->attachedRectTransform->_scale;
+        sysm::vector2 locPos = (this->_position - parent->attachedRectTransform->_position) / parent->attachedRectTransform->_scale;
         rotatePointAroundOrigin(locPos, -parent->attachedRectTransform->_rotation);
         return locPos;
     }
-    else return this->_position;
+    else
+        return this->_position;
 }
-void RectTransform::setLocalPosition(Vector2 value)
+void RectTransform::setLocalPosition(sysm::vector2 value)
 {
     this->_dirty = true;
 
     Entity2D* parent = this->attachedEntity->_parent;
-    Vector2 delta;
+    sysm::vector2 delta;
     if (parent)
     {
         rotatePointAroundOrigin(value, parent->attachedRectTransform->_rotation);
         delta = parent->attachedRectTransform->_position + parent->attachedRectTransform->_scale * value - this->_position;
     }
-    else delta = value - this->_position;
+    else
+        delta = value - this->_position;
     this->_position += delta;
 
     auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity2D* entity) -> void
@@ -181,7 +175,8 @@ void RectTransform::setLocalRotation(float value)
     float delta;
     if (parent)
         delta = parent->attachedRectTransform->_rotation + value - this->_rotation;
-    else delta = value - this->_rotation;
+    else
+        delta = value - this->_rotation;
     this->_rotation += delta;
 
     auto setChildrenRotationRecursive = [&, this](auto&& setChildrenRotationRecursive, Entity2D* entity) -> void
@@ -196,20 +191,21 @@ void RectTransform::setLocalRotation(float value)
     };
     setChildrenRotationRecursive(setChildrenRotationRecursive, this->attachedEntity);
 }
-Vector2 RectTransform::getLocalScale() const
+sysm::vector2 RectTransform::getLocalScale() const
 {
     Entity2D* parent = this->attachedEntity->_parent;
     return parent ? this->_scale / parent->attachedRectTransform->_scale : this->_scale;
 }
-void RectTransform::setLocalScale(Vector2 value)
+void RectTransform::setLocalScale(sysm::vector2 value)
 {
     this->_dirty = true;
 
     Entity2D* parent = this->attachedEntity->_parent;
-    Vector2 delta;
+    sysm::vector2 delta;
     if (parent)
         delta = value * parent->attachedRectTransform->_scale / this->_scale;
-    else delta = value / this->_scale;
+    else
+        delta = value / this->_scale;
     this->_scale *= delta;
 
     auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity2D* entity) -> void
@@ -225,32 +221,30 @@ void RectTransform::setLocalScale(Vector2 value)
     setChildrenScaleRecursive(setChildrenScaleRecursive, this->attachedEntity);
 }
 
-bool RectTransform::queryPointIn(const Vector2& point)
+bool RectTransform::queryPointIn(const sysm::vector2& point)
 {
     float rL = this->_rect.left * this->_scale.x;
     float rB = this->_rect.bottom * this->_scale.y;
 
-    Vector2 vA(this->_rect.right * this->_scale.x, rB);
+    sysm::vector2 vA(this->_rect.right * this->_scale.x, rB);
     rotatePointAroundOrigin(vA, this->_rotation);
-    Vector2 vB(rL, rB);
+    sysm::vector2 vB(rL, rB);
     rotatePointAroundOrigin(vB, this->_rotation);
-    Vector2 vC(rL, this->_rect.top * this->_scale.y);
+    sysm::vector2 vC(rL, this->_rect.top * this->_scale.y);
     rotatePointAroundOrigin(vC, this->_rotation);
 
-    Vector2 vAB = vB - vA;
-    Vector2 vBC = vC - vB;
+    sysm::vector2 vAB = vB - vA;
+    sysm::vector2 vBC = vC - vB;
 
     vA += this->_position;
     vB += this->_position;
     vC += this->_position;
 
-    Vector2 vAM = point - vA;
-    Vector2 vBM = point - vB;
+    sysm::vector2 vAM = point - vA;
+    sysm::vector2 vBM = point - vB;
 
-    float dABAM = Math::dot(vAB, vAM);
-    float dBCBM = Math::dot(vBC, vBM);
+    float dABAM = sysm::dot(vAB, vAM);
+    float dBCBM = sysm::dot(vBC, vBM);
 
-    return
-    0.0f <= dABAM && dABAM <= Math::dot(vAB, vAB) &&
-    0.0f <= dBCBM && dBCBM <= Math::dot(vBC, vBC);
+    return 0.0f <= dABAM && dABAM <= Math::dot(vAB, vAB) && 0.0f <= dBCBM && dBCBM <= Math::dot(vBC, vBC);
 }

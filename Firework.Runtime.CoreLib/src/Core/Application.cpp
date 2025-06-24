@@ -6,7 +6,6 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 
 moodycamel::ConcurrentQueue<func::function<void()>> Application::mainThreadQueue;
 moodycamel::ConcurrentQueue<func::function<void()>> Application::workerThreadQueue;

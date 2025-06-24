@@ -3,20 +3,17 @@
 #include <cmath>
 #include <numeric>
 #include <tuple>
-#include <Mathematics.h>
 #include <Core/CoreEngine.h>
 #include <Core/Debug.h>
 #include <Core/Display.h>
 #include <Components/RectTransform.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <GL/Renderer.h>
-#include <Library/FixedWidth.h>
 
 #include <Text.vfAll.h>
 
 using namespace Firework;
 using namespace Firework::Internal;
-using namespace Firework::Mathematics;
 using namespace Firework::Typography;
 using namespace Firework::GL;
 using namespace Firework::PackageSystem;
@@ -964,10 +961,10 @@ void Text::renderOffload()
             for (auto it = renderData->second.begin(); it != renderData->second.end(); ++it)
             {
                 Vector2 tl(0.0f, 1.0f), tr(1.0f, 1.0f), bl(0.0f, 0.0f), br(1.0f, 0.0f);
-                Vector4 tl4 = it->second.tf * Vector4(tl.x, tl.y, 0.0f, 1.0f);
-                Vector4 tr4 = it->second.tf * Vector4(tr.x, tr.y, 0.0f, 1.0f);
-                Vector4 bl4 = it->second.tf * Vector4(bl.x, bl.y, 0.0f, 1.0f);
-                Vector4 br4 = it->second.tf * Vector4(br.x, br.y, 0.0f, 1.0f);
+                sysm::vector4 tl4 = it->second.tf * sysm::vector4(tl.x, tl.y, 0.0f, 1.0f);
+                sysm::vector4 tr4 = it->second.tf * sysm::vector4(tr.x, tr.y, 0.0f, 1.0f);
+                sysm::vector4 bl4 = it->second.tf * sysm::vector4(bl.x, bl.y, 0.0f, 1.0f);
+                sysm::vector4 br4 = it->second.tf * sysm::vector4(br.x, br.y, 0.0f, 1.0f);
                 tl = Vector2(tl4.x, tl4.y);
                 tr = Vector2(tr4.x, tr4.y);
                 bl = Vector2(bl4.x, bl4.y);

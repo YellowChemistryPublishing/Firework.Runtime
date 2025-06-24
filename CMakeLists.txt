@@ -215,9 +215,12 @@ set(BGFX_BUILD_EXAMPLES ON CACHE INTERNAL "" FORCE)
 set(BGFX_CONFIG_MULTITHREADED OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 
+# libcxxext
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/libcxxext")
+
 # Firework.Runtime
 
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 26)
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 set(CMAKE_DEBUG_POSTFIX "" CACHE INTERNAL "")
@@ -239,10 +242,6 @@ message(STATUS "[FireworkConfigure] [INFO]  Compilation target ${FIREWORK_TARGET
 
 # Firework.Tools
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/Firework.Tools")
-
-# Firework.Mathematics
-add_library(Firework.Mathematics INTERFACE)
-target_include_directories(Firework.Mathematics INTERFACE "${CMAKE_CURRENT_LIST_DIR}/Firework.Mathematics/include")
 
 # Firework.Typography
 
@@ -323,8 +322,8 @@ target_include_directories(Firework.Runtime.GL
 )
 target_link_libraries(Firework.Runtime.GL
     PUBLIC
-    Firework.Mathematics
     assimp
+    sys.Mathematics
     PRIVATE
     bimg
     bx
@@ -450,7 +449,7 @@ target_link_libraries(Firework.Runtime.CoreLib
     PUBLIC
     concurrentqueue
     robin_hood
-    Firework.Mathematics
+    sys.Mathematics
     Firework.Runtime.RenderPipeline
     Firework.Runtime.GL
     PRIVATE
@@ -533,7 +532,6 @@ target_include_directories(Firework.Components.Core2D
 )
 target_link_libraries(Firework.Components.Core2D
     PUBLIC
-    Firework.Mathematics
     Firework.Runtime.CoreLib
     Firework.Runtime.GL
     Firework.Typography

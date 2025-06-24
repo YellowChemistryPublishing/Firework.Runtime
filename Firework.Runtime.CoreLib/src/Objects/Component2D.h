@@ -5,8 +5,6 @@
 #include <list>
 
 #include <Objects/Object.h>
-#include <Library/MemoryChunk.h>
-#include <Library/MinAllocList.h>
 #include <Library/Property.h>
 
 namespace Firework

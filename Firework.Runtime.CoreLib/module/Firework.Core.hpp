@@ -25,14 +25,7 @@
 #include <Objects/Entity.h>
 #include <Objects/Object.h>
 
-#include <Library/Error.h>
 #include <Library/Event.h>
 #include <Library/Hash.h>
-#include <Library/Lock.h>
-#include <Library/ManagedArray.h>
-#include <Library/MemoryChunk.h>
-#include <Library/MinAllocList.h>
 #include <Library/Property.h>
-#include <Library/StaticQueue.h>
-#include <Library/TupleHash.h>
 #include <Library/TypeInfo.h>

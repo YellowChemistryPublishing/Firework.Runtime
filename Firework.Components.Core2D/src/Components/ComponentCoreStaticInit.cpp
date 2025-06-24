@@ -2,13 +2,11 @@
 #include <Components/Mask.h>
 #include <Components/Panel.h>
 #include <Components/Text.h>
-#include <Components/Button.h>
 #include <Core/PackageManager.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <EntityComponentSystem/EntityManagement.h>
 #include <Library/TypeInfo.h>
 
-#include <Mathematics.h>
 #include <Components/RectTransform.h>
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/EngineEvent.h>
@@ -38,41 +36,26 @@ namespace Firework::Internal
             };
             EngineEvent::OnTick += []
             {
-                CoreEngine::queueRenderJobForFrame([]
-                {
-                    Mask::currentRenderMaskValue = 0;
-                });
+                CoreEngine::queueRenderJobForFrame([] { Mask::currentRenderMaskValue = 0; });
             };
             InternalEngineEvent::OnRenderOffloadForComponent2D += [](Component2D* component)
             {
                 switch (component->typeIndex())
                 {
-                case __typeid(Mask).qualifiedNameHash():
-                    static_cast<Mask*>(component)->renderOffload();
-                    break;
-                case __typeid(Panel).qualifiedNameHash():
-                    static_cast<Panel*>(component)->renderOffload();
-                    break;
-                case __typeid(Image).qualifiedNameHash():
-                    static_cast<Image*>(component)->renderOffload();
-                    break;
-                case __typeid(Text).qualifiedNameHash():
-                    static_cast<Text*>(component)->renderOffload();
-                    break;
-                case __typeid(ColorHighlightButton).qualifiedNameHash():
-                    static_cast<ColorHighlightButton*>(component)->renderOffload();
-                    break;
+                case __typeid(Mask).qualifiedNameHash(): static_cast<Mask*>(component)->renderOffload(); break;
+                case __typeid(Panel).qualifiedNameHash(): static_cast<Panel*>(component)->renderOffload(); break;
+                case __typeid(Image).qualifiedNameHash(): static_cast<Image*>(component)->renderOffload(); break;
+                case __typeid(Text).qualifiedNameHash(): static_cast<Text*>(component)->renderOffload(); break;
+                case __typeid(ColorHighlightButton).qualifiedNameHash(): static_cast<ColorHighlightButton*>(component)->renderOffload(); break;
                 }
             };
             InternalEngineEvent::OnLateRenderOffloadForComponent2D += [](Component2D* component)
             {
                 switch (component->typeIndex())
                 {
-                case __typeid(Mask).qualifiedNameHash():
-                    static_cast<Mask*>(component)->lateRenderOffload();
-                    break;
+                case __typeid(Mask).qualifiedNameHash(): static_cast<Mask*>(component)->lateRenderOffload(); break;
                 }
             };
         }
     } init;
-}
+} // namespace Firework::Internal

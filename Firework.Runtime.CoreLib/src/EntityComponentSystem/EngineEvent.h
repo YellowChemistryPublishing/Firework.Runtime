@@ -39,13 +39,13 @@ namespace Firework
         /// @note Main thread only.
         static FuncPtrEvent<MouseButton> OnMouseUp;
         /// @brief Event raised when the cursor is moved.
-        /// @param from ```Firework::Mathematics::Vector2Int```. The previous position of the cursor. Retrieve the current position of the cursor with ```Firework::Input::mousePosition()```.
+        /// @param from ```sysm::vector2i32```. The previous position of the cursor. Retrieve the current position of the cursor with ```Firework::Input::mousePosition()```.
         /// @note Main thread only.
-        static FuncPtrEvent<Mathematics::Vector2Int> OnMouseMove;
+        static FuncPtrEvent<sysm::vector2i32> OnMouseMove;
         /// @brief Event raised when the mouse scrolls.
-        /// @param scroll ```Firework::Mathematics::Vector2```. The scroll amount in the x and y directions.
+        /// @param scroll ```sysm::vector2```. The scroll amount in the x and y directions.
         /// @note Main thread only.
-        static FuncPtrEvent<Mathematics::Vector2> OnMouseScroll;
+        static FuncPtrEvent<sysm::vector2> OnMouseScroll;
 
         /// @brief Event raised when a key is pressed down.
         /// @param key ```Firework::Key```
@@ -72,9 +72,9 @@ namespace Firework
         static FuncPtrEvent<const std::u32string&> OnTextInput;
         
         /// @brief Event raised when the window is resized.
-        /// @param from ```Firework::Mathematics::Vector2Int```. The previous size of the window. Retrieve the current window size with ```Firework::Window::pixelWidth()``` and ```Firework::Window::pixelHeight()```.
+        /// @param from ```sysm::vector2i32```. The previous size of the window. Retrieve the current window size with ```Firework::Window::pixelWidth()``` and ```Firework::Window::pixelHeight()```.
         /// @note Main thread only.
-        static FuncPtrEvent<Mathematics::Vector2Int> OnWindowResize;
+        static FuncPtrEvent<sysm::vector2i32> OnWindowResize;
 
         /// @brief Event raised when the window is brought into focus.
         /// @note Main thread only.

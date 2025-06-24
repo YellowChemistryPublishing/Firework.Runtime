@@ -2,18 +2,17 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
-#include <vector>
-#include <type_traits>
+#include <module/sys.Mathematics>
 #include <robin_hood.h>
+#include <type_traits>
+#include <vector>
 
-#include <Mathematics.h>
-#include <Core/Debug.h>
 #include <Components/RectTransform.h>
+#include <Core/Debug.h>
 #include <EntityComponentSystem/EntityManagement.h>
-#include <Objects/Component2D.h>
-#include <Library/ManagedArray.h>
 #include <Library/Hash.h>
 #include <Library/TypeInfo.h>
+#include <Objects/Component2D.h>
 
 ///
 /// The documentation in this file is incomplete, because the API is work-in-progress.
@@ -27,7 +26,7 @@ namespace Firework
     class Entity2D;
     class EntityManager;
     class Debug;
-    
+
     namespace Internal
     {
         class CoreEngine;
@@ -45,8 +44,8 @@ namespace Firework
         Entity2D* childrenFront = nullptr;
         Entity2D* childrenBack = nullptr;
 
-        //size_t getIndex();
-        //void setIndex(size_t value);
+        // size_t getIndex();
+        // void setIndex(size_t value);
 
         void insertBefore(Entity2D* entity);
         void insertAfter(Entity2D* entity);
@@ -58,8 +57,8 @@ namespace Firework
 
         Entity2D();
         Entity2D(Entity2D* parent);
-        Entity2D(const Mathematics::Vector2& localPosition, float localRotation, Entity2D* parent = nullptr);
-        Entity2D(const Mathematics::Vector2& localPosition, float localRotation, const Mathematics::Vector2& scale, Entity2D* parent = nullptr);
+        Entity2D(const sysm::vector2& localPosition, float localRotation, Entity2D* parent = nullptr);
+        Entity2D(const sysm::vector2& localPosition, float localRotation, const sysm::vector2& scale, Entity2D* parent = nullptr);
         ~Entity2D() override;
 
         /// @brief Retrieves the 2D transform component associated with this entity.
@@ -68,17 +67,15 @@ namespace Firework
         {
             return this->attachedRectTransform;
         }
-        
-        const Property<Entity2D*, Entity2D*> parent
+
+        const Property<Entity2D*, Entity2D*> parent { [this]() -> Entity2D* { return this->_parent; }, [this](Entity2D* value)
         {
-            [this]() -> Entity2D* { return this->_parent; },
-            [this](Entity2D* value) { this->setParent(value); }
-        };
+            this->setParent(value);
+        } };
         inline std::vector<Entity2D*> children() const
         {
             std::vector<Entity2D*> ret;
-            for (auto it = this->childrenFront; it != nullptr; ++it)
-                ret.push_back(it);
+            for (auto it = this->childrenFront; it != nullptr; ++it) ret.push_back(it);
             return ret;
         }
 
@@ -106,4 +103,4 @@ namespace Firework
         friend class Firework::Internal::CoreEngine;
         friend class Firework::Debug;
     };
-}
+} // namespace Firework

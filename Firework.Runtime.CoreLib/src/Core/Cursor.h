@@ -3,8 +3,8 @@
 #include "Firework.Runtime.CoreLib.Exports.h"
 
 #include <SDL3/SDL.h>
+#include <module/sys.Mathematics>
 
-#include <Mathematics.h>
 #include <Library/Property.h>
 
 namespace Firework
@@ -28,7 +28,7 @@ namespace Firework
         BiArrowHorizontal = SDL_SYSTEM_CURSOR_EW_RESIZE,
         BiArrowVertical = SDL_SYSTEM_CURSOR_NS_RESIZE,
         Move = SDL_SYSTEM_CURSOR_MOVE,
-        No = SDL_SYSTEM_CURSOR_NOT_ALLOWED, // Red circle with a line through it!
+        No = SDL_SYSTEM_CURSOR_NOT_ALLOWED,  // Red circle with a line through it!
         Pointer = SDL_SYSTEM_CURSOR_POINTER, // Hand cursor!
         ArrowTopLeft = SDL_SYSTEM_CURSOR_NW_RESIZE,
         ArrowUp = SDL_SYSTEM_CURSOR_N_RESIZE,
@@ -53,7 +53,7 @@ namespace Firework
         ~CursorTexture();
     private:
         SDL_Cursor* internalCursor;
-        
+
         friend class Firework::Cursor;
     };
 
@@ -72,4 +72,4 @@ namespace Firework
 
         friend class Firework::Internal::CoreEngine;
     };
-}
+} // namespace Firework

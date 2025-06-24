@@ -1,6 +1,5 @@
 #include "Panel.h"
 
-#include <Mathematics.h>
 #include <Core/CoreEngine.h>
 #include <Components/RectTransform.h>
 #include <EntityComponentSystem/EngineEvent.h>
@@ -40,7 +39,7 @@ void Panel::renderInitialize()
             throw "unimplemented";
         }
         
-        Vector3 unitSquareVerts[]
+        sysm::vector3 unitSquareVerts[]
         {
             { -1.0f, -1.0f, 1.0f },
             { -1.0f, 1.0f, 1.0f },

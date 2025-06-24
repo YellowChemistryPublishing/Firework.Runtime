@@ -27,7 +27,7 @@ void DirectionalLightManager::dtor()
     delete DirectionalLightManager::directionalLights;
     DirectionalLightManager::directionalLightsSampler.destroy();
 }
-uint16_t DirectionalLightManager::pushDirectionalLight(const Mathematics::Vector3& pos, const Mathematics::Vector3& color)
+uint16_t DirectionalLightManager::pushDirectionalLight(const sysm::vector3& pos, const sysm::vector3& color)
 {
     return 0;
 }
@@ -35,7 +35,7 @@ void DirectionalLightManager::popDirectionalLight(uint16_t index)
 {
 }
 
-DirectionalLightHandle DirectionalLightHandle::create(const Mathematics::Vector3& pos, const Mathematics::Vector3& color)
+DirectionalLightHandle DirectionalLightHandle::create(const sysm::vector3& pos, const sysm::vector3& color)
 {
     DirectionalLightHandle ret;
     ret.index = DirectionalLightManager::pushDirectionalLight(pos, color);

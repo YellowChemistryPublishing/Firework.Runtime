@@ -1,4 +1,3 @@
-#include <Mathematics.h>
 #include <Components/Camera.h>
 #include <Components/Mesh.h>
 #include <EntityComponentSystem/EngineEvent.h>
@@ -20,9 +19,7 @@ namespace Firework::Internal
             {
                 switch (component->typeIndex())
                 {
-                case __typeid(Mesh).qualifiedNameHash():
-                    static_cast<Mesh*>(component)->renderOffload();
-                    break;
+                case __typeid(Mesh).qualifiedNameHash(): static_cast<Mesh*>(component)->renderOffload(); break;
                 }
             };
             EngineEvent::OnTick += []
@@ -32,4 +29,4 @@ namespace Firework::Internal
             };
         }
     } init;
-}
+} // namespace Firework::Internal

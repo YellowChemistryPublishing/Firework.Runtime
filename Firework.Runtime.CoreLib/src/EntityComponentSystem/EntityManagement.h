@@ -5,13 +5,12 @@
 #include <initializer_list>
 #include <list>
 #include <map>
-#include <tuple>
 #include <robin_hood.h>
+#include <tuple>
+
 #include <EntityComponentSystem/SceneManagement.h>
-#include <Objects/Entity2D.inc>
 #include <Objects/Entity.inc>
-#include <Library/MinAllocList.h>
-#include <Library/TupleHash.h>
+#include <Objects/Entity2D.inc>
 
 namespace Firework
 {
@@ -24,7 +23,7 @@ namespace Firework
     {
         class Component2D;
         class CoreEngine;
-        
+
         /// @internal
         /// @brief Internal API. Hashes an entity-component pair.
         /// @tparam EntityType Either ```Firework::Entity2D``` or ```Firework::Entity```.
@@ -40,7 +39,7 @@ namespace Firework
                 return (a + b) / 2 * (a + b + 1) + b; // Cantor pairing function. Good enough.
             }
         };
-    }
+    } // namespace Internal
 
     /// @brief Static class containing functionality relevant to 2D entities.
     class __firework_corelib_api EntityManager2D final
@@ -61,27 +60,18 @@ namespace Firework
             auto recurse = [&](auto&& recurse, Entity2D* entity) -> void
             {
                 func(entity);
-                for (auto it = entity->childrenFront; it != nullptr; it = it->next)
-                    recurse(recurse, it);
+                for (auto it = entity->childrenFront; it != nullptr; it = it->next) recurse(recurse, it);
             };
 
-            for
-            (
-                auto _it1 = SceneManager::existingScenes.begin();
-                _it1 != SceneManager::existingScenes.end();
-                ++_it1
-            )
+            for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)
             {
                 Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
                 if (it1->active)
                 {
-                    for
-                    (
-                        auto it2 = it1->front2D;
-                        it2 != nullptr;
-                        it2 = it2->next
-                    )
-                    { recurse(recurse, it2); }
+                    for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next)
+                    {
+                        recurse(recurse, it2);
+                    }
                 }
             }
         }
@@ -98,12 +88,7 @@ namespace Firework
         {
             EntityManager2D::foreachEntity([&](Entity2D* entity)
             {
-                for
-                (
-                    auto it = EntityManager2D::existingComponents.begin();
-                    it != EntityManager2D::existingComponents.end();
-                    ++it
-                )
+                for (auto it = EntityManager2D::existingComponents.begin(); it != EntityManager2D::existingComponents.end(); ++it)
                 {
                     auto component = EntityManager2D::components.find(std::make_pair(entity, it->first));
                     if (component != EntityManager2D::components.end() && component->second->active)
@@ -119,7 +104,7 @@ namespace Firework
         /// @note Main thread only.
         template <typename... Ts, typename Func>
         inline static void foreachEntityWithAll(const Func&& func)
-        requires (std::derived_from<Ts, Internal::Component2D> && ...) && requires { func::function<void(Entity2D*, Ts*...)>(func); }
+        requires (std::derived_from<Ts, Internal::Component2D> && ...) && requires { func::function<void(Entity2D*, Ts * ...)>(func); }
         {
             EntityManager2D::foreachEntity([&](Entity2D* entity)
             {
@@ -129,11 +114,11 @@ namespace Firework
                     return it != EntityManager2D::components.end() ? it->second : nullptr;
                 };
 
-                Internal::Component2D* arr[sizeof...(Ts)] { std::is_same<Ts, RectTransform>::value ? entity->attachedRectTransform : componentIfExistsOrNull(entity, __typeid(Ts).qualifiedNameHash()) ... };
+                Internal::Component2D* arr[sizeof...(Ts)] { std::is_same<Ts, RectTransform>::value ? entity->attachedRectTransform
+                                                                                                   : componentIfExistsOrNull(entity, __typeid(Ts).qualifiedNameHash())... };
 
                 bool pred = true;
-                for (auto it = arr; it != arr + sizeof...(Ts); ++it)
-                    pred = pred && (*it != nullptr);
+                for (auto it = arr; it != arr + sizeof...(Ts); ++it) pred = pred && (*it != nullptr);
 
                 size_t i = 0;
                 if (pred)
@@ -159,4 +144,4 @@ namespace Firework
         friend class Firework::Internal::Component;
         friend class Firework::Internal::CoreEngine;
     };
-}
+} // namespace Firework

@@ -1,16 +1,15 @@
 #include "RenderPipeline.h"
 
-#include <Mathematics.h>
+#include <chrono>
+#include <module/sys.Mathematics>
+#include <thread>
+
 #include <GL/Light.h>
 #include <GL/Renderer.h>
 
 #include <Generic.vfAll.h>
 
-#include <thread>
-#include <chrono>
-
 using namespace Firework;
-using namespace Firework::Mathematics;
 using namespace Firework::GL;
 
 static GeometryProgramHandle genericProgram;
@@ -24,19 +23,23 @@ void RenderPipeline::init()
 {
     switch (Renderer::rendererBackend())
     {
-    #if _WIN32
+#if _WIN32
     case RendererBackend::Direct3D11:
-        genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, d3d11), { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
+        genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, d3d11),
+                                                       { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
         break;
     case RendererBackend::Direct3D12:
-        genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, d3d12), { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
+        genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, d3d12),
+                                                       { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
         break;
-    #endif
+#endif
     case RendererBackend::OpenGL:
-        genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, opengl), { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
+        genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, opengl),
+                                                       { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
         break;
     case RendererBackend::Vulkan:
-        genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, vulkan), { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
+        genericProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Generic, vulkan),
+                                                       { ShaderUniform { .name = "u_ambientData", .type = UniformType::Vec4, .count = 1 } });
         break;
     default:
         // TODO: Implement.
@@ -60,7 +63,7 @@ void RenderPipeline::defaultResetViewArea(uint16_t w, uint16_t h)
 {
     Renderer::setViewArea(0, 0, 0, w, h);
     Renderer::setViewArea(1, 0, 0, w, h);
-    Renderer::setViewOrthographic(1, w, h, Vector3(0, 0, 0), Renderer::fromEuler(Vector3(0, 0, 0)), 0.0f, 16777216.0f);
+    Renderer::setViewOrthographic(1, w, h, sysm::vector3(0, 0, 0), Renderer::fromEuler(sysm::vector3(0, 0, 0)), 0.0f, 16777216.0f);
     Renderer::setViewDrawOrder(1, bgfx::ViewMode::Sequential);
 }
 void RenderPipeline::defaultResetBackbuffer(uint32_t w, uint32_t h)

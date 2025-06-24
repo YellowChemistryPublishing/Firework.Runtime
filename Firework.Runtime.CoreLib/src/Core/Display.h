@@ -2,7 +2,8 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
-#include <Mathematics.h>
+#include <module/sys.Mathematics>
+
 #include <Library/Property.h>
 
 namespace Firework
@@ -44,12 +45,12 @@ namespace Firework
         /// @brief Set the resolution of the window.
         /// @param size Dimensions of the window in pixels.
         /// @note Main thread only.
-        static void setResolution(Mathematics::Vector2Int resolution);
+        static void setResolution(sysm::vector2i32 resolution);
 
         friend class Firework::Internal::CoreEngine;
         friend class Firework::Cursor;
     };
-    
+
     class __firework_corelib_api Screen final
     {
         static int width;
@@ -80,4 +81,4 @@ namespace Firework
 
         friend class Firework::Internal::CoreEngine;
     };
-}
+} // namespace Firework

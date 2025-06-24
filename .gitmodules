@@ -37,3 +37,6 @@
 [submodule "external/uni-algo"]
 	path = external/uni-algo
 	url = https://github.com/uni-algo/uni-algo.git
+[submodule "external/libcxxext"]
+	path = external/libcxxext
+	url = https://github.com/YellowChemistryPublishing/libcxxext.git
