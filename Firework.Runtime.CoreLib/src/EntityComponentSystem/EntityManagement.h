@@ -1,17 +1,13 @@
 #pragma once
 
 #include "Firework.Runtime.CoreLib.Exports.h"
-#include "Objects/Object.h"
 
-#include <initializer_list>
-#include <list>
-#include <map>
 #include <robin_hood.h>
-#include <tuple>
 #include <typeindex>
 
 #include <Objects/Entity.inc>
 #include <Objects/Entity2D.h>
+#include <Objects/Object.h>
 
 namespace Firework
 {
@@ -47,11 +43,10 @@ namespace Firework
 
     class __firework_corelib_api Entities final
     {
-        static robin_hood::unordered_set<Internal::Object*> entities;
         //                               v Component type.
         //                                                                          v Entity is key.
-        //                                                                                 v Component instance.
-        static robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<void*, void*>> table;
+        //                                                                                             v Component instance.
+        static robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<Internal::Object*, void*>> table;
     public:
         Entities() = delete;
 
@@ -69,8 +64,8 @@ namespace Firework
             }
             else
             {
-                const decltype(Entities::table.find(nullptr)) componentTable[sizeof...(Ts)];
-                for (auto query : componentTable)
+                const decltype(Entities::table.find(nullptr)) componentTable[] { Entities::table.find(std::type_index(typeid(Ts)))... };
+                for (auto& query : componentTable)
                     if (query == Entities::table.end()) [[unlikely]]
                         return;
 
@@ -78,9 +73,18 @@ namespace Firework
                 {
                     if (Entity* requestedEntity = dynamic_cast<Entity*>(entity))
                     {
-                        
-                        func(*requestedEntity);
+                        const decltype(componentTable->find(nullptr)) components[sizeof...(Ts)];
+                        for (size_t i = 0; i < sizeof...(Ts); i++)
+                        {
+                            components[i] = componentTable[i].find(requestedEntity);
+                            if (components[i] == componentTable[i].end())
+                                goto Continue;
+                        }
+
+                        size_t i = 0;
+                        func(*requestedEntity, (Ts*)components[i++]->second...);
                     }
+                Continue:;
                 }
             }
         }
