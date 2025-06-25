@@ -1,83 +1,82 @@
-#include "Entity.h"
+#include "Entity2D.h"
 
-#include <Components/Transform.h>
 #include <EntityComponentSystem/EntityManagement.h>
 #include <EntityComponentSystem/SceneManagement.h>
 
 using namespace Firework;
 using namespace Firework::Internal;
 
-#define thisTransform this->attachedTransform
+#define thisRect this->attachedRectTransform
 
-Entity::Entity() : attachedTransform(new Transform)
+Entity2D::Entity2D() : attachedRectTransform(new RectTransform())
 {
-    this->attachedTransform->attachedEntity = this;
-    this->attachedTransform->attachedTransform = this->attachedTransform;
+    this->attachedRectTransform->attachedEntity = this;
+    this->attachedRectTransform->attachedRectTransform = this->attachedRectTransform;
 
     Scene* mainScene = reinterpret_cast<Scene*>(&SceneManager::existingScenes.front().data);
-    if (mainScene->front)
-        this->insertAfter(mainScene->back);
+    if (mainScene->front2D)
+        this->insertAfter(mainScene->back2D);
     else
     {
-        mainScene->front = this;
-        mainScene->back = this;
+        mainScene->front2D = this;
+        mainScene->back2D = this;
     }
     this->attachedScene = mainScene;
 }
-Entity::Entity(Entity* parent) : attachedTransform(new Transform)
+Entity2D::Entity2D(Entity2D* parent) : attachedRectTransform(new RectTransform())
 {
-    this->attachedTransform->attachedEntity = this;
-    this->attachedTransform->attachedTransform = this->attachedTransform;
+    this->attachedRectTransform->attachedEntity = this;
+    this->attachedRectTransform->attachedRectTransform = this->attachedRectTransform;
     this->parent = parent;
 
     Scene* mainScene = reinterpret_cast<Scene*>(&SceneManager::existingScenes.front().data);
-    if (mainScene->front)
-        this->insertAfter(mainScene->back);
+    if (mainScene->front2D)
+        this->insertAfter(mainScene->back2D);
     else
     {
-        mainScene->front = this;
-        mainScene->back = this;
+        mainScene->front2D = this;
+        mainScene->back2D = this;
     }
     this->attachedScene = mainScene;
 }
-Entity::Entity(const sysm::vector3& localPosition, const sysm::quaternion& localRotation, Entity* parent) : attachedTransform(new Transform)
+Entity2D::Entity2D(const sysm::vector2& localPosition, float localRotation, Entity2D* parent) : attachedRectTransform(new RectTransform())
 {
-    this->attachedTransform->attachedEntity = this;
-    this->attachedTransform->attachedTransform = this->attachedTransform;
+    this->attachedRectTransform->attachedEntity = this;
+    this->attachedRectTransform->attachedRectTransform = this->attachedRectTransform;
     this->parent = parent;
-    thisTransform->localPosition = localPosition;
-    thisTransform->localRotation = localRotation;
+    thisRect->localPosition = localPosition;
+    thisRect->localRotation = localRotation;
 
     Scene* mainScene = reinterpret_cast<Scene*>(&SceneManager::existingScenes.front().data);
-    if (mainScene->front)
-        this->insertAfter(mainScene->back);
+    if (mainScene->front2D)
+        this->insertAfter(mainScene->back2D);
     else
     {
-        mainScene->front = this;
-        mainScene->back = this;
+        mainScene->front2D = this;
+        mainScene->back2D = this;
     }
     this->attachedScene = mainScene;
 }
-Entity::Entity(const sysm::vector3& localPosition, const sysm::quaternion& localRotation, const sysm::vector3& scale, Entity* parent) : attachedTransform(new Transform)
+Entity2D::Entity2D(const sysm::vector2& localPosition, float localRotation, const sysm::vector2& scale, Entity2D* parent) : attachedRectTransform(new RectTransform())
 {
-    this->attachedTransform->attachedEntity = this;
-    this->attachedTransform->attachedTransform = this->attachedTransform;
+    this->attachedRectTransform->attachedEntity = this;
+    this->attachedRectTransform->attachedRectTransform = this->attachedRectTransform;
     this->parent = parent;
-    thisTransform->localPosition = localPosition;
-    thisTransform->localRotation = localRotation;
-    thisTransform->scale = scale;
+    thisRect->localPosition = localPosition;
+    thisRect->localRotation = localRotation;
+    thisRect->scale = scale;
 
     Scene* mainScene = reinterpret_cast<Scene*>(&SceneManager::existingScenes.front().data);
-    if (mainScene->front)
-        this->insertAfter(mainScene->back);
+    if (mainScene->front2D)
+        this->insertAfter(mainScene->back2D);
     else
     {
-        mainScene->front = this;
-        mainScene->back = this;
+        mainScene->front2D = this;
+        mainScene->back2D = this;
     }
     this->attachedScene = mainScene;
 }
-Entity::~Entity()
+Entity2D::~Entity2D()
 {
     auto it = this->childrenFront;
     while (it != nullptr)
@@ -87,23 +86,28 @@ Entity::~Entity()
         it = itNext;
     }
 
-    for (auto it = EntityManager::existingComponents.begin(); it != EntityManager::existingComponents.end(); ++it)
+    for (auto it = EntityManager2D::existingComponents.begin(); it != EntityManager2D::existingComponents.end();)
     {
-        auto component = EntityManager::components.find(std::make_pair(this, it->first));
-        if (component != EntityManager::components.end())
+        auto component = EntityManager2D::components.find(std::make_pair(this, it->first));
+        if (component != EntityManager2D::components.end())
         {
-            delete component->second;
-            EntityManager::components.erase(component);
+            Component2D* c = component->second;
+            EntityManager2D::components.erase(component);
+            delete c;
             if (--it->second == 0)
-                EntityManager::existingComponents.erase(it);
+            {
+                it = EntityManager2D::existingComponents.erase(it);
+                continue;
+            }
         }
+        ++it;
     }
-    delete this->attachedTransform;
+    delete this->attachedRectTransform;
 
     this->eraseFromImplicitList();
 }
 
-void Entity::insertAfter(Entity* entity)
+void Entity2D::insertAfter(Entity2D* entity)
 {
     if (entity->next)
     {
@@ -113,17 +117,19 @@ void Entity::insertAfter(Entity* entity)
     else
     {
         this->next = nullptr;
-        entity->attachedScene->back = this;
+        if (entity->_parent)
+            entity->_parent->childrenBack = this;
+        else entity->attachedScene->back2D = this;
     }
     entity->next = this;
     this->prev = entity;
 }
-void Entity::moveAfter(Entity* entity)
+void Entity2D::moveAfter(Entity2D* entity)
 {
     this->eraseFromImplicitList();
     this->insertAfter(entity);
 }
-void Entity::eraseFromImplicitList()
+void Entity2D::eraseFromImplicitList()
 {
     if (this->prev)
         this->prev->next = this->next;
@@ -131,7 +137,7 @@ void Entity::eraseFromImplicitList()
     {  
         if (this->_parent)
             this->_parent->childrenFront = this->next;
-        else this->attachedScene->front = this->next;
+        else this->attachedScene->front2D = this->next;
     }
     if (this->next)
         this->next->prev = this->prev;
@@ -139,11 +145,11 @@ void Entity::eraseFromImplicitList()
     {
         if (this->_parent)
             this->_parent->childrenBack = this->prev;
-        else this->attachedScene->back = this->prev;
+        else this->attachedScene->back2D = this->prev;
     }
 }
 
-void Entity::setParent(Entity* value)
+void Entity2D::setParent(Entity2D* value)
 {
     this->eraseFromImplicitList();
     
@@ -162,33 +168,14 @@ void Entity::setParent(Entity* value)
     }
     else
     {
-        if (this->attachedScene->back)
-            this->insertAfter(this->attachedScene->back);
+        if (this->attachedScene->back2D)
+            this->insertAfter(this->attachedScene->back2D);
         else
         {
-            this->attachedScene->front = this;
-            this->attachedScene->back = this;
+            this->attachedScene->front2D = this;
+            this->attachedScene->back2D = this;
             this->prev = nullptr;
             this->next = nullptr;
         }
     }
 }
-
-/*void Entity::setIndex(size_t value)
-{
-    if (value < this->attachedScene->entities.size())
-    {
-        this->attachedScene->entities.splice
-        (
-            std::next(this->attachedScene->entities.begin(), value),
-            this->attachedScene->entities, this->it
-        );
-        this->_index = value;
-        auto it = std::next(this->it);
-        while (it != this->attachedScene->entities.end())
-        {
-            ++(*it)->_index;
-            ++it;
-        }
-    }
-}*/

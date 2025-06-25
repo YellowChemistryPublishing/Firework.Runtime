@@ -5,15 +5,13 @@
 #include <robin_hood.h>
 #include <typeindex>
 
-#include <Objects/Entity.inc>
-#include <Objects/Entity2D.h>
+#include <Objects/Entity.h>
 #include <Objects/Object.h>
 
 namespace Firework
 {
     class Scene;
 
-    class Entity2D;
     class Entity;
 
     namespace Internal
@@ -23,10 +21,10 @@ namespace Firework
 
         /// @internal
         /// @brief Internal API. Hashes an entity-component pair.
-        /// @tparam EntityType Either ```Firework::Entity2D``` or ```Firework::Entity```.
+        /// @tparam EntityType Either ```Firework::Entity``` or ```Firework::Entity```.
         /// @note Thread-safe.
         template <typename EntityType>
-        requires std::same_as<EntityType, Entity2D> || std::same_as<EntityType, Entity>
+        requires std::same_as<EntityType, Entity> || std::same_as<EntityType, Entity>
         struct EntityComponentHash // Specialization appears before first use.
         {
             size_t operator()(const std::pair<EntityType*, uint64_t>& value) const
@@ -39,14 +37,14 @@ namespace Firework
     } // namespace Internal
 
     template <typename T>
-    concept IEntity = std::same_as<T, Entity2D> || std::same_as<T, Entity>;
+    concept IEntity = std::same_as<T, Entity> || std::same_as<T, Entity>;
 
     class __firework_corelib_api Entities final
     {
         //                               v Component type.
         //                                                                          v Entity is key.
-        //                                                                                             v Component instance.
-        static robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<Internal::Object*, void*>> table;
+        //                                                                                   v Component instance.
+        static robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<Entity*, std::shared_ptr<void>>> table;
     public:
         Entities() = delete;
 
@@ -88,5 +86,7 @@ namespace Firework
                 }
             }
         }
+
+        friend class Firework::Entity;
     };
 } // namespace Firework

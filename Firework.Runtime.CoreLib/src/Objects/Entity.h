@@ -2,77 +2,110 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+#include <cstddef>
+#include <memory>
 #include <module/sys.Mathematics>
+#include <module/sys>
 #include <robin_hood.h>
 #include <type_traits>
-#include <vector>
 
+#include <Components/RectTransform.h>
 #include <Core/Debug.h>
 #include <EntityComponentSystem/EntityManagement.h>
 #include <Library/Hash.h>
 #include <Library/TypeInfo.h>
-#include <Objects/Component.h>
-#include <Objects/Entity.inc>
+#include <Objects/Component2D.h>
+#include <typeindex>
 
 namespace Firework
 {
-    template <typename T>
-    requires (!std::same_as<T, Transform> && std::derived_from<T, Internal::Component>)
-    T* Entity::addComponent()
+    class Scene;
+    class SceneManager;
+    class Entity;
+    class EntityManager;
+    class Debug;
+
+    namespace Internal
     {
-        if (!EntityManager::components.contains(std::make_pair(this, __typeid(T).qualifiedNameHash())))
+        class CoreEngine;
+    }
+
+    class __firework_corelib_api Entity final : public Internal::Object
+    {
+        Scene* attachedScene;
+
+        Entity* next = nullptr;
+        Entity* prev = nullptr;
+
+        Entity* _parent = nullptr;
+        Entity* _childrenFront = nullptr;
+        Entity* _childrenBack = nullptr;
+
+        void setParent(Entity* value);
+
+        template <typename T, bool Get, bool Add>
+        requires (Get || Add)
+        inline std::shared_ptr<T> fetchComponent()
         {
-            T* ret = new T();
+            auto& componentSet = Entities::table[std::type_index(typeid(T))];
 
-            EntityManager::components.emplace(std::make_pair(this, __typeid(T).qualifiedNameHash()), ret);
-            ret->attachedEntity = this;
-            ret->attachedTransform = this->attachedTransform;
-            ret->reflection.typeID = __typeid(T).qualifiedNameHash();
+            auto it = componentSet.find(this);
+            if (it != componentSet.end())
+            {
+                if constexpr (Get)
+                    return std::static_pointer_cast<T>(it->second);
+                else
+                    return nullptr;
+            }
 
-            auto it = EntityManager::existingComponents.find(__typeid(T).qualifiedNameHash());
-            if (it != EntityManager::existingComponents.end())
-                ++it->second;
+            if constexpr (Add)
+                return componentSet.emplace(robin_hood::pair(this, std::make_shared<T>()))->first.second;
             else
-                EntityManager::existingComponents.emplace(__typeid(T).qualifiedNameHash(), 1);
+                return nullptr;
+        }
+    public:
+        Entity();
+        Entity(Entity* parent);
+        ~Entity() override;
 
-            if constexpr (requires { ret->onCreate(); })
-                ret->onCreate();
+        const Property<Entity*, Entity*> parent { [this]() -> Entity* { return this->_parent; }, [this](Entity* value)
+        {
+            this->setParent(value);
+        } };
 
-            return ret;
-        }
-        else
-        {
-            Debug::logError("Entity already has this type of component!");
-            return nullptr;
-        }
-    }
-    template <typename T>
-    requires std::derived_from<T, Internal::Component>
-    T* Entity::getComponent()
-    {
-        if constexpr (std::is_same<T, Transform>::value)
-            return this->attachedTransform;
-        else
-        {
-            auto it = EntityManager::components.find({ this->attachedScene, this, __typeid(T).qualifiedNameHash() });
-            if (it != EntityManager::components.end())
-                return it;
+        void moveBefore(Entity* entity);
+        void moveAfter(Entity* entity);
 
-            Debug::logWarn("No component of type \"", __typeid(T).qualifiedName(), "\" could be found on this Entity!");
-            return nullptr;
-        }
-    }
-    template <typename T>
-    requires (!std::same_as<T, Transform> && std::derived_from<T, Internal::Component>)
-    void Entity::removeComponent()
-    {
-        auto it = EntityManager::components.find({ this->attachedScene, this, __typeid(T).qualifiedNameHash() });
-        if (it != EntityManager::components.end())
+        template <typename T>
+        inline std::shared_ptr<T> addComponent()
         {
-            delete it->second;
-            EntityManager::components.erase(it);
+            return this->fetchComponent<T, false, true>();
         }
-        else
-            Debug::logWarn("No identical component could be found on this Entity to be removed!");
-    }
+        template <typename T>
+        inline std::shared_ptr<T> getComponent()
+        {
+            return this->fetchComponent<T, true, false>();
+        }
+        template <typename T>
+        inline std::shared_ptr<T> getOrAddComponent()
+        {
+            return this->fetchComponent<T, true, true>();
+        }
+        template <typename T>
+        inline void removeComponent()
+        {
+            static_assert(!std::is_same<T, RectTransform>::value,
+                          "Cannot remove component from Entity. You cannot remove RectTransform from an Entity, it is a default component.");
+            static_assert(std::is_base_of<Internal::Component2D, T>::value, "Cannot get component from Entity. Typename \"T\" is not derived from type \"Component2D\"");
+
+            auto it = EntityManager2D::components.find(std::make_pair(this, __typeid(T).qualifiedNameHash()));
+            if (it != EntityManager2D::components.end())
+            {
+                delete it->second;
+                EntityManager2D::components.erase(it);
+            }
+            else
+                Debug::logWarn("No identical component could be found on this Entity to be removed!");
+        }
+    };
 } // namespace Firework
