@@ -1,16 +1,17 @@
 #pragma once
 
 #include "Firework.Runtime.CoreLib.Exports.h"
+#include "Objects/Object.h"
 
 #include <initializer_list>
 #include <list>
 #include <map>
 #include <robin_hood.h>
 #include <tuple>
+#include <typeindex>
 
-#include <EntityComponentSystem/SceneManagement.h>
 #include <Objects/Entity.inc>
-#include <Objects/Entity2D.inc>
+#include <Objects/Entity2D.h>
 
 namespace Firework
 {
@@ -41,107 +42,47 @@ namespace Firework
         };
     } // namespace Internal
 
-    /// @brief Static class containing functionality relevant to 2D entities.
-    class __firework_corelib_api EntityManager2D final
+    template <typename T>
+    concept IEntity = std::same_as<T, Entity2D> || std::same_as<T, Entity>;
+
+    class __firework_corelib_api Entities final
     {
-        static robin_hood::unordered_map<uint64_t, uint64_t> existingComponents;
-        static std::map<std::pair<Entity2D*, uint64_t>, Internal::Component2D*> components;
+        static robin_hood::unordered_set<Internal::Object*> entities;
+        //                               v Component type.
+        //                                                                          v Entity is key.
+        //                                                                                 v Component instance.
+        static robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<void*, void*>> table;
     public:
-        EntityManager2D() = delete;
+        Entities() = delete;
 
-        /// @brief Iterate over all existing entities, first scene first, first entity first.
-        /// @tparam Func ```requires requires { func::function<void(Entity2D*)>(func); }```
-        /// @param func Function to call with each entity.
-        /// @note Main thread only.
-        template <typename Func>
-        inline static void foreachEntity(Func&& func)
-        requires requires { func::function<void(Entity2D*)>(func); }
+        template <IEntity Entity, typename... Ts>
+        inline static void forEach(auto&& func)
+        requires requires(Entity& entity) { func(entity, std::declval<Ts>()...); }
         {
-            auto recurse = [&](auto&& recurse, Entity2D* entity) -> void
+            if constexpr (sizeof...(Ts) == 0u)
             {
-                func(entity);
-                for (auto it = entity->childrenFront; it != nullptr; it = it->next) recurse(recurse, it);
-            };
-
-            for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)
-            {
-                Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
-                if (it1->active)
+                for (Internal::Object* entity : Entities::entities)
                 {
-                    for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next)
+                    if (Entity* requestedEntity = dynamic_cast<Entity*>(entity))
+                        func(*requestedEntity);
+                }
+            }
+            else
+            {
+                const decltype(Entities::table.find(nullptr)) componentTable[sizeof...(Ts)];
+                for (auto query : componentTable)
+                    if (query == Entities::table.end()) [[unlikely]]
+                        return;
+
+                for (Internal::Object* entity : Entities::entities)
+                {
+                    if (Entity* requestedEntity = dynamic_cast<Entity*>(entity))
                     {
-                        recurse(recurse, it2);
+                        
+                        func(*requestedEntity);
                     }
                 }
             }
         }
-
-        /// @brief
-        /// Iterate over all existing components, first scene first, first entity first.
-        /// There is no guarantee for any particular ordering of components for any given entity.
-        /// @tparam Func ```requires requires { func::function<void(Component2D*)>(func); }```
-        /// @param func Function to call with each component.
-        /// @note Main thread only.
-        template <typename Func>
-        inline static void foreachComponent(Func&& func)
-        requires requires { func::function<void(Internal::Component2D*)>(func); }
-        {
-            EntityManager2D::foreachEntity([&](Entity2D* entity)
-            {
-                for (auto it = EntityManager2D::existingComponents.begin(); it != EntityManager2D::existingComponents.end(); ++it)
-                {
-                    auto component = EntityManager2D::components.find(std::make_pair(entity, it->first));
-                    if (component != EntityManager2D::components.end() && component->second->active)
-                        func(component->second);
-                }
-            });
-        }
-
-        /// @brief Iterate over all entities with a particular set of components, first scene first, first entity first.
-        /// @tparam ...Ts ```requires (std::derived_from<Ts, Internal::Component2D> && ...)```. Component types to query on an entity.
-        /// @tparam Func ```requires { func::function<void(Entity2D*, Ts*...)>(func); }```
-        /// @param func Function to call with each entity that has all of the queried components.
-        /// @note Main thread only.
-        template <typename... Ts, typename Func>
-        inline static void foreachEntityWithAll(const Func&& func)
-        requires (std::derived_from<Ts, Internal::Component2D> && ...) && requires { func::function<void(Entity2D*, Ts * ...)>(func); }
-        {
-            EntityManager2D::foreachEntity([&](Entity2D* entity)
-            {
-                auto componentIfExistsOrNull = [&](Entity2D* entity, uint64_t qualNameHash) -> Internal::Component2D*
-                {
-                    auto it = EntityManager2D::components.find({ entity, qualNameHash });
-                    return it != EntityManager2D::components.end() ? it->second : nullptr;
-                };
-
-                Internal::Component2D* arr[sizeof...(Ts)] { std::is_same<Ts, RectTransform>::value ? entity->attachedRectTransform
-                                                                                                   : componentIfExistsOrNull(entity, __typeid(Ts).qualifiedNameHash())... };
-
-                bool pred = true;
-                for (auto it = arr; it != arr + sizeof...(Ts); ++it) pred = pred && (*it != nullptr);
-
-                size_t i = 0;
-                if (pred)
-                    func(entity, (Ts*)arr[i++]...);
-            });
-        }
-
-        friend class Firework::Entity2D;
-        friend class Firework::Internal::Component2D;
-        friend class Firework::Internal::CoreEngine;
-    };
-
-    /// @brief Static class containing functionality relevant to 3D entities.
-    /// @warning Unimplemented.
-    class __firework_corelib_api EntityManager final
-    {
-        static robin_hood::unordered_map<uint64_t, uint64_t> existingComponents;
-        static robin_hood::unordered_map<std::pair<Entity*, uint64_t>, Internal::Component*, Internal::EntityComponentHash<Entity>> components;
-    public:
-        EntityManager() = delete;
-
-        friend class Firework::Entity;
-        friend class Firework::Internal::Component;
-        friend class Firework::Internal::CoreEngine;
     };
 } // namespace Firework
