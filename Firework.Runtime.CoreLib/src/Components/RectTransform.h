@@ -100,6 +100,8 @@ namespace Firework
 
         bool _dirty = true;
 
+        std::shared_ptr<RectTransform> parent() const;
+
         void setRect(const RectFloat& value);
 
         /// @internal
@@ -253,7 +255,7 @@ namespace Firework
         bool queryPointIn(const sysm::vector2& point);
 
         friend class Firework::Internal::CoreEngine;
-        friend class Firework::Entity2D;
+        friend class Firework::Entity;
         friend class Firework::Debug;
     };
 } // namespace Firework

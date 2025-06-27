@@ -5,10 +5,3 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
-
-Entity2D::Entity2D()
-{
-}
-Entity2D::Entity2D(Entity2D* parent)
-{
-}

@@ -39,12 +39,12 @@
 #include <Core/PackageManager.h>
 #include <Core/Time.h>
 #include <EntityComponentSystem/EngineEvent.h>
+#include <EntityComponentSystem/Entity.h>
 #include <EntityComponentSystem/SceneManagement.h>
 #include <Firework/Config.h>
 #include <GL/RenderPipeline.h>
 #include <GL/Renderer.h>
 #include <Library/Hash.h>
-#include <EntityComponentSystem/Entity.h>
 
 namespace fs = std::filesystem;
 using namespace Firework;
@@ -323,66 +323,15 @@ void CoreEngine::internalLoop()
             }
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([] { RenderPipeline::clearViewArea(); }, false));
 
-            for (auto _it1 = SceneManager::existingScenes.rbegin(); _it1 != SceneManager::existingScenes.rend(); ++_it1)
+            for (auto sceneIt = SceneManager::existingScenes.rbegin(); sceneIt != SceneManager::existingScenes.rend(); ++sceneIt)
             {
-                Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
-                if (it1->active)
-                {
-                    for (auto it2 = it1->back; it2 != nullptr; it2 = it2->prev)
-                    {
-                        for (auto it3 = EntityManager::existingComponents.begin(); it3 != EntityManager::existingComponents.end(); ++it3)
-                        {
-                            auto component = EntityManager::components.find(std::make_pair(it2, it3->first));
-                            if (component != EntityManager::components.end() && component->second->active)
-                                InternalEngineEvent::OnRenderOffloadForComponent(component->second);
-                        }
-                    }
+                if (!sceneIt->active) [[unlikely]]
+                    continue;
 
-                    auto recurse = [](auto&& recurse, Entity2D* entity) -> void
-                    {
-                        for (auto it3 = EntityManager2D::existingComponents.begin(); it3 != EntityManager2D::existingComponents.end(); ++it3)
-                        {
-                            auto component = EntityManager2D::components.find(std::make_pair(entity, it3->first));
-                            if (component != EntityManager2D::components.end() && component->second->active &&
-                                !(
-                                    // FIXME: Doesn't account for rotation!
-                                    component->second->attachedRectTransform->_position.y +
-                                            component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y <
-                                        -Window::height / 2_u32 ||
-                                    component->second->attachedRectTransform->_position.x +
-                                            component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x <
-                                        -Window::width / 2_u32 ||
-                                    component->second->attachedRectTransform->_position.y +
-                                            component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y >
-                                        Window::height / 2_u32 ||
-                                    component->second->attachedRectTransform->_position.x +
-                                            component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x >
-                                        Window::width / 2_u32))
-                                InternalEngineEvent::OnRenderOffloadForComponent2D(component->second);
-                        }
-                        for (auto it2 = entity->childrenBack; it2 != nullptr; it2 = it2->prev) recurse(recurse, it2);
-                        for (auto it3 = EntityManager2D::existingComponents.begin(); it3 != EntityManager2D::existingComponents.end(); ++it3)
-                        {
-                            auto component = EntityManager2D::components.find(std::make_pair(entity, it3->first));
-                            if (component != EntityManager2D::components.end() && component->second->active &&
-                                !(
-                                    // FIXME: Doesn't account for rotation!
-                                    component->second->attachedRectTransform->_position.y +
-                                            component->second->attachedRectTransform->_rect.top * component->second->attachedRectTransform->_scale.y <
-                                        -Window::height / 2_u32 ||
-                                    component->second->attachedRectTransform->_position.x +
-                                            component->second->attachedRectTransform->_rect.right * component->second->attachedRectTransform->_scale.x <
-                                        -Window::width / 2_u32 ||
-                                    component->second->attachedRectTransform->_position.y +
-                                            component->second->attachedRectTransform->_rect.bottom * component->second->attachedRectTransform->_scale.y >
-                                        Window::height / 2_u32 ||
-                                    component->second->attachedRectTransform->_position.x +
-                                            component->second->attachedRectTransform->_rect.left * component->second->attachedRectTransform->_scale.x >
-                                        Window::width / 2_u32))
-                                InternalEngineEvent::OnLateRenderOffloadForComponent2D(component->second);
-                        }
-                    };
-                    for (auto it2 = it1->back2D; it2 != nullptr; it2 = it2->prev) recurse(recurse, it2);
+                for (auto entityIt = sceneIt->front; entityIt; entityIt = entityIt->next)
+                {
+                    // Todo implement with renderable register.
+                    // like have a map of type indexes to run the callback even on.
                 }
             }
 
@@ -426,20 +375,6 @@ void CoreEngine::internalLoop()
             Input::internalMouseMotion = sysm::vector2::zero;
 
             while (CoreEngine::pendingPostTickQueue.try_dequeue(job)) job();
-
-            for (auto _it1 = SceneManager::existingScenes.begin(); _it1 != SceneManager::existingScenes.end(); ++_it1)
-            {
-                Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
-                if (it1->active)
-                {
-                    constexpr auto recurse = [](auto&& recurse, Entity2D* entity) -> void
-                    {
-                        entity->rectTransform()->_dirty = false;
-                        for (auto it2 = entity->childrenFront; it2 != nullptr; it2 = it2->next) recurse(recurse, it2);
-                    };
-                    for (auto it2 = it1->front2D; it2 != nullptr; it2 = it2->next) recurse(recurse, it2);
-                }
-            }
 #pragma endregion
 
             frameBegin = SDL_GetPerformanceCounter();
@@ -464,7 +399,6 @@ void CoreEngine::internalLoop()
 
     EngineEvent::OnQuit();
 
-    for (auto it = SceneManager::existingScenes.begin(); it != SceneManager::existingScenes.end(); ++it) reinterpret_cast<Scene*>(it->data)->~Scene();
     SceneManager::existingScenes.clear();
 
     while (Application::mainThreadQueue.try_dequeue(job));
@@ -576,27 +510,6 @@ void CoreEngine::internalWindowLoop()
                         (float)(-h + prevh) / 2.0f,
                         (float)(-w + prevw) / 2.0f,
                     };
-
-                    for (auto _it1 = SceneManager::existingScenes.rbegin(); _it1 != SceneManager::existingScenes.rend(); ++_it1)
-                    {
-                        Scene* it1 = reinterpret_cast<Scene*>(&_it1->data);
-                        if (it1->active)
-                        {
-                            for (auto it2 = it1->back2D; it2 != nullptr; it2 = it2->prev)
-                            {
-                                it2->attachedRectTransform->setRect(it2->attachedRectTransform->_rect + windowDelta * it2->attachedRectTransform->_anchor);
-                                if (it2->attachedRectTransform->_positionAnchor != RectFloat(0, 0, 0, 0))
-                                {
-                                    it2->attachedRectTransform->setLocalPosition(
-                                        it2->attachedRectTransform->getLocalPosition() +
-                                        sysm::vector2(windowDelta.right, windowDelta.top) *
-                                            sysm::vector2(it2->attachedRectTransform->_positionAnchor.right, it2->attachedRectTransform->_positionAnchor.top) +
-                                        sysm::vector2(windowDelta.left, windowDelta.bottom) *
-                                            sysm::vector2(it2->attachedRectTransform->_positionAnchor.left, it2->attachedRectTransform->_positionAnchor.bottom));
-                                }
-                            }
-                        }
-                    }
 
                     EngineEvent::OnWindowResize(sysm::vector2i32 { prevw, prevh });
                 });

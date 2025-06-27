@@ -314,10 +314,6 @@ namespace Firework
 			Debug::log(LogLevel::Error, out);
 		}
 
-		/// @brief Logs a message detailing the current hierachy of the world.
-		/// @note Main thread only.
-		static void printHierarchy();
-
 		static void showF3Menu();
 		static void hideF3Menu();
 

@@ -9,7 +9,6 @@
 
 namespace Firework
 {
-    class Entity2D;
     class RectTransform;
     class Debug;
 

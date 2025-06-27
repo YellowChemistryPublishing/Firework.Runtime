@@ -13,7 +13,9 @@
 #include <Components/RectTransform.h>
 #include <Core/Debug.h>
 #include <EntityComponentSystem/Component.h>
+#define FIREWORK_ENTITY_MGMT_DECL_ONLY 1
 #include <EntityComponentSystem/EntityManagement.h>
+#undef FIREWORK_ENTITY_MGMT_DECL_ONLY
 #include <Library/Hash.h>
 #include <Library/TypeInfo.h>
 
@@ -67,6 +69,9 @@ namespace Firework
         inline std::shared_ptr<T> getOrAddComponent();
         template <typename T>
         inline bool removeComponent();
+
+        friend class Firework::Internal::CoreEngine;
+        friend class Firework::RectTransform;
     };
 
 #if !defined(FIREWORK_ENTITY_DECL_ONLY) || !FIREWORK_ENTITY_DECL_ONLY
@@ -74,15 +79,15 @@ namespace Firework
     requires (Get || Add)
     std::shared_ptr<T> Entity::fetchComponent()
     {
-        auto componentSetIt = Entities::table.emplace(std::type_index(typeid(T)))->first;
+        auto componentSetIt = Entities::table.emplace(std::type_index(typeid(T)), robin_hood::unordered_map<Entity*, std::shared_ptr<void>>()).first;
         sys::sc_act contractKeeper([&]
         {
             if (componentSetIt->second.empty()) [[unlikely]]
                 Entities::table.erase(componentSetIt);
         });
 
-        auto it = componentSet.find(this);
-        if (it != componentSet.end())
+        auto it = componentSetIt->second.find(this);
+        if (it != componentSetIt->second.end())
         {
             if constexpr (Get)
                 return std::static_pointer_cast<T>(it->second);
@@ -91,7 +96,7 @@ namespace Firework
         }
 
         if constexpr (Add)
-            return componentSet.emplace(robin_hood::pair(this, std::make_shared<T>()))->first.second;
+            return componentSetIt->second.emplace(robin_hood::pair(this, std::make_shared<T>()))->first.second;
         else
             return nullptr;
     }

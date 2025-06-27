@@ -550,65 +550,9 @@ set_target_properties(Firework.Components.Core2D
     CXX_VISIBILITY_PRESET hidden
 )
 
-# Firework.Components.Core3D
-
-add_custom_target(PrecompileComponentCore3DShaders
-    COMMAND ${CMAKE_COMMAND}
-    -DSHADERC_PATH="$<TARGET_FILE:shaderc>"
-    -DSHADERC_DIR="$<TARGET_FILE_DIR:shaderc>"
-    -DSHADER_FILES_DIR="${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core3D/shaders"
-    -DBGFX_SHADER_DIR="${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bgfx/src"
-    -DCMAKE_BUILD_TYPE=$<CONFIG>
-    -P "${CMAKE_CURRENT_LIST_DIR}/cmake/PrecompileShaders.cmake"
-)
-add_dependencies(PrecompileComponentCore3DShaders shaderc)
-
-file(GLOB_RECURSE GLSRCS configure_depends
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/*.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/*.cpp"
-)
-
-file(GLOB_RECURSE CORE3DSRCS configure_depends
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core3D/*.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core3D/*.cpp"
-)
-
-add_library(Firework.Components.Core3D SHARED ${CORE3DSRCS})
-add_dependencies(Firework.Components.Core3D PrecompileComponentCore3DShaders)
-
-generate_export_header(Firework.Components.Core3D
-    BASE_NAME FIREWORK_COMPONENTCORE3D
-    EXPORT_MACRO_NAME __firework_componentcore3d_api
-    EXPORT_FILE_NAME Firework.Components.Core3D.Exports.h
-)
-
-target_include_directories(Firework.Components.Core3D
-    PUBLIC
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core3D/src"
-    PRIVATE
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core3D/shaders/include"
-)
-target_link_libraries(Firework.Components.Core3D
-    PUBLIC
-    Firework.Runtime.CoreLib
-)
-
-target_compile_definitions(Firework.Components.Core3D PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
-target_compile_options(Firework.Components.Core3D PUBLIC ${FIREWORK_COMPILE_FLAGS})
-target_link_options(Firework.Components.Core3D PUBLIC ${FIREWORK_LINKER_FLAGS})
-set_target_properties(Firework.Components.Core3D
-    PROPERTIES
-    ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Components.Core3D"
-    LIBRARY_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Components.Core3D"
-    RUNTIME_OUTPUT_DIRECTORY "../bin/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Components.Core3D"
-    C_VISIBILITY_PRESET hidden
-    CXX_VISIBILITY_PRESET hidden
-)
-
 # Examples and tests.
 
 list(APPEND EXAMPLES "HelloFireworkUI")
-list(APPEND EXAMPLES "DevTest")
 if (FIREWORK_BUILD_EXAMPLES)
     foreach (EXAMPLE_NAME ${EXAMPLES})
         string(REPLACE "." "_" EXAMPLE_NAME_NORMALIZED "${EXAMPLE_NAME}")
@@ -625,7 +569,7 @@ if (FIREWORK_BUILD_EXAMPLES)
         # target_sources(${EXAMPLE_NAME} PUBLIC FILE_SET CXX_MODULES FILES "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/main.cpp")
         add_dependencies(${EXAMPLE_NAME} Package${EXAMPLE_NAME_NORMALIZED}Assets)
 
-        target_link_libraries(${EXAMPLE_NAME} PUBLIC Firework.Components.Core2D Firework.Components.Core3D)
+        target_link_libraries(${EXAMPLE_NAME} PUBLIC Firework.Components.Core2D)
         set_target_properties(${EXAMPLE_NAME}
             PROPERTIES
             ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Examples/${EXAMPLE_NAME}"
@@ -658,11 +602,6 @@ if (FIREWORK_BUILD_EXAMPLES)
         add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:Firework.Components.Core2D>
-            $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
-        )
-        add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:Firework.Components.Core3D>
             $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
         )
     endforeach()

@@ -6,74 +6,43 @@
 #include <string>
 
 #include <Library/Property.h>
- 
+
 namespace Firework
 {
     class SceneManager;
-    class EntityManager2D;
     class EntityManager;
-    class Entity2D;
     class Entity;
     class Debug;
 
     namespace Internal
     {
         class CoreEngine;
-        struct SceneMemoryChunk;
-    }
+    } // namespace Internal
 
     class __firework_corelib_api Scene final
     {
-        inline Scene();
-        ~Scene();
+        Scene() = default;
 
-        Entity2D* front2D = nullptr;
-        Entity2D* back2D = nullptr;
         Entity* front = nullptr;
         Entity* back = nullptr;
-        
-        std::list<Internal::SceneMemoryChunk>::iterator it;
+
+        std::list<Scene>::iterator it;
         bool active = false;
-        std::wstring _name = L"Untitled";
     public:
-        /// @brief [Property] The name of the scene.
-        /// @param value ```std::wstring```
-        /// @return ```const std::wstring&```
-        /// @note Main thread only.
-        const Property<const std::wstring&, std::wstring> name
-        {
-            [this]() -> const std::wstring& { return this->_name; },
-            [this](std::wstring value) { this->_name = std::move(value); }
-        };
-        /// @brief Retrieves the index of the scene. Index ```0``` is first.
-        /// @warning This function runs in O(n) time, for n number of scenes. Be reasonable with it!
-        /// @return Index of scene.
-        /// @retval - ```SIZE_MAX```: An error in determining the scene index occurred.
-        /// @retval - Othewise, the index of the scene.
-        /// @note Main thread only.
-        size_t index();
+        friend class std::allocator<Scene>;
 
         friend class Firework::Internal::CoreEngine;
         friend class Firework::SceneManager;
-        friend class Firework::EntityManager2D;
         friend class Firework::EntityManager;
-        friend class Firework::Entity2D;
         friend class Firework::Entity;
         friend class Firework::Debug;
+
     };
 
-    namespace Internal
-    {
-        struct SceneMemoryChunk
-        {
-            alignas(Scene) char data[sizeof(Scene)];
-        };
-    }
-    
     /// @brief Static class containing functionality relevant to scene management.
     class __firework_corelib_api SceneManager final
     {
-        static std::list<Internal::SceneMemoryChunk> existingScenes;
+        static std::list<Scene> existingScenes;
     public:
         SceneManager() = delete;
 
@@ -82,17 +51,17 @@ namespace Firework
         /// @note Main thread only.
         inline static Scene* createScene()
         {
-            SceneManager::existingScenes.emplace_back();
-            return new(SceneManager::existingScenes.back().data) Scene;
+            SceneManager::existingScenes.push_back(Scene());
+            Scene& ret = SceneManager::existingScenes.back();
+            ret.it = --SceneManager::existingScenes.end();
+            return &ret;
         }
         /// @brief Destroys an existing scene, including all its entities and components.
         /// @param scene Scene to destroy.
         /// @note Main thread only.
         inline static void destroyScene(Scene* scene)
         {
-            auto it = scene->it;
-            scene->~Scene();
-            SceneManager::existingScenes.erase(it);
+            SceneManager::existingScenes.erase(scene->it);
         }
 
         /// @brief Sets a scene to an active state.
@@ -114,29 +83,10 @@ namespace Firework
             SceneManager::existingScenes.splice(SceneManager::existingScenes.begin(), SceneManager::existingScenes, scene->it);
         }
 
-        /// @brief Retrieves a scene by its index.
-        /// @warning This function runs in O(n) time, for n number of scenes. Invoke wisely!
-        /// @param index Index of the queried scene.
-        /// @return Scene with queried index.
-        /// @retval - ```nullptr```: The index was out of bounds.
-        /// @retval - Otherwise, the scene with the queried index.
-        /// @note Main thread only.
-        inline static Scene* getSceneByIndex(size_t index)
-        {
-            if (index < SceneManager::existingScenes.size())
-                return reinterpret_cast<Scene*>(&std::next(SceneManager::existingScenes.begin(), index)->data);
-            else return nullptr;
-        }
-
         friend class Firework::Internal::CoreEngine;
         friend class Firework::Scene;
-        friend class Firework::EntityManager2D;
         friend class Firework::EntityManager;
-        friend class Firework::Entity2D;
         friend class Firework::Entity;
         friend class Firework::Debug;
     };
-
-    Scene::Scene() : it(--SceneManager::existingScenes.end())
-    { }
-}
+} // namespace Firework
