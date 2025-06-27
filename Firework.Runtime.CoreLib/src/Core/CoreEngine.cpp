@@ -40,7 +40,7 @@
 #include <Core/Time.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <EntityComponentSystem/Entity.h>
-#include <EntityComponentSystem/SceneManagement.h>
+#include <EntityComponentSystem/EntityManagement.h>
 #include <Firework/Config.h>
 #include <GL/RenderPipeline.h>
 #include <GL/Renderer.h>
@@ -323,16 +323,10 @@ void CoreEngine::internalLoop()
             }
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([] { RenderPipeline::clearViewArea(); }, false));
 
-            for (auto sceneIt = SceneManager::existingScenes.rbegin(); sceneIt != SceneManager::existingScenes.rend(); ++sceneIt)
+            for (Entity& entity : Entities::range())
             {
-                if (!sceneIt->active) [[unlikely]]
-                    continue;
-
-                for (auto entityIt = sceneIt->front; entityIt; entityIt = entityIt->next)
-                {
-                    // Todo implement with renderable register.
-                    // like have a map of type indexes to run the callback even on.
-                }
+                // Todo implement with renderable register.
+                // like have a map of type indexes to run the callback even on.
             }
 
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([]
@@ -399,11 +393,11 @@ void CoreEngine::internalLoop()
 
     EngineEvent::OnQuit();
 
-    SceneManager::existingScenes.clear();
-
     while (Application::mainThreadQueue.try_dequeue(job));
     while (CoreEngine::pendingPreTickQueue.try_dequeue(job));
     while (CoreEngine::pendingPostTickQueue.try_dequeue(job));
+
+    
 
     // Render finalise.
     CoreEngine::renderQueue.enqueue(RenderJob::create([jobs = std::move(CoreEngine::frameRenderJobs)]

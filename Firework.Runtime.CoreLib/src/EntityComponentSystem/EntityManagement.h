@@ -5,56 +5,33 @@
 #include <robin_hood.h>
 #include <typeindex>
 
-#define FIREWORK_ENTITY_DECL_ONLY 1
 #include <EntityComponentSystem/Entity.h>
-#undef FIREWORK_ENTITY_DECL_ONLY
-#include <EntityComponentSystem/SceneManagement.h>
+#include <EntityComponentSystem/EntityManagement.inc>
 
 namespace Firework
 {
-    class Scene;
-    class Entity;
-
-    namespace Internal
+    EntityIterator Entities::begin()
     {
-        class Component2D;
-        class CoreEngine;
-    } // namespace Internal
-
-    template <typename T>
-    concept IEntity = std::same_as<T, Entity> || std::same_as<T, Entity>;
-
-    class __firework_corelib_api Entities final
+        return EntityIterator(Entities::front);
+    }
+    EntityIterator Entities::end()
     {
-        //                               v Component type.
-        //                                                                          v Entity is key.
-        //                                                                                   v Component instance.
-        static robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<Entity*, std::shared_ptr<void>>> table;
-    public:
-        Entities() = delete;
+        return EntityIterator();
+    }
+    EntityRange Entities::range()
+    {
+        return EntityRange(Entities::front);
+    }
 
-        inline static void forEachEntity(auto&& func)
-        requires requires(Entity& entity) { func(entity); };
-        template <typename... Ts>
-        inline static void forEach(auto&& func)
-        requires requires(Entity& entity) { func(entity, std::declval<Ts>()...); };
-
-        friend class Firework::Entity;
-    };
-
-#if !defined(FIREWORK_ENTITY_MGMT_DECL_ONLY) || !FIREWORK_ENTITY_MGMT_DECL_ONLY
     inline void Entities::forEachEntity(auto&& func)
     requires requires(Entity& entity) { func(entity); }
     {
-        for (Scene& scene : SceneManager::existingScenes)
+        auto recurse = [&](auto&& recurse, Entity& entity) -> void
         {
-            auto recurse = [&](auto&& recurse, Entity* entity)
-            {
-                func(*entity);
-                for (Entity* child = entity->_childrenFront; child; child = child->next) recurse(recurse, child);
-            };
-            for (Entity* entity = scene.front; entity; entity = entity->next) recurse(recurse, entity);
-        }
+            func(entity);
+            for (auto childIt = entity.childrenBegin(); childIt != entity.childrenEnd(); ++childIt) recurse(recurse, *childIt);
+        };
+        for (Entity& entity : Entities::range()) recurse(recurse, entity);
     }
     template <typename... Ts>
     inline void Entities::forEach(auto&& func)
@@ -64,25 +41,24 @@ namespace Firework
             Entities::forEachEntity(func);
         else
         {
-            const auto componentTable[] { Entities::table.find(std::type_index(typeid(Ts)))... };
+            const decltype(Entities::table)::iterator componentTable[] { Entities::table.find(std::type_index(typeid(Ts)))... };
             for (auto& query : componentTable)
                 if (query == Entities::table.end()) [[unlikely]]
                     return;
 
             Entities::forEachEntity([&](Entity& entity)
             {
-                const decltype(componentTable->find(nullptr)) components[sizeof...(Ts)];
+                decltype((**componentTable).second.find(nullptr)) components[sizeof...(Ts)];
                 for (size_t i = 0; i < sizeof...(Ts); i++)
                 {
-                    components[i] = componentTable[i].find(&entity);
-                    if (components[i] == componentTable[i].end())
+                    components[i] = componentTable[i]->second.find(&entity);
+                    if (components[i] == componentTable[i]->second.end())
                         return;
                 }
 
                 size_t i = 0;
-                func(entity, (Ts*)components[i++]->second...);
+                func(entity, *std::static_pointer_cast<Ts>(components[i++]->second)...);
             });
         }
     }
-#endif
 } // namespace Firework

@@ -12,30 +12,71 @@
 
 #include <Components/RectTransform.h>
 #include <Core/Debug.h>
-#include <EntityComponentSystem/Component.h>
-#define FIREWORK_ENTITY_MGMT_DECL_ONLY 1
-#include <EntityComponentSystem/EntityManagement.h>
-#undef FIREWORK_ENTITY_MGMT_DECL_ONLY
+#include <EntityComponentSystem/EntityManagement.inc>
 #include <Library/Hash.h>
 #include <Library/TypeInfo.h>
 
 namespace Firework
 {
-    class Scene;
-    class SceneManager;
     class Entity;
     class EntityManager;
-    class Debug;
 
-    namespace Internal
+    struct EntityIterator
     {
-        class CoreEngine;
-    }
+        using difference_type = ptrdiff_t;
+        using value_type = Entity;
 
-    class __firework_corelib_api Entity final : public Internal::Object
+        EntityIterator() = default;
+        EntityIterator(Entity* entity) : current(entity)
+        { }
+
+        inline value_type& operator*()
+        {
+            return *this->current;
+        }
+        inline value_type* operator->()
+        {
+            return this->current;
+        }
+
+        constexpr friend bool operator==(const EntityIterator& a, const EntityIterator& b) = default;
+
+        inline EntityIterator& operator++();
+        inline EntityIterator operator++(int)
+        {
+            EntityIterator ret = *this;
+            ++*this;
+            return ret;
+        }
+        inline EntityIterator& operator--();
+        inline EntityIterator operator--(int)
+        {
+            EntityIterator ret = *this;
+            --*this;
+            return ret;
+        }
+    private:
+        Entity* current = nullptr;
+    };
+    struct EntityRange
     {
-        Scene* attachedScene;
+        inline EntityIterator begin()
+        {
+            return EntityIterator(this->front);
+        }
+        inline EntityIterator end()
+        {
+            return EntityIterator();
+        }
 
+        EntityRange(Entity* front) : front(front)
+        { }
+    private:
+        Entity* front = nullptr;
+    };
+
+    class __firework_corelib_api Entity final : std::enable_shared_from_this<Entity>
+    {
         Entity* next = nullptr;
         Entity* prev = nullptr;
 
@@ -43,23 +84,30 @@ namespace Firework
         Entity* _childrenFront = nullptr;
         Entity* _childrenBack = nullptr;
 
-        void setParent(Entity* value);
+        void orphan();
+        void reparentAfterOrphan(Entity* parent);
 
         template <typename T, bool Get, bool Add>
         requires (Get || Add)
         inline std::shared_ptr<T> fetchComponent();
     public:
-        Entity();
-        Entity(Entity* parent);
-        ~Entity() override;
+        Entity(Entity* parent = nullptr);
+        ~Entity();
 
         const Property<Entity*, Entity*> parent { [this]() -> Entity* { return this->_parent; }, [this](Entity* value)
         {
-            this->setParent(value);
+            this->orphan();
+            this->reparentAfterOrphan(value);
         } };
 
-        void moveBefore(Entity* entity);
-        void moveAfter(Entity* entity);
+        EntityIterator childrenBegin()
+        {
+            return EntityIterator(this->_childrenFront);
+        }
+        EntityIterator childrenEnd()
+        {
+            return EntityIterator();
+        }
 
         template <typename T>
         inline std::shared_ptr<T> addComponent();
@@ -70,11 +118,23 @@ namespace Firework
         template <typename T>
         inline bool removeComponent();
 
+        friend struct Firework::EntityIterator;
+
         friend class Firework::Internal::CoreEngine;
         friend class Firework::RectTransform;
     };
 
-#if !defined(FIREWORK_ENTITY_DECL_ONLY) || !FIREWORK_ENTITY_DECL_ONLY
+    EntityIterator& EntityIterator::operator++()
+    {
+        this->current = this->current->next;
+        return *this;
+    }
+    EntityIterator& EntityIterator::operator--()
+    {
+        this->current = this->current->prev;
+        return *this;
+    }
+
     template <typename T, bool Get, bool Add>
     requires (Get || Add)
     std::shared_ptr<T> Entity::fetchComponent()
@@ -96,29 +156,29 @@ namespace Firework
         }
 
         if constexpr (Add)
-            return componentSetIt->second.emplace(robin_hood::pair(this, std::make_shared<T>()))->first.second;
+            return std::static_pointer_cast<T>(componentSetIt->second.emplace(robin_hood::pair(this, std::static_pointer_cast<void>(std::make_shared<T>()))).first->second);
         else
             return nullptr;
     }
 
     template <typename T>
-    inline std::shared_ptr<T> Entity::addComponent()
+    std::shared_ptr<T> Entity::addComponent()
     {
         return this->fetchComponent<T, false, true>();
     }
     template <typename T>
-    inline std::shared_ptr<T> Entity::getComponent()
+    std::shared_ptr<T> Entity::getComponent()
     {
         return this->fetchComponent<T, true, false>();
     }
     template <typename T>
-    inline std::shared_ptr<T> Entity::getOrAddComponent()
+    std::shared_ptr<T> Entity::getOrAddComponent()
     {
         return this->fetchComponent<T, true, true>();
     }
 
     template <typename T>
-    inline bool Entity::removeComponent()
+    bool Entity::removeComponent()
     {
         auto componentSetIt = Entities::table.find(std::type_index(typeid(T)));
         if (componentSetIt == Entities::table.end()) [[unlikely]]
@@ -126,5 +186,4 @@ namespace Firework
 
         return componentSetIt->second.erase(this);
     }
-#endif
 } // namespace Firework

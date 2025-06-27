@@ -2,7 +2,6 @@
 
 #include <SDL3/SDL.h>
 #include <Core/CoreEngine.h>
-#include <EntityComponentSystem/SceneManagement.h>
 #include <GL/Renderer.h>
 #include <EntityComponentSystem/Entity.h>
 

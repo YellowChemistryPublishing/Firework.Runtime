@@ -44,9 +44,9 @@ void RectTransform::setRect(const RectFloat& value)
     RectFloat delta = value - this->_rect;
     this->_rect = value;
 
-    auto recurse = [&](auto&& recurse, Entity* entity, RectFloat delta) -> void
+    auto recurse = [&](auto&& recurse, Entity& entity, RectFloat delta) -> void
     {
-        for (auto it = entity->_childrenFront; it; it = it->next)
+        for (auto it = entity._childrenFront; it; it = it->next)
         {
             RectFloat localDelta = delta;
             if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
@@ -62,10 +62,10 @@ void RectTransform::setRect(const RectFloat& value)
                         sysm::vector2(delta.left, delta.bottom) * sysm::vector2(rectTransform->_positionAnchor.left, rectTransform->_positionAnchor.bottom));
                 }
             }
-            recurse(recurse, it, localDelta);
+            recurse(recurse, *it, localDelta);
         }
     };
-    recurse(recurse, this->attachedEntity, delta);
+    recurse(recurse, *this->attachedEntity, delta);
 }
 
 void RectTransform::setPosition(sysm::vector2 value)
@@ -75,19 +75,19 @@ void RectTransform::setPosition(sysm::vector2 value)
     sysm::vector2 delta = value - this->_position;
     this->_position = value;
 
-    auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity* entity) -> void
+    auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity& entity) -> void
     {
-        for (auto it = entity->_childrenFront; it; it = it->next)
+        for (auto it = entity._childrenFront; it; it = it->next)
         {
             if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 rectTransform->_position += delta;
             }
-            setChildrenPositionRecursive(setChildrenPositionRecursive, it);
+            setChildrenPositionRecursive(setChildrenPositionRecursive, *it);
         }
     };
-    setChildrenPositionRecursive(setChildrenPositionRecursive, this->attachedEntity);
+    setChildrenPositionRecursive(setChildrenPositionRecursive, *this->attachedEntity);
 }
 void RectTransform::setRotation(float value)
 {
@@ -96,9 +96,9 @@ void RectTransform::setRotation(float value)
     float delta = value - this->_rotation;
     this->_rotation = value;
 
-    auto setChildrenRotationRecursive = [&, this](auto&& setChildrenRotationRecursive, Entity* entity) -> void
+    auto setChildrenRotationRecursive = [&, this](auto&& setChildrenRotationRecursive, Entity& entity) -> void
     {
-        for (auto it = entity->_childrenFront; it; it = it->next)
+        for (auto it = entity._childrenFront; it; it = it->next)
         {
             if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
             {
@@ -106,10 +106,10 @@ void RectTransform::setRotation(float value)
                 rectTransform->_rotation += delta;
                 rotatePointAround(rectTransform->_position, this->_position, delta);
             }
-            setChildrenRotationRecursive(setChildrenRotationRecursive, it);
+            setChildrenRotationRecursive(setChildrenRotationRecursive, *it);
         }
     };
-    setChildrenRotationRecursive(setChildrenRotationRecursive, this->attachedEntity);
+    setChildrenRotationRecursive(setChildrenRotationRecursive, *this->attachedEntity);
 }
 void RectTransform::setScale(sysm::vector2 value)
 {
@@ -118,9 +118,9 @@ void RectTransform::setScale(sysm::vector2 value)
     sysm::vector2 delta = value / this->_scale;
     this->_scale = value;
 
-    auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity* entity) -> void
+    auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity& entity) -> void
     {
-        for (auto it = entity->_childrenFront; it; it = it->next)
+        for (auto it = entity._childrenFront; it; it = it->next)
         {
             if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
             {
@@ -128,10 +128,10 @@ void RectTransform::setScale(sysm::vector2 value)
                 rectTransform->_scale *= delta;
                 rectTransform->_position = delta * (rectTransform->_position - this->_position) + this->_position;
             }
-            setChildrenScaleRecursive(setChildrenScaleRecursive, it);
+            setChildrenScaleRecursive(setChildrenScaleRecursive, *it);
         }
     };
-    setChildrenScaleRecursive(setChildrenScaleRecursive, this->attachedEntity);
+    setChildrenScaleRecursive(setChildrenScaleRecursive, *this->attachedEntity);
 }
 
 std::shared_ptr<RectTransform> RectTransform::parent() const
@@ -171,19 +171,19 @@ void RectTransform::setLocalPosition(sysm::vector2 value)
         delta = value - this->_position;
     this->_position += delta;
 
-    auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity* entity) -> void
+    auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity& entity) -> void
     {
-        for (auto it = entity->_childrenFront; it; it = it->next)
+        for (auto it = entity._childrenFront; it; it = it->next)
         {
             if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 rectTransform->_position += delta;
             }
-            setChildrenPositionRecursive(setChildrenPositionRecursive, it);
+            setChildrenPositionRecursive(setChildrenPositionRecursive, *it);
         }
     };
-    setChildrenPositionRecursive(setChildrenPositionRecursive, this->attachedEntity);
+    setChildrenPositionRecursive(setChildrenPositionRecursive, *this->attachedEntity);
 }
 float RectTransform::getLocalRotation() const
 {
@@ -202,9 +202,9 @@ void RectTransform::setLocalRotation(float value)
         delta = value - this->_rotation;
     this->_rotation += delta;
 
-    auto setChildrenRotationRecursive = [&, this](auto&& setChildrenRotationRecursive, Entity* entity) -> void
+    auto setChildrenRotationRecursive = [&, this](auto&& setChildrenRotationRecursive, Entity& entity) -> void
     {
-        for (auto it = entity->_childrenFront; it != nullptr; it = it->next)
+        for (auto it = entity._childrenFront; it != nullptr; it = it->next)
         {
             if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
             {
@@ -212,10 +212,10 @@ void RectTransform::setLocalRotation(float value)
                 rectTransform->_rotation += delta;
                 rotatePointAround(rectTransform->_position, this->_position, delta);
             }
-            setChildrenRotationRecursive(setChildrenRotationRecursive, it);
+            setChildrenRotationRecursive(setChildrenRotationRecursive, *it);
         }
     };
-    setChildrenRotationRecursive(setChildrenRotationRecursive, this->attachedEntity);
+    setChildrenRotationRecursive(setChildrenRotationRecursive, *this->attachedEntity);
 }
 sysm::vector2 RectTransform::getLocalScale() const
 {
@@ -234,9 +234,9 @@ void RectTransform::setLocalScale(sysm::vector2 value)
         delta = value / this->_scale;
     this->_scale *= delta;
 
-    auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity* entity) -> void
+    auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity& entity) -> void
     {
-        for (auto it = entity->_childrenFront; it != nullptr; it = it->next)
+        for (auto it = entity._childrenFront; it != nullptr; it = it->next)
         {
             if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
             {
@@ -244,10 +244,10 @@ void RectTransform::setLocalScale(sysm::vector2 value)
                 rectTransform->_scale *= delta;
                 rectTransform->_position = delta * (rectTransform->_position - this->_position) + this->_position;
             }
-            setChildrenScaleRecursive(setChildrenScaleRecursive, it);
+            setChildrenScaleRecursive(setChildrenScaleRecursive, *it);
         }
     };
-    setChildrenScaleRecursive(setChildrenScaleRecursive, this->attachedEntity);
+    setChildrenScaleRecursive(setChildrenScaleRecursive, *this->attachedEntity);
 }
 
 bool RectTransform::queryPointIn(const sysm::vector2& point)

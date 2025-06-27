@@ -14,7 +14,6 @@ module;
 #include <EntityComponentSystem/ComponentData.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <EntityComponentSystem/EntityManagement.h>
-#include <EntityComponentSystem/SceneManagement.h>
 
 #include <Firework/Config.h>
 #include <Firework/Entry.h>

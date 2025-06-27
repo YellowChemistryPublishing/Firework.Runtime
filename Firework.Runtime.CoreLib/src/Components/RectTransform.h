@@ -4,13 +4,13 @@
 
 #include <module/sys.Mathematics>
 
-#include <EntityComponentSystem/Component.h>
 #include <GL/Transform.h>
 #include <Library/Property.h>
 
 namespace Firework
 {
     class Debug;
+    class RectTransform;
 
     namespace Internal
     {
@@ -88,7 +88,7 @@ namespace Firework
     /// @brief The transform component of a 2D entity.
     class __firework_corelib_api RectTransform final
     {
-        class Entity* attachedEntity;
+        std::shared_ptr<class Entity> attachedEntity;
 
         RectFloat _rect { 10, 10, -10, -10 };
         RectFloat _anchor { 0, 0, 0, 0 };

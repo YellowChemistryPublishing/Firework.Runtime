@@ -12,14 +12,11 @@
 
 #include <EntityComponentSystem/EngineEvent.h>
 #include <EntityComponentSystem/EntityManagement.h>
-#include <EntityComponentSystem/SceneManagement.h>
 
 #include <Firework/Config.h>
 #include <Firework/Entry.h>
 
-#include <EntityComponentSystem/Component.h>
 #include <EntityComponentSystem/Entity.h>
-#include <EntityComponentSystem/Object.h>
 
 #include <Library/Event.h>
 #include <Library/Hash.h>
