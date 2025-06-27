@@ -4,8 +4,8 @@
 #include <module/sys.Mathematics>
 #include <numbers>
 
+#include <EntityComponentSystem/Entity.h>
 #include <GL/Renderer.h>
-#include <Objects/Entity2D.h>
 
 using namespace Firework;
 using namespace Firework::Internal;

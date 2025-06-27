@@ -1,6 +1,6 @@
 #include "EntityManagement.h"
 
-#include <Objects/Entity2D.h>
+#include <EntityComponentSystem/Entity.h>
 
 using namespace Firework;
 using namespace Firework::Internal;

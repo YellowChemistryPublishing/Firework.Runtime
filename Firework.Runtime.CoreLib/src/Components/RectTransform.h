@@ -4,9 +4,9 @@
 
 #include <module/sys.Mathematics>
 
+#include <EntityComponentSystem/Component.h>
 #include <GL/Transform.h>
 #include <Library/Property.h>
-#include <Objects/Component2D.h>
 
 namespace Firework
 {
@@ -86,9 +86,9 @@ namespace Firework
     };
 
     /// @brief The transform component of a 2D entity.
-    class __firework_corelib_api RectTransform final : public Internal::Component2D
+    class __firework_corelib_api RectTransform final
     {
-        ~RectTransform() override = default;
+        class Entity* attachedEntity;
 
         RectFloat _rect { 10, 10, -10, -10 };
         RectFloat _anchor { 0, 0, 0, 0 };
@@ -149,6 +149,8 @@ namespace Firework
         /// @note Main thread only.
         void setLocalScale(sysm::vector2 scale);
     public:
+        inline RectTransform() = default;
+
         /// @property
         /// @brief [Property] The rectangle bounds of this transform.
         /// @param value ```const Firework::RectFloat&```
@@ -205,8 +207,7 @@ namespace Firework
         /// @param value ```sysm::vector2```
         /// @return ```sysm::vector2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> localPosition { [this]() -> sysm::vector2 { return this->getLocalPosition(); },
-                                                                                   [this](sysm::vector2 value)
+        const Property<sysm::vector2, sysm::vector2> localPosition { [this]() -> sysm::vector2 { return this->getLocalPosition(); }, [this](sysm::vector2 value)
         {
             this->setLocalPosition(value);
         } };
@@ -224,8 +225,7 @@ namespace Firework
         /// @param value ```sysm::vector2```
         /// @return ```sysm::vector2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> localScale { [this]() -> sysm::vector2 { return this->getLocalScale(); },
-                                                                                [this](sysm::vector2 value)
+        const Property<sysm::vector2, sysm::vector2> localScale { [this]() -> sysm::vector2 { return this->getLocalScale(); }, [this](sysm::vector2 value)
         {
             this->setLocalScale(value);
         } };

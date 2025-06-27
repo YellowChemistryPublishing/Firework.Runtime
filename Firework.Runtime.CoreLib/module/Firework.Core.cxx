@@ -21,7 +21,7 @@ module;
 
 #include <Objects/Component2D.h>
 #include <Objects/Component.h>
-#include <Objects/Entity2D.h>
+#include <EntityComponentSystem/Entity.h>
 #include <Objects/Entity.h>
 #include <Objects/Object.h>
 

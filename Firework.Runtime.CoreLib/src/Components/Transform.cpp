@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-#include <Objects/Entity.h>
+#include <EntityComponentSystem/Entity.h>
 
 using namespace Firework;
 using namespace Firework::Internal;

@@ -44,7 +44,7 @@
 #include <GL/RenderPipeline.h>
 #include <GL/Renderer.h>
 #include <Library/Hash.h>
-#include <Objects/Entity2D.h>
+#include <EntityComponentSystem/Entity.h>
 
 namespace fs = std::filesystem;
 using namespace Firework;

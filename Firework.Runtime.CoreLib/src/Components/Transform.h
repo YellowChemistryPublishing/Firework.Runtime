@@ -4,9 +4,9 @@
 
 #include <module/sys.Mathematics>
 
+#include <EntityComponentSystem/Component.h>
 #include <GL/Transform.h>
 #include <Library/Property.h>
-#include <Objects/Component.h>
 
 namespace Firework
 {
@@ -89,8 +89,7 @@ namespace Firework
         /// @return ```sysm::quaternion```
         /// @see sysm::quaternion::fromEuler when using euler angles for rotations.
         /// @note Main thread only.
-        const Property<sysm::quaternion, sysm::quaternion> rotation { [this]() -> sysm::quaternion { return this->_rotation; },
-                                                                                    [this](sysm::quaternion value)
+        const Property<sysm::quaternion, sysm::quaternion> rotation { [this]() -> sysm::quaternion { return this->_rotation; }, [this](sysm::quaternion value)
         {
             this->setRotation(value);
         } };
@@ -109,8 +108,7 @@ namespace Firework
         /// @param value ```sysm::vector3```
         /// @return ```sysm::vector3```
         /// @note Main thread only.
-        const Property<sysm::vector3, sysm::vector3> localPosition { [this]() -> sysm::vector3 { return this->getLocalPosition(); },
-                                                                                   [this](sysm::vector3 value)
+        const Property<sysm::vector3, sysm::vector3> localPosition { [this]() -> sysm::vector3 { return this->getLocalPosition(); }, [this](sysm::vector3 value)
         {
             this->setLocalPosition(value);
         } };
@@ -120,8 +118,7 @@ namespace Firework
         /// @return ```sysm::quaternion```
         /// @see sysm::quaternion::fromEuler when using euler angles for rotations.
         /// @note Main thread only.
-        const Property<sysm::quaternion, sysm::quaternion> localRotation { [this]() -> sysm::quaternion { return this->getLocalRotation(); },
-                                                                                         [this](sysm::quaternion value)
+        const Property<sysm::quaternion, sysm::quaternion> localRotation { [this]() -> sysm::quaternion { return this->getLocalRotation(); }, [this](sysm::quaternion value)
         {
             this->setLocalRotation(value);
         } };
@@ -130,8 +127,7 @@ namespace Firework
         /// @param value ```sysm::vector3```
         /// @return ```sysm::vector3```
         /// @note Main thread only.
-        const Property<sysm::vector3, sysm::vector3> localScale { [this]() -> sysm::vector3 { return this->getLocalScale(); },
-                                                                                [this](sysm::vector3 value)
+        const Property<sysm::vector3, sysm::vector3> localScale { [this]() -> sysm::vector3 { return this->getLocalScale(); }, [this](sysm::vector3 value)
         {
             this->setLocalScale(value);
         } };

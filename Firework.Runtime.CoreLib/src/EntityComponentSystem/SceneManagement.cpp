@@ -1,14 +1,14 @@
 #include "SceneManagement.h"
 
-#include <Objects/Entity2D.h>
-#include <Objects/Entity.h>
+#include <EntityComponentSystem/Entity.h>
 
 using namespace Firework;
 using namespace Firework::Internal;
 
 std::list<Internal::SceneMemoryChunk> SceneManager::existingScenes;
 
-static struct Init {
+static struct Init
+{
     Init()
     {
         SceneManager::setSceneActive(SceneManager::createScene(), true);

@@ -5,8 +5,7 @@
 #include <robin_hood.h>
 #include <typeindex>
 
-#include <Objects/Entity.h>
-#include <Objects/Object.h>
+#include <EntityComponentSystem/Entity.h>
 
 namespace Firework
 {
