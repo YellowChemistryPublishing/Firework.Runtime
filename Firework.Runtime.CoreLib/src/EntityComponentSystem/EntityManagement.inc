@@ -24,8 +24,8 @@ namespace Firework
         //                                                                                   v Component instance.
         static robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<Entity*, std::shared_ptr<void>>> table;
 
-        static Entity* front;
-        static Entity* back;
+        static std::shared_ptr<Entity> front;
+        static std::shared_ptr<Entity> back;
     public:
         Entities() = delete;
 
@@ -39,6 +39,7 @@ namespace Firework
         inline static void forEach(auto&& func)
         requires requires(Entity& entity) { func(entity, std::declval<Ts>()...); };
 
+        friend class Firework::Internal::CoreEngine;
         friend class Firework::Entity;
     };
 } // namespace Firework

@@ -1,27 +1,24 @@
 #include <Firework.Core.hpp>
 #include <Firework/Entry.h>
+#include <Components/EntityAttributes.h>
 
 using namespace Firework;
 using namespace Firework::PackageSystem;
-
-struct EntityAttributes
-{
-    std::string name;
-};
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
     EngineEvent::OnInitialize += []
     {
-        auto e = std::make_shared<Entity>();
+        auto e = (new Entity())->shared_from_this();
         e->addComponent<EntityAttributes>()->name = "beans";
-        auto e2 = std::make_shared<Entity>();
-        e2->addComponent<EntityAttributes>()->name = "beans2";
-        auto e3 = std::make_shared<Entity>();
+        (new Entity())->addComponent<EntityAttributes>()->name = "beans2";
+        auto e3 = (new Entity())->shared_from_this();
         e3->addComponent<EntityAttributes>()->name = "beans3";
-        e3->parent = e.get();
+        e3->parent = e;
 
-        Entities::forEach<EntityAttributes>([&](Entity& entity, const EntityAttributes& attr) -> void
+        Debug::printHierarchy();
+
+        Entities::forEach<EntityAttributes>([&](Entity&, const EntityAttributes& attr) -> void
         {
             std::cout << attr.name << '\n';
         });

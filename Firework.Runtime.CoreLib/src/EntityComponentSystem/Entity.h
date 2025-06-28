@@ -11,7 +11,6 @@
 #include <typeindex>
 
 #include <Components/RectTransform.h>
-#include <Core/Debug.h>
 #include <EntityComponentSystem/EntityManagement.inc>
 #include <Library/Hash.h>
 #include <Library/TypeInfo.h>
@@ -27,7 +26,7 @@ namespace Firework
         using value_type = Entity;
 
         EntityIterator() = default;
-        EntityIterator(Entity* entity) : current(entity)
+        EntityIterator(std::shared_ptr<Entity> entity) : current(std::move(entity))
         { }
 
         inline value_type& operator*()
@@ -36,7 +35,7 @@ namespace Firework
         }
         inline value_type* operator->()
         {
-            return this->current;
+            return this->current.get();
         }
 
         constexpr friend bool operator==(const EntityIterator& a, const EntityIterator& b) = default;
@@ -56,7 +55,7 @@ namespace Firework
             return ret;
         }
     private:
-        Entity* current = nullptr;
+        std::shared_ptr<Entity> current = nullptr;
     };
     struct EntityRange
     {
@@ -69,44 +68,60 @@ namespace Firework
             return EntityIterator();
         }
 
-        EntityRange(Entity* front) : front(front)
+        constexpr bool empty()
+        {
+            return !this->front;
+        }
+
+        constexpr EntityRange(std::shared_ptr<Entity> front) : front(std::move(front))
         { }
     private:
-        Entity* front = nullptr;
+        std::shared_ptr<Entity> front = nullptr;
     };
 
-    class __firework_corelib_api Entity final : std::enable_shared_from_this<Entity>
+    class __firework_corelib_api Entity final : public std::enable_shared_from_this<Entity>
     {
-        Entity* next = nullptr;
-        Entity* prev = nullptr;
+        std::shared_ptr<Entity> next = nullptr;
+        std::shared_ptr<Entity> prev = nullptr;
 
-        Entity* _parent = nullptr;
-        Entity* _childrenFront = nullptr;
-        Entity* _childrenBack = nullptr;
+        std::shared_ptr<Entity> _parent = nullptr;
+        std::shared_ptr<Entity> _childrenFront = nullptr;
+        std::shared_ptr<Entity> _childrenBack = nullptr;
 
-        void orphan();
-        void reparentAfterOrphan(Entity* parent);
+        void orphan() noexcept;
+        void reparentAfterOrphan(std::shared_ptr<Entity> parent) noexcept;
 
         template <typename T, bool Get, bool Add>
         requires (Get || Add)
         inline std::shared_ptr<T> fetchComponent();
     public:
-        Entity(Entity* parent = nullptr);
+        Entity(std::shared_ptr<Entity> parent = nullptr) noexcept;
         ~Entity();
 
-        const Property<Entity*, Entity*> parent { [this]() -> Entity* { return this->_parent; }, [this](Entity* value)
+        const Property<std::shared_ptr<Entity>, std::shared_ptr<Entity>> parent { [this]() -> std::shared_ptr<Entity> { return this->_parent; },
+                                                                                  [this](std::shared_ptr<Entity> value)
         {
+            std::shared_ptr<Entity> lease = shared_from_this();
             this->orphan();
             this->reparentAfterOrphan(value);
         } };
 
-        EntityIterator childrenBegin()
+        inline EntityIterator childrenBegin()
         {
             return EntityIterator(this->_childrenFront);
         }
-        EntityIterator childrenEnd()
+        inline EntityIterator childrenEnd()
         {
             return EntityIterator();
+        }
+        inline EntityRange children()
+        {
+            return EntityRange(this->_childrenFront);
+        }
+
+        inline bool orphaned()
+        {
+            return !this->_parent && !this->prev && !this->next;
         }
 
         template <typename T>
@@ -156,7 +171,12 @@ namespace Firework
         }
 
         if constexpr (Add)
-            return std::static_pointer_cast<T>(componentSetIt->second.emplace(robin_hood::pair(this, std::static_pointer_cast<void>(std::make_shared<T>()))).first->second);
+        {
+            std::shared_ptr<T> ret = std::make_shared<T>();
+            componentSetIt->second.emplace(robin_hood::pair(this, std::static_pointer_cast<void>(ret)));
+                auto x = Entities::table.find(std::type_index(typeid(T)))->second.size();
+            return ret;
+        }
         else
             return nullptr;
     }
@@ -184,6 +204,13 @@ namespace Firework
         if (componentSetIt == Entities::table.end()) [[unlikely]]
             return false;
 
-        return componentSetIt->second.erase(this);
+        auto componentIt = componentSetIt->second.find(this);
+        if (componentIt == componentSetIt->second.end())
+            return false;
+        if (componentIt->second.use_count() > 1)
+            return false;
+
+        componentSetIt->second.erase(componentIt);
+        return true;
     }
 } // namespace Firework

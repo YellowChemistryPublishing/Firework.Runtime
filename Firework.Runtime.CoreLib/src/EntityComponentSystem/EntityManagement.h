@@ -2,6 +2,7 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+#include <iostream>
 #include <robin_hood.h>
 #include <typeindex>
 
@@ -29,7 +30,7 @@ namespace Firework
         auto recurse = [&](auto&& recurse, Entity& entity) -> void
         {
             func(entity);
-            for (auto childIt = entity.childrenBegin(); childIt != entity.childrenEnd(); ++childIt) recurse(recurse, *childIt);
+            for (Entity& child : entity.children()) recurse(recurse, child);
         };
         for (Entity& entity : Entities::range()) recurse(recurse, entity);
     }

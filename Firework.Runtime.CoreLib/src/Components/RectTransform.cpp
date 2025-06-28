@@ -136,7 +136,7 @@ void RectTransform::setScale(sysm::vector2 value)
 
 std::shared_ptr<RectTransform> RectTransform::parent() const
 {
-    for (Entity* parent = this->attachedEntity->_parent; parent; parent = parent->_parent)
+    for (std::shared_ptr<Entity> parent = this->attachedEntity->_parent; parent; parent = parent->_parent)
     {
         if (std::shared_ptr<RectTransform> rectTransform = parent->getComponent<RectTransform>())
             return rectTransform;
