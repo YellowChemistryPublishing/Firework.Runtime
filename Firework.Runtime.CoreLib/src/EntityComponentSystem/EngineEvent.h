@@ -11,6 +11,8 @@
 
 namespace Firework
 {
+    class Entity;
+    
     /// @brief Static class containing functionality relevant to runtime handled events. You may add as many callbacks as you wish.
     /// @warning You are **not** allowed to invoke any of this events yourself!
     class __firework_corelib_api EngineEvent final
@@ -108,7 +110,7 @@ namespace Firework
 
             /// @internal
             /// @note Main thread only.
-            static FuncPtrEvent<std::type_index, std::shared_ptr<void>> OnRenderOffloadForComponent;
+            static FuncPtrEvent<std::type_index, Entity&, std::shared_ptr<void>> OnRenderOffloadForComponent;
             /// @internal
             /// @brief Low-level API. Event raised immediately before the render thread exits.
             /// @note Render thread only.

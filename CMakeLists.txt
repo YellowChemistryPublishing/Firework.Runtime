@@ -528,7 +528,7 @@ target_include_directories(Firework.Components.Core2D
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core2D/src"
     "${CMAKE_CURRENT_LIST_DIR}/dependencies/stb"
     "${CMAKE_CURRENT_LIST_DIR}/external/cpptrace/include"
-    PRIVATE
+    # PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core2D/shaders/include"
 )
 target_link_libraries(Firework.Components.Core2D

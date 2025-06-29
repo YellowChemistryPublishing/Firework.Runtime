@@ -329,7 +329,7 @@ void CoreEngine::internalLoop()
                 {
                     auto componentIt = componentSet.find(&entity);
                     if (componentIt != componentSet.end())
-                        InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, componentIt->second);
+                        InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, entity, componentIt->second);
                 }
             });
 

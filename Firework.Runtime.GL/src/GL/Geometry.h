@@ -39,9 +39,12 @@ namespace Firework
 
         class __firework_gl_api StaticMeshHandle final
         {
-            bgfx::VertexBufferHandle internalVertexBuffer;
-            bgfx::IndexBufferHandle internalIndexBuffer;
+            bgfx::VertexBufferHandle internalVertexBuffer { .idx = bgfx::kInvalidHandle };
+            bgfx::IndexBufferHandle internalIndexBuffer { .idx = bgfx::kInvalidHandle };
         public:
+            constexpr StaticMeshHandle(std::nullptr_t = nullptr)
+            { }
+
             static StaticMeshHandle create(const void* vertexData, uint32_t vertexDataSize, VertexLayout vl, const uint16_t* indexData, uint32_t indexDataSize);
             void destroy();
 
