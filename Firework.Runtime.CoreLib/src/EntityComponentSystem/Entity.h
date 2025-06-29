@@ -174,7 +174,6 @@ namespace Firework
         {
             std::shared_ptr<T> ret = std::make_shared<T>();
             componentSetIt->second.emplace(robin_hood::pair(this, std::static_pointer_cast<void>(ret)));
-                auto x = Entities::table.find(std::type_index(typeid(T)))->second.size();
             return ret;
         }
         else

@@ -2,7 +2,10 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+#include <memory>
 #include <string_view>
+#include <typeindex>
+
 #include <Core/Input.h>
 #include <Library/Event.h>
 
@@ -70,9 +73,10 @@ namespace Firework
         /// @param text ```const std::u32string&```.
         /// @note Main thread only.
         static FuncPtrEvent<const std::u32string&> OnTextInput;
-        
+
         /// @brief Event raised when the window is resized.
-        /// @param from ```sysm::vector2i32```. The previous size of the window. Retrieve the current window size with ```Firework::Window::pixelWidth()``` and ```Firework::Window::pixelHeight()```.
+        /// @param from ```sysm::vector2i32```. The previous size of the window. Retrieve the current window size with ```Firework::Window::pixelWidth()``` and
+        /// ```Firework::Window::pixelHeight()```.
         /// @note Main thread only.
         static FuncPtrEvent<sysm::vector2i32> OnWindowResize;
 
@@ -103,20 +107,12 @@ namespace Firework
             InternalEngineEvent() = delete;
 
             /// @internal
-            /// @brief Low-level API. Event raised when a 2D component should be sent to render.
-            /// @param component ```Firework::Internal::Component2D*```
             /// @note Main thread only.
-            static FuncPtrEvent<Component2D*> OnRenderOffloadForComponent2D;
-            static FuncPtrEvent<Component2D*> OnLateRenderOffloadForComponent2D;
-            /// @internal
-            /// @brief Low-level API. Event raised when a 3D component should be sent to render.
-            /// @param component ```Firework::Internal::Component*```
-            /// @note Main thread only.
-            static FuncPtrEvent<Component*> OnRenderOffloadForComponent;
+            static FuncPtrEvent<std::type_index, std::shared_ptr<void>> OnRenderOffloadForComponent;
             /// @internal
             /// @brief Low-level API. Event raised immediately before the render thread exits.
             /// @note Render thread only.
             static FuncPtrEvent<> OnRenderShutdown;
         };
-    }
-}
+    } // namespace Internal
+} // namespace Firework

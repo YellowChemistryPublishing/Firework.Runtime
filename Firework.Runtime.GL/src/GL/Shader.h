@@ -11,11 +11,11 @@
 
 #define __concat(a, b) a##b
 #define __recat(a, b) __concat(a, b)
-#define getGeometryProgramArgsFromPrecompiledShaderName(shaderName, backend) \
-(void*)__recat(__recat(__recat(__concat(shader, shaderName), Vertex), backend), Data), \
-(uint32_t)__recat(__recat(__recat(__recat(__concat(shader, shaderName), Vertex), backend), Data), _Size), \
-(void*)__recat(__recat(__recat(__concat(shader, shaderName), Fragment), backend), Data), \
-(uint32_t)__recat(__recat(__recat(__recat(__concat(shader, shaderName), Fragment), backend), Data), _Size)
+#define getGeometryProgramArgsFromPrecompiledShaderName(shaderName, backend)                                       \
+    (void*)__recat(__recat(__recat(__concat(shader, shaderName), Vertex), backend), Data),                         \
+        (uint32_t)__recat(__recat(__recat(__recat(__concat(shader, shaderName), Vertex), backend), Data), _Size),  \
+        (void*)__recat(__recat(__recat(__concat(shader, shaderName), Fragment), backend), Data),                   \
+        (uint32_t)__recat(__recat(__recat(__recat(__concat(shader, shaderName), Fragment), backend), Data), _Size)
 
 namespace Firework
 {
@@ -42,21 +42,13 @@ namespace Firework
 
             bgfx::ProgramHandle internalHandle;
             std::map<const char*, UniformHandle, Comp> internalUniformHandles;
-            
-            static GeometryProgramHandle create
-            (
-                void* vertexShaderData, uint32_t vertexShaderDataSize,
-                void* fragmentShaderData, uint32_t fragmentShaderDataSize,
-                const ShaderUniform* uniforms, size_t uniformsLength
-            );
+
+            static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,
+                                                const ShaderUniform* uniforms, size_t uniformsLength);
         public:
             template <size_t N>
-            inline static GeometryProgramHandle create
-            (
-                void* vertexShaderData, uint32_t vertexShaderDataSize,
-                void* fragmentShaderData, uint32_t fragmentShaderDataSize,
-                const ShaderUniform (&uniforms)[N] = { }
-            )
+            inline static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,
+                                                       const ShaderUniform (&uniforms)[N])
             {
                 return GeometryProgramHandle::create(vertexShaderData, vertexShaderDataSize, fragmentShaderData, fragmentShaderDataSize, uniforms, N);
             }
@@ -66,10 +58,15 @@ namespace Firework
             }
             void destroy();
 
+            inline operator bool()
+            {
+                return bgfx::isValid(this->internalHandle);
+            }
+
             void setUniform(const char* name, const void* value);
             void setArrayUniform(const char* name, const void* value, uint16_t count);
 
             friend class Firework::GL::Renderer;
         };
-    }
-}
+    } // namespace GL
+} // namespace Firework

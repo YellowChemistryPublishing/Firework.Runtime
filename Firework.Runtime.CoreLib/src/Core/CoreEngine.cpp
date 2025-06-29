@@ -323,11 +323,15 @@ void CoreEngine::internalLoop()
             }
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([] { RenderPipeline::clearViewArea(); }, false));
 
-            for (Entity& entity : Entities::range())
+            Entities::forEachEntity([](Entity& entity)
             {
-                // Todo implement with renderable register.
-                // like have a map of type indexes to run the callback even on.
-            }
+                for (auto& [typeIndex, componentSet] : Entities::table)
+                {
+                    auto componentIt = componentSet.find(&entity);
+                    if (componentIt != componentSet.end())
+                        InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, componentIt->second);
+                }
+            });
 
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([]
             {

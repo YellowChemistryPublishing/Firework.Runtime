@@ -32,9 +32,7 @@ FuncPtrEvent<> EngineEvent::OnLoseFocus;
 FuncPtrEvent<> EngineEvent::OnQuit;
 
 // Runs in main thread.
-FuncPtrEvent<Component2D*> InternalEngineEvent::OnRenderOffloadForComponent2D;
-FuncPtrEvent<Component2D*> InternalEngineEvent::OnLateRenderOffloadForComponent2D;
-FuncPtrEvent<Component*> InternalEngineEvent::OnRenderOffloadForComponent;
+FuncPtrEvent<std::type_index, std::shared_ptr<void>> InternalEngineEvent::OnRenderOffloadForComponent;
 // Runs in render thread. Note FuncPtrEvent is not thread-safe,
 // so make sure you modify this event _before_ the main thread loop exits.
 FuncPtrEvent<> InternalEngineEvent::OnRenderShutdown;
