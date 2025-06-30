@@ -19,16 +19,27 @@ struct RendererUtil
     inline static StaticMeshHandle unitSquare = nullptr;
 };
 
-struct FilledPathRenderer
+struct FilledPathPoint
 {
-    inline static float testVerts[] { -1.0f, -1.0f, 1.0f, 0.0f, -1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, -1.0f, 1.0f, 1.0f };
-    inline static StaticMeshHandle fill;
+
+};
+
+class FilledPathRenderer
+{
+    inline static float testVerts[] { 85, 630, 1,   85, 0,   1,   436, 0,   1,   461, 72,  1,   461, 80,  1,   180, 80,  1,   180, 285, 1,   401, 285,
+                                      1,  423, 353, 1,  423, 361, 1,   180, 361, 1,   180, 551, 1,   433, 551, 1,   456, 622, 1,   456, 630, 1 };
+    StaticMeshHandle fill;
 
     inline static GeometryProgramHandle program;
-
+public:
     inline operator bool()
     {
         return this->program && this->fill;
+    }
+
+    inline bool createPolygon()
+    {
+
     }
 
     inline void draw(const RenderTransform& transform)
@@ -57,21 +68,24 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
             CoreEngine::queueRenderJobForFrame([]
             {
                 RenderTransform t;
-                t.scale(sysm::vector3(100.0f));
+                t.scale(0.1f);
 
                 float col[4] { 1.0f, 1.0f, 1.0f, 1.0f };
                 FilledPathRenderer::program.setUniform("u_color", &col);
                 Renderer::setDrawTransform(t);
-                Renderer::setDrawStencil(BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_S_INVERT |
+                Renderer::setDrawStencil(BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_FUNC_RMASK(0) | BGFX_STENCIL_OP_FAIL_S_INVERT |
                                          BGFX_STENCIL_OP_FAIL_Z_INVERT | BGFX_STENCIL_OP_PASS_Z_INVERT);
                 Renderer::submitDraw(1, FilledPathRenderer::fill, FilledPathRenderer::program, BGFX_STATE_DEPTH_TEST_LESS);
 
+                RenderTransform t2;
+                t2.scale(500.0f);
+
                 FilledPathRenderer::program.setUniform("u_color", &col);
-                Renderer::setDrawTransform(t);
-                Renderer::setDrawStencil(BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_FUNC_REF(0xFF) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_S_KEEP |
-                                         BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE | BGFX_STATE_CULL_CW);
+                Renderer::setDrawTransform(t2);
+                Renderer::setDrawStencil(BGFX_STENCIL_TEST_LESS | BGFX_STENCIL_FUNC_REF(0b10000000) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_S_KEEP |
+                                         BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
                 Renderer::submitDraw(1, RendererUtil::unitSquare, FilledPathRenderer::program);
-            });
+            }, false);
         }
     };
 
