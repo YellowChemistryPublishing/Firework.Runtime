@@ -12,9 +12,9 @@ using namespace Firework::Internal;
 using namespace Firework::GL;
 using namespace Firework::PackageSystem;
 
-struct FilledPathPoint
+_pack(1) struct FilledPathPoint
 {
-    float x, y;
+    float x, y, z = 1.0f; // Leave as 1.0f unless you're really confident in what you're doing.
 };
 
 class FilledPathRenderer
@@ -73,31 +73,25 @@ public:
     requires sys::IEnumerable<Container, FilledPathPoint> && sys::ISizeable<Container>
     inline FilledPathRenderer(Container&& closedPath)
     {
-        std::vector<float> verts;
-        if constexpr (requires { sz(closedPath.size()); })
-            verts.reserve(+(sz(closedPath.size()) * 3_uz));
-
-        for (const FilledPathPoint& point : closedPath)
-        {
-            verts.push_back(point.x);
-            verts.push_back(point.y);
-            verts.push_back(1.0f);
-        }
+        std::vector<FilledPathPoint> verts;
+        if constexpr (requires { sz(std::size(closedPath)); })
+            verts.reserve(+sz(std::size(closedPath)));
+        verts.insert(verts.begin(), std::begin(closedPath), std::end(closedPath));
 
         std::vector<uint16_t> inds;
-        if constexpr (requires { sz(closedPath.size()); })
-            inds.reserve(+((sz(closedPath.size()) - 2_uz) * 3_uz));
+        if constexpr (requires { sz(std::size(closedPath)); })
+            inds.reserve(+((sz(std::size(closedPath)) - 2_uz) * 3_uz));
 
-        for (u16 i = 1; i < u16(closedPath.size()) - 1_u16; i++)
+        for (u16 i = 1; i < u16(std::size(closedPath)) - 1_u16; i++)
         {
             inds.push_back(0);
             inds.push_back(+(i + 1_u16));
             inds.push_back(+i);
         }
 
-        this->fill = StaticMeshHandle::create(verts.data(), verts.size() * sizeof(decltype(verts)::value_type),
+        this->fill = StaticMeshHandle::create(std::data(verts), std::size(verts) * sizeof(decltype(verts)::value_type),
                                               VertexLayout::create({ VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 } }),
-                                              inds.data(), inds.size() * sizeof(decltype(inds)::value_type));
+                                              std::data(inds), std::size(inds) * sizeof(decltype(inds)::value_type));
     }
     inline FilledPathRenderer(const FilledPathRenderer&) = delete;
     inline FilledPathRenderer(FilledPathRenderer&& other)
