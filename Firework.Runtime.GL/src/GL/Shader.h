@@ -40,7 +40,7 @@ namespace Firework
                 }
             };
 
-            bgfx::ProgramHandle internalHandle;
+            bgfx::ProgramHandle internalHandle { .idx = bgfx::kInvalidHandle };
             std::map<const char*, UniformHandle, Comp> internalUniformHandles;
 
             static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,

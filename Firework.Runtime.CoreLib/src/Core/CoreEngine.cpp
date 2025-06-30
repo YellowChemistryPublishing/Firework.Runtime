@@ -323,13 +323,14 @@ void CoreEngine::internalLoop()
             }
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([] { RenderPipeline::clearViewArea(); }, false));
 
-            Entities::forEachEntity([](Entity& entity)
+            sz renderIndex = 0;
+            Entities::forEachEntity([&](Entity& entity)
             {
                 for (auto& [typeIndex, componentSet] : Entities::table)
                 {
                     auto componentIt = componentSet.find(&entity);
                     if (componentIt != componentSet.end())
-                        InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, entity, componentIt->second);
+                        InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, entity, componentIt->second, renderIndex++);
                 }
             });
 
