@@ -3,7 +3,7 @@
 #include <EntityComponentSystem/EngineEvent.h>
 #include <GL/Renderer.h>
 
-#include <Panel.vfAll.h>
+#include <Path.vfAll.h>
 
 using namespace Firework;
 using namespace Firework::Internal;
@@ -27,20 +27,20 @@ bool FilledPathRenderer::renderInitialize()
 #if _WIN32
     case RendererBackend::Direct3D11:
         FilledPathRenderer::program =
-            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Panel, d3d11), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
+            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Path, d3d11), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
         break;
     case RendererBackend::Direct3D12:
         FilledPathRenderer::program =
-            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Panel, d3d12), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
+            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Path, d3d12), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
         break;
 #endif
     case RendererBackend::OpenGL:
         FilledPathRenderer::program =
-            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Panel, opengl), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
+            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Path, opengl), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
         break;
     case RendererBackend::Vulkan:
         FilledPathRenderer::program =
-            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Panel, vulkan), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
+            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Path, vulkan), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
         break;
     default:;
     }
@@ -58,9 +58,6 @@ bool FilledPathRenderer::submitDrawStencil(sz renderIndex, RenderTransform shape
 {
     if (!this->fill || !FilledPathRenderer::program) [[unlikely]]
         return false;
-
-    float col[4] { 1.0f, 1.0f, 1.0f, 1.0f };
-    FilledPathRenderer::program.setUniform("u_color", &col);
 
     shape.translate(sysm::vector3::forward * float(+renderIndex));
     Renderer::setDrawTransform(shape);

@@ -1,10 +1,11 @@
 #include <Components/RectTransform.h>
 #include <Core/CoreEngine.h>
+#include <Core/Debug.h>
 #include <Core/PackageManager.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <EntityComponentSystem/EntityManagement.h>
-#include <Friends/PackageFileCore2D.h>
 #include <Friends/FilledPathRenderer.h>
+#include <Friends/PackageFileCore2D.h>
 #include <GL/Renderer.h>
 #include <Library/TypeInfo.h>
 
@@ -28,7 +29,8 @@ namespace Firework::Internal
 
             CoreEngine::queueRenderJobForFrame([]
             {
-                FilledPathRenderer::renderInitialize();
+                if (!FilledPathRenderer::renderInitialize()) [[unlikely]]
+                    Debug::logError("`FilledPathRenderer` failed to render initialize.");
             });
         }
     } init;

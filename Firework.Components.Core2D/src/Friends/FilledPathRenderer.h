@@ -17,7 +17,7 @@ namespace Firework
 
     struct _packed FilledPathPoint
     {
-        float x, y, z = 1.0f; // Leave as 1.0f unless you're really confident in what you're doing.
+        float x, y, z = 1.0f; // Leave `z` as 1.0f unless you're really confident in what you're doing.
     };
 
     class __firework_componentcore2d_api FilledPathRenderer final
@@ -80,7 +80,7 @@ namespace Firework
         }
 
         [[nodiscard]] bool submitDrawStencil(sz renderIndex, GL::RenderTransform shape, bool forceHole = false);
-        [[nodiscard]] static bool submitDraw(sz renderIndex, GL::RenderTransform clip, u8 whenStencil = ~u8(0));
+        [[nodiscard]] static bool submitDraw(sz renderIndex, GL::RenderTransform clip, u8 whenStencil = ~0_u8);
 
         friend inline void swap(FilledPathRenderer& a, FilledPathRenderer& b)
         {
