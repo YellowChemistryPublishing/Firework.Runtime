@@ -78,10 +78,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 
     EngineEvent::OnInitialize += []
     {
-        auto e = (new Entity())->shared_from_this();
+        auto e = Entity::alloc();
         e->addComponent<EntityAttributes>()->name = "beans";
-        (new Entity())->addComponent<EntityAttributes>()->name = "beans2";
-        auto e3 = (new Entity())->shared_from_this();
+        Entity::alloc()->addComponent<EntityAttributes>()->name = "beans2";
+        auto e3 = Entity::alloc();
         e3->addComponent<EntityAttributes>()->name = "beans3";
         e3->parent = e;
         e3->addComponent<TestComponent>();

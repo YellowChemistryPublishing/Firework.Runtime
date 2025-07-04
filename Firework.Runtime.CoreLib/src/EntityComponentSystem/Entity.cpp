@@ -5,10 +5,11 @@
 using namespace Firework;
 using namespace Firework::Internal;
 
-Entity::Entity(std::shared_ptr<Entity> parent)
+std::shared_ptr<Entity> Entity::alloc(std::shared_ptr<Entity> parent)
 {
-    std::shared_ptr<Entity> _this = std::shared_ptr<Entity>(this);
-    this->reparentAfterOrphan(parent);
+    std::shared_ptr<Entity> ret = std::shared_ptr<Entity>(new Entity());
+    ret->reparentAfterOrphan(parent);
+    return ret;
 }
 Entity::~Entity()
 {

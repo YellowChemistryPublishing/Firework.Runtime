@@ -88,6 +88,8 @@ namespace Firework
         std::shared_ptr<Entity> _childrenFront = nullptr;
         std::shared_ptr<Entity> _childrenBack = nullptr;
 
+        constexpr Entity() noexcept { };
+
         void orphan() noexcept;
         void reparentAfterOrphan(std::shared_ptr<Entity> parent) noexcept;
 
@@ -95,7 +97,7 @@ namespace Firework
         requires (Get || Add)
         inline std::shared_ptr<T> fetchComponent();
     public:
-        Entity(std::shared_ptr<Entity> parent = nullptr) noexcept;
+        static std::shared_ptr<Entity> alloc(std::shared_ptr<Entity> parent = nullptr);
         ~Entity();
 
         const Property<std::shared_ptr<Entity>, std::shared_ptr<Entity>> parent { [this]() -> std::shared_ptr<Entity> { return this->_parent; },
@@ -174,6 +176,8 @@ namespace Firework
         {
             std::shared_ptr<T> ret = std::make_shared<T>();
             componentSetIt->second.emplace(robin_hood::pair(this, std::static_pointer_cast<void>(ret)));
+            if constexpr (requires { ret->onAttach(*this); })
+                ret->onAttach(*this);
             return ret;
         }
         else
