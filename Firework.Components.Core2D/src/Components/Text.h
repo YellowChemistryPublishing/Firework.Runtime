@@ -64,7 +64,62 @@ namespace Firework
 
         void setFont(PackageSystem::TrueTypeFontPackageFile* value)
         {
-            
+            if (this->_font == value) [[unlikely]]
+                return;
+
+            for (char32_t c : this->_text)
+            {
+                auto refCountIt = Text::characterRefCounts.find(FontCharacterQuery { this->_font, c });
+                if (refCountIt->second <= 1)
+                    Text::characterRefCounts.erase(refCountIt);
+                else
+                    --refCountIt->second;
+            }
+
+            struct CharacterRenderInitData
+            {
+                char32_t c;
+                std::vector<FilledPathPoint> paths;
+                std::vector<size_t> spans;
+
+                constexpr bool operator<(const CharacterRenderInitData& other) const
+                {
+                    return this->c < other.c;
+                }
+            };
+            std::vector<CharacterRenderInitData> initData;
+
+            for (char32_t c : this->_text)
+            {
+                auto refCountIt = Text::characterRefCounts.find(FontCharacterQuery { value, c });
+                if (refCountIt != Text::characterRefCounts.end())
+                {
+                    ++refCountIt->second;
+                    continue;
+                }
+
+                Typography::Font& font = this->_font->fontHandle();
+                int glyphIndex = font.getGlyphIndex(c);
+                Typography::GlyphOutline go = font.getGlyphOutline(glyphIndex);
+
+                CharacterRenderInitData workingData { .c = c };
+                for (sys::integer<int> i = 0; i < go.vertsSize; i++)
+                {
+                    if (go.verts[+i].type == STBTT_vmove)
+                        workingData.spans.emplace_back(workingData.paths.size());
+                    workingData.paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
+                }
+                workingData.spans.emplace_back(workingData.paths.size());
+                
+                initData.emplace_back(std::move(workingData));
+                workingData.paths.clear();
+                workingData.spans.clear();
+            }
+
+            CoreEngine::queueRenderJobForFrame([file = value, initData = std::move(initData)]
+            {
+
+            });
 
             this->_font = value;
         }
