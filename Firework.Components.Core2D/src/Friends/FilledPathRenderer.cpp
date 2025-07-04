@@ -54,6 +54,30 @@ bool FilledPathRenderer::renderInitialize()
     return FilledPathRenderer::program && FilledPathRenderer::unitSquare;
 }
 
+FilledPathRenderer::FilledPathRenderer(std::span<FilledPathPoint> closedPath)
+{
+    std::vector<FilledPathPoint> verts;
+    if constexpr (requires { sz(closedPath.size()); })
+        verts.reserve(+sz(closedPath.size()));
+    verts.insert(verts.begin(), closedPath.begin(), closedPath.end());
+
+    std::vector<uint16_t> inds;
+    if constexpr (requires { sz(closedPath.size()); })
+        inds.reserve(+((sz(closedPath.size()) - 2_uz) * 3_uz));
+
+    for (u16 i = 1; i < u16(closedPath.size()) - 1_u16; i++)
+    {
+        inds.push_back(0);
+        inds.push_back(+(i + 1_u16));
+        inds.push_back(+i);
+    }
+
+    this->fill = GL::StaticMeshHandle::create(
+        std::data(verts), verts.size() * sizeof(decltype(verts)::value_type),
+        GL::VertexLayout::create({ GL::VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 } }), inds.data(),
+        inds.size() * sizeof(decltype(inds)::value_type));
+}
+
 bool FilledPathRenderer::submitDrawStencil(sz renderIndex, RenderTransform shape, bool forceHole)
 {
     if (!this->fill || !FilledPathRenderer::program) [[unlikely]]

@@ -553,25 +553,24 @@ set_target_properties(Firework.Components.Core2D
 
 # Examples and tests.
 
-list(APPEND EXAMPLES "HelloFireworkUI")
+file(GLOB FIREWORK_EXAMPLES LIST_DIRECTORIES TRUE RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/examples" "${CMAKE_CURRENT_SOURCE_DIR}/examples/*")
+
 if (FIREWORK_BUILD_EXAMPLES)
-    foreach (EXAMPLE_NAME ${EXAMPLES})
-        string(REPLACE "." "_" EXAMPLE_NAME_NORMALIZED "${EXAMPLE_NAME}")
-        add_custom_target(Package${EXAMPLE_NAME_NORMALIZED}Assets
+    foreach (EXAMPLE_NAME ${FIREWORK_EXAMPLES})
+        add_custom_target(package_example_${EXAMPLE_NAME}
             COMMAND ${CMAKE_COMMAND}
             -DFIREWORK_PACKAGER_EXECUTABLE="$<TARGET_FILE:Firework.Packager>"
             -DPACKAGE_INPUT_FOLDER="${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/Assets"
-            -DPACKAGE_OUTPUT_FILE="$<TARGET_FILE_DIR:${EXAMPLE_NAME}>/Runtime/CorePackage.fwpkg"
+            -DPACKAGE_OUTPUT_FILE="$<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>/Runtime/CorePackage.fwpkg"
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/PackageArchive.cmake"
         )
-        add_dependencies(Package${EXAMPLE_NAME_NORMALIZED}Assets Firework.Packager)
+        add_dependencies(package_example_${EXAMPLE_NAME} Firework.Packager)
 
-        add_executable(${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/main.cpp")
-        # target_sources(${EXAMPLE_NAME} PUBLIC FILE_SET CXX_MODULES FILES "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/main.cpp")
-        add_dependencies(${EXAMPLE_NAME} Package${EXAMPLE_NAME_NORMALIZED}Assets)
+        add_executable(example_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/main.cpp")
+        add_dependencies(example_${EXAMPLE_NAME} package_example_${EXAMPLE_NAME})
 
-        target_link_libraries(${EXAMPLE_NAME} PUBLIC Firework.Components.Core2D)
-        set_target_properties(${EXAMPLE_NAME}
+        target_link_libraries(example_${EXAMPLE_NAME} PUBLIC Firework.Components.Core2D)
+        set_target_properties(example_${EXAMPLE_NAME}
             PROPERTIES
             ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Examples/${EXAMPLE_NAME}"
             LIBRARY_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Examples/${EXAMPLE_NAME}"
@@ -580,30 +579,30 @@ if (FIREWORK_BUILD_EXAMPLES)
             CXX_VISIBILITY_PRESET hidden
         )
 
-        add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
+        add_custom_command(TARGET example_${EXAMPLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:Firework.Typography>
-            $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
+            $<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>
         )
-        add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
+        add_custom_command(TARGET example_${EXAMPLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:Firework.Runtime.GL>
-            $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
+            $<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>
         )
-        add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
+        add_custom_command(TARGET example_${EXAMPLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:Firework.Runtime.RenderPipeline>
-            $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
+            $<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>
         )
-        add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
+        add_custom_command(TARGET example_${EXAMPLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:Firework.Runtime.CoreLib>
-            $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
+            $<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>
         )
-        add_custom_command(TARGET ${EXAMPLE_NAME} POST_BUILD
+        add_custom_command(TARGET example_${EXAMPLE_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:Firework.Components.Core2D>
-            $<TARGET_FILE_DIR:${EXAMPLE_NAME}>
+            $<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>
         )
     endforeach()
 endif()
