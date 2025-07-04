@@ -26,8 +26,10 @@ namespace Firework
             char32_t c;
         };
 
+        // Main thread only.
+        static robin_hood::unordered_map<FontCharacterQuery, size_t> characterRefCounts;
         // Render thread only.
-        static robin_hood::unordered_map<FontCharacterQuery, std::pair<FilledPathRenderer, sz>> characterPaths;
+        static robin_hood::unordered_map<FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>> characterPaths;
 
         std::shared_ptr<RectTransform> rectTransform;
         PackageSystem::TrueTypeFontPackageFile* _font = nullptr;
@@ -35,15 +37,35 @@ namespace Firework
 
         struct CharacterRenderData
         {
+            PackageSystem::TrueTypeFontPackageFile* file;
             char32_t c;
-            FilledPathRenderer& renderer;
-            sz& refCount;
+            std::shared_ptr<std::vector<FilledPathRenderer>> paths;
             GL::RenderTransform tf;
+
+            inline CharacterRenderData(PackageSystem::TrueTypeFontPackageFile* file, char32_t c, GL::RenderTransform tf) :
+                file(file), c(c), paths(
+                                      [&]() -> std::shared_ptr<std::vector<FilledPathRenderer>>
+            {
+                auto pathIt = Text::characterPaths.find(FontCharacterQuery { file, c });
+                if (pathIt != Text::characterPaths.end()) [[likely]]
+                    return pathIt->second;
+                else
+                    return nullptr;
+            }()),
+                tf(std::move(tf))
+            { }
+            inline ~CharacterRenderData()
+            {
+                if (this->paths.use_count() <= 1)
+                    Text::characterPaths.erase(FontCharacterQuery { this->file, this->c });
+            }
         };
         std::shared_ptr<std::vector<CharacterRenderData>> renderData = std::make_shared<std::vector<CharacterRenderData>>();
 
         void setFont(PackageSystem::TrueTypeFontPackageFile* value)
         {
+            
+
             this->_font = value;
         }
 
