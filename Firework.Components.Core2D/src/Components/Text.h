@@ -27,74 +27,31 @@ namespace Firework
         };
 
         // Main thread only.
-        static robin_hood::unordered_map<FontCharacterQuery, size_t> characterRefCounts;
-        // Render thread only.
         static robin_hood::unordered_map<FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>> characterPaths;
 
         std::shared_ptr<RectTransform> rectTransform;
         PackageSystem::TrueTypeFontPackageFile* _font = nullptr;
         std::u32string _text = U"";
 
-        struct CharacterRenderData
+        struct RenderData
         {
-            PackageSystem::TrueTypeFontPackageFile* file;
-            char32_t c;
-            std::shared_ptr<std::vector<FilledPathRenderer>> paths;
-            GL::RenderTransform tf;
-
-            inline CharacterRenderData(PackageSystem::TrueTypeFontPackageFile* file, char32_t c, GL::RenderTransform tf) :
-                file(file), c(c), paths(
-                                      [&]() -> std::shared_ptr<std::vector<FilledPathRenderer>>
-            {
-                auto pathIt = Text::characterPaths.find(FontCharacterQuery { file, c });
-                if (pathIt != Text::characterPaths.end()) [[likely]]
-                    return pathIt->second;
-                else
-                    return nullptr;
-            }()),
-                tf(std::move(tf))
-            { }
-            inline ~CharacterRenderData()
-            {
-                if (this->paths.use_count() <= 1)
-                    Text::characterPaths.erase(FontCharacterQuery { this->file, this->c });
-            }
+            std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> toRender;
+            std::mutex toRenderLock;
         };
-        std::shared_ptr<std::vector<CharacterRenderData>> renderData = std::make_shared<std::vector<CharacterRenderData>>();
+        std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
 
         void setFont(PackageSystem::TrueTypeFontPackageFile* value)
         {
             if (this->_font == value) [[unlikely]]
                 return;
 
+            std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> swapToRender;
             for (char32_t c : this->_text)
             {
-                auto refCountIt = Text::characterRefCounts.find(FontCharacterQuery { this->_font, c });
-                if (refCountIt->second <= 1)
-                    Text::characterRefCounts.erase(refCountIt);
-                else
-                    --refCountIt->second;
-            }
-
-            struct CharacterRenderInitData
-            {
-                char32_t c;
-                std::vector<FilledPathPoint> paths;
-                std::vector<size_t> spans;
-
-                constexpr bool operator<(const CharacterRenderInitData& other) const
+                auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = value, .c = c });
+                if (charPathIt != Text::characterPaths.end())
                 {
-                    return this->c < other.c;
-                }
-            };
-            std::vector<CharacterRenderInitData> initData;
-
-            for (char32_t c : this->_text)
-            {
-                auto refCountIt = Text::characterRefCounts.find(FontCharacterQuery { value, c });
-                if (refCountIt != Text::characterRefCounts.end())
-                {
-                    ++refCountIt->second;
+                    swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), GL::RenderTransform()));
                     continue;
                 }
 
@@ -102,24 +59,30 @@ namespace Firework
                 int glyphIndex = font.getGlyphIndex(c);
                 Typography::GlyphOutline go = font.getGlyphOutline(glyphIndex);
 
-                CharacterRenderInitData workingData { .c = c };
+                std::vector<size_t> spans;
+                std::vector<FilledPathPoint> paths;
                 for (sys::integer<int> i = 0; i < go.vertsSize; i++)
                 {
                     if (go.verts[+i].type == STBTT_vmove)
-                        workingData.spans.emplace_back(workingData.paths.size());
-                    workingData.paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
+                        spans.emplace_back(paths.size());
+                    paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
                 }
-                workingData.spans.emplace_back(workingData.paths.size());
-                
-                initData.emplace_back(std::move(workingData));
-                workingData.paths.clear();
-                workingData.spans.clear();
+                spans.emplace_back(paths.size());
+
+                if (spans.size() <= 1)
+                    continue;
+
+                std::shared_ptr<std::vector<FilledPathRenderer>> pathRenderers = std::make_shared<std::vector<FilledPathRenderer>>();
+                for (auto it = spans.begin(); it != --spans.end(); ++it)
+                {
+                    size_t beg = *it;
+                    size_t end = *++decltype(it)(it);
+
+                    pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + beg, paths.begin() + end)));
+                }
+                Text::characterPaths.emplace(FontCharacterQuery { .file = value, .c = c }, pathRenderers);
+                swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), GL::RenderTransform()));
             }
-
-            CoreEngine::queueRenderJobForFrame([file = value, initData = std::move(initData)]
-            {
-
-            });
 
             this->_font = value;
         }
@@ -145,5 +108,5 @@ namespace std
         {
             return _hash_combine(value.c, value.file);
         }
-    }
+    };
 } // namespace std
