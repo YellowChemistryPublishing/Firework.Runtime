@@ -87,6 +87,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         e3->addComponent<TestComponent>();
 
         Debug::printHierarchy();
+        Debug::showF3Menu();
     };
 
     return 0;

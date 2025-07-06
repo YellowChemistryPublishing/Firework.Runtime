@@ -3,13 +3,15 @@
 using namespace Firework;
 using namespace Firework::Internal;
 
-robin_hood::unordered_map<Text::FontCharacterQuery, std::pair<FilledPathRenderer, sz>> Text::characterPaths;
+robin_hood::unordered_map<Internal::FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>> Text::characterPaths;
 
 void Text::renderOffload(sz renderIndex)
 {
-    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, renderTransform = renderTransformFromRectTransform(&*this->rectTransform)]
+    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get())]
     {
-        for (auto& [c, renderer, refCount, tf] : *renderData) renderer.submitDrawStencil(renderIndex, tf);
-        FilledPathRenderer::submitDraw(renderIndex, renderTransform);
+        std::lock_guard guard(renderData->toRenderLock);
+        for (auto& [paths, transform] : renderData->toRender)
+            for (auto& path : *paths) path.submitDrawStencil(renderIndex, transform);
+        FilledPathRenderer::submitDraw(renderIndex, rectTransform);
     }, false);
 }

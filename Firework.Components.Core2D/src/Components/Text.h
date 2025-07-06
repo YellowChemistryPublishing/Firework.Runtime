@@ -4,6 +4,7 @@
 
 #include <Components/RectTransform.h>
 #include <Core/CoreEngine.h>
+#include <EntityComponentSystem/Entity.h>
 #include <Friends/FilledPathRenderer.h>
 #include <Friends/PackageFileCore2D.h>
 #include <GL/Transform.h>
@@ -12,22 +13,42 @@
 template <typename T, typename U>
 inline size_t _hash_combine(const T& t, const U& u)
 {
-    return std::hash<T>()(t) ^ (std::hash<U>()(u) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+    size_t seed = std::hash<T>()(t);
+    return seed ^ (std::hash<U>()(u) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
 }
+
+namespace Firework::Internal
+{
+    struct FontCharacterQuery
+    {
+        // Must not dereference, may outlive underlying value.
+        PackageSystem::TrueTypeFontPackageFile* file;
+        char32_t c;
+
+        friend inline bool operator==(const FontCharacterQuery&, const FontCharacterQuery&) noexcept = default;
+    };
+} // namespace Firework::Internal
+
+namespace std
+{
+    template <>
+    struct hash<Firework::Internal::FontCharacterQuery>
+    {
+        inline size_t operator()(const Firework::Internal::FontCharacterQuery& value) const
+        {
+            return _hash_combine(value.c, value.file);
+        }
+    };
+} // namespace std
 
 namespace Firework
 {
+    class Entity;
+
     class __firework_componentcore2d_api [[fw::component]] Text final
     {
-        struct FontCharacterQuery
-        {
-            // Must not dereference, may outlive underlying value.
-            PackageSystem::TrueTypeFontPackageFile* file;
-            char32_t c;
-        };
-
         // Main thread only.
-        static robin_hood::unordered_map<FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>> characterPaths;
+        static robin_hood::unordered_map<Internal::FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>> characterPaths;
 
         std::shared_ptr<RectTransform> rectTransform;
         PackageSystem::TrueTypeFontPackageFile* _font = nullptr;
@@ -40,6 +61,11 @@ namespace Firework
         };
         std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
 
+        void onAttach(Entity& entity)
+        {
+            this->rectTransform = entity.getOrAddComponent<RectTransform>();
+        }
+
         void setFont(PackageSystem::TrueTypeFontPackageFile* value)
         {
             if (this->_font == value) [[unlikely]]
@@ -48,7 +74,7 @@ namespace Firework
             std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> swapToRender;
             for (char32_t c : this->_text)
             {
-                auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = value, .c = c });
+                auto charPathIt = Text::characterPaths.find(Internal::FontCharacterQuery { .file = value, .c = c });
                 if (charPathIt != Text::characterPaths.end())
                 {
                     swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), GL::RenderTransform()));
@@ -80,7 +106,7 @@ namespace Firework
 
                     pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + beg, paths.begin() + end)));
                 }
-                Text::characterPaths.emplace(FontCharacterQuery { .file = value, .c = c }, pathRenderers);
+                Text::characterPaths.emplace(Internal::FontCharacterQuery { .file = value, .c = c }, pathRenderers);
                 swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), GL::RenderTransform()));
             }
 
@@ -95,18 +121,7 @@ namespace Firework
             this->setFont(value);
         } };
 
-        friend struct std::hash<FontCharacterQuery>;
+        friend struct std::hash<Internal::FontCharacterQuery>;
+        friend class Firework::Entity;
     };
 } // namespace Firework
-
-namespace std
-{
-    template <>
-    struct hash<Firework::Text::FontCharacterQuery>
-    {
-        inline size_t operator()(const Firework::Text::FontCharacterQuery& value)
-        {
-            return _hash_combine(value.c, value.file);
-        }
-    };
-} // namespace std

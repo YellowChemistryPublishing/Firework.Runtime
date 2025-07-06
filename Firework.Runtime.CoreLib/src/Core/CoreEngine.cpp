@@ -103,7 +103,6 @@ int CoreEngine::execute(int argc, char* argv[])
         PackageManager::endianness = Endianness::Little;
     else
         PackageManager::endianness = Endianness::Big;
-
     fs::path corePackagePath(fs::current_path());
     corePackagePath.append("Runtime");
     corePackagePath.append("CorePackage.fwpkg");
