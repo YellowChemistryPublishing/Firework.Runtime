@@ -46,10 +46,10 @@ void RectTransform::setRect(const RectFloat& value)
 
     auto recurse = [&](auto&& recurse, Entity& entity, RectFloat delta) -> void
     {
-        for (auto it = entity._childrenFront; it; it = it->next)
+        for (Entity& child : entity.children())
         {
             RectFloat localDelta = delta;
-            if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
+            if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 localDelta = delta * rectTransform->_anchor;
@@ -62,7 +62,7 @@ void RectTransform::setRect(const RectFloat& value)
                         sysm::vector2(delta.left, delta.bottom) * sysm::vector2(rectTransform->_positionAnchor.left, rectTransform->_positionAnchor.bottom));
                 }
             }
-            recurse(recurse, *it, localDelta);
+            recurse(recurse, child, localDelta);
         }
     };
     recurse(recurse, *this->attachedEntity, delta);
@@ -77,14 +77,14 @@ void RectTransform::setPosition(sysm::vector2 value)
 
     auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity& entity) -> void
     {
-        for (auto it = entity._childrenFront; it; it = it->next)
+        for (Entity& child : entity.children())
         {
-            if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
+            if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 rectTransform->_position += delta;
             }
-            setChildrenPositionRecursive(setChildrenPositionRecursive, *it);
+            setChildrenPositionRecursive(setChildrenPositionRecursive, child);
         }
     };
     setChildrenPositionRecursive(setChildrenPositionRecursive, *this->attachedEntity);
@@ -98,15 +98,15 @@ void RectTransform::setRotation(float value)
 
     auto setChildrenRotationRecursive = [&, this](auto&& setChildrenRotationRecursive, Entity& entity) -> void
     {
-        for (auto it = entity._childrenFront; it; it = it->next)
+        for (Entity& child : entity.children())
         {
-            if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
+            if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 rectTransform->_rotation += delta;
                 rotatePointAround(rectTransform->_position, this->_position, delta);
             }
-            setChildrenRotationRecursive(setChildrenRotationRecursive, *it);
+            setChildrenRotationRecursive(setChildrenRotationRecursive, child);
         }
     };
     setChildrenRotationRecursive(setChildrenRotationRecursive, *this->attachedEntity);
@@ -120,15 +120,15 @@ void RectTransform::setScale(sysm::vector2 value)
 
     auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity& entity) -> void
     {
-        for (auto it = entity._childrenFront; it; it = it->next)
+        for (Entity& child : entity.children())
         {
-            if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
+            if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 rectTransform->_scale *= delta;
                 rectTransform->_position = delta * (rectTransform->_position - this->_position) + this->_position;
             }
-            setChildrenScaleRecursive(setChildrenScaleRecursive, *it);
+            setChildrenScaleRecursive(setChildrenScaleRecursive, child);
         }
     };
     setChildrenScaleRecursive(setChildrenScaleRecursive, *this->attachedEntity);
@@ -136,7 +136,7 @@ void RectTransform::setScale(sysm::vector2 value)
 
 std::shared_ptr<RectTransform> RectTransform::parent() const
 {
-    for (std::shared_ptr<Entity> parent = this->attachedEntity->_parent; parent; parent = parent->_parent)
+    for (std::shared_ptr<Entity> parent = this->attachedEntity->parent; parent; parent = parent->parent)
     {
         if (std::shared_ptr<RectTransform> rectTransform = parent->getComponent<RectTransform>())
             return rectTransform;
@@ -173,14 +173,14 @@ void RectTransform::setLocalPosition(sysm::vector2 value)
 
     auto setChildrenPositionRecursive = [&](auto&& setChildrenPositionRecursive, Entity& entity) -> void
     {
-        for (auto it = entity._childrenFront; it; it = it->next)
+        for (Entity& child : entity.children())
         {
-            if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
+            if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 rectTransform->_position += delta;
             }
-            setChildrenPositionRecursive(setChildrenPositionRecursive, *it);
+            setChildrenPositionRecursive(setChildrenPositionRecursive, child);
         }
     };
     setChildrenPositionRecursive(setChildrenPositionRecursive, *this->attachedEntity);
@@ -204,15 +204,15 @@ void RectTransform::setLocalRotation(float value)
 
     auto setChildrenRotationRecursive = [&, this](auto&& setChildrenRotationRecursive, Entity& entity) -> void
     {
-        for (auto it = entity._childrenFront; it != nullptr; it = it->next)
+        for (Entity& child : entity.children())
         {
-            if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
+            if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 rectTransform->_rotation += delta;
                 rotatePointAround(rectTransform->_position, this->_position, delta);
             }
-            setChildrenRotationRecursive(setChildrenRotationRecursive, *it);
+            setChildrenRotationRecursive(setChildrenRotationRecursive, child);
         }
     };
     setChildrenRotationRecursive(setChildrenRotationRecursive, *this->attachedEntity);
@@ -236,15 +236,15 @@ void RectTransform::setLocalScale(sysm::vector2 value)
 
     auto setChildrenScaleRecursive = [&, this](auto&& setChildrenScaleRecursive, Entity& entity) -> void
     {
-        for (auto it = entity._childrenFront; it != nullptr; it = it->next)
+        for (Entity& child : entity.children())
         {
-            if (std::shared_ptr<RectTransform> rectTransform = it->getComponent<RectTransform>())
+            if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
                 rectTransform->_scale *= delta;
                 rectTransform->_position = delta * (rectTransform->_position - this->_position) + this->_position;
             }
-            setChildrenScaleRecursive(setChildrenScaleRecursive, *it);
+            setChildrenScaleRecursive(setChildrenScaleRecursive, child);
         }
     };
     setChildrenScaleRecursive(setChildrenScaleRecursive, *this->attachedEntity);

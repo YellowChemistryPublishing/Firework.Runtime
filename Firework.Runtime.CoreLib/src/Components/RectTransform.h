@@ -4,6 +4,7 @@
 
 #include <module/sys.Mathematics>
 
+#include <EntityComponentSystem/Entity.h>
 #include <GL/Transform.h>
 #include <Library/Property.h>
 
@@ -99,6 +100,11 @@ namespace Firework
         sysm::vector2 _scale { 1, 1 };
 
         bool _dirty = true;
+
+        void onAttach(Entity& entity)
+        {
+            this->attachedEntity = entity.shared_from_this();
+        }
 
         std::shared_ptr<RectTransform> parent() const;
 

@@ -10,9 +10,9 @@
 #include <type_traits>
 #include <typeindex>
 
-#include <Components/RectTransform.h>
 #include <EntityComponentSystem/EntityManagement.inc>
 #include <Library/Hash.h>
+#include <Library/Property.h>
 #include <Library/TypeInfo.h>
 
 namespace Firework
@@ -68,12 +68,12 @@ namespace Firework
             return EntityIterator();
         }
 
-        constexpr bool empty()
+        bool empty()
         {
             return !this->front;
         }
 
-        constexpr EntityRange(std::shared_ptr<Entity> front) : front(std::move(front))
+        EntityRange(std::shared_ptr<Entity> front) : front(std::move(front))
         { }
     private:
         std::shared_ptr<Entity> front = nullptr;
@@ -88,7 +88,7 @@ namespace Firework
         std::shared_ptr<Entity> _childrenFront = nullptr;
         std::shared_ptr<Entity> _childrenBack = nullptr;
 
-        constexpr Entity() noexcept { };
+        Entity() noexcept = default;
 
         void orphan() noexcept;
         void reparentAfterOrphan(std::shared_ptr<Entity> parent) noexcept;
@@ -138,7 +138,6 @@ namespace Firework
         friend struct Firework::EntityIterator;
 
         friend class Firework::Internal::CoreEngine;
-        friend class Firework::RectTransform;
     };
 
     EntityIterator& EntityIterator::operator++()

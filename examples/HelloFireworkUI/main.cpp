@@ -1,4 +1,5 @@
 #include <Components/EntityAttributes.h>
+#include <Components/Text.h>
 #include <Core/CoreEngine.h>
 #include <Firework.Core.hpp>
 #include <Firework/Entry.h>
@@ -80,11 +81,11 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     {
         auto e = Entity::alloc();
         e->addComponent<EntityAttributes>()->name = "beans";
-        Entity::alloc()->addComponent<EntityAttributes>()->name = "beans2";
-        auto e3 = Entity::alloc();
-        e3->addComponent<EntityAttributes>()->name = "beans3";
-        e3->parent = e;
-        e3->addComponent<TestComponent>();
+        auto rt = e->getOrAddComponent<RectTransform>();
+        rt->rect = RectFloat(200, 200, -200, -200);
+        auto t = e->addComponent<Text>();
+        t->font = file_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"Assets/Comic Sans MS.ttf"));
+        t->text = U"beans 2";
 
         Debug::printHierarchy();
         Debug::showF3Menu();

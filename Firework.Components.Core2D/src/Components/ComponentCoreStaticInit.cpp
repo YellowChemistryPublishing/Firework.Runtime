@@ -1,4 +1,5 @@
 #include <Components/RectTransform.h>
+#include <Components/Text.h>
 #include <Core/CoreEngine.h>
 #include <Core/Debug.h>
 #include <Core/PackageManager.h>
@@ -29,6 +30,11 @@ namespace Firework::Internal
 
             CoreEngine::queueRenderJobForFrame([]
             {
+                InternalEngineEvent::OnRenderShutdown += []
+                {
+                    Text::characterPaths.clear();
+                };
+
                 if (!FilledPathRenderer::renderInitialize()) [[unlikely]]
                     Debug::logError("`FilledPathRenderer` failed to render initialize.");
             });

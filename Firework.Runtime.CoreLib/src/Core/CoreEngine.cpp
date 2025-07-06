@@ -31,6 +31,7 @@
 // clang-format on
 #endif
 
+#include <Components/RectTransform.h>
 #include <Core/Application.h>
 #include <Core/Debug.h>
 #include <Core/Display.h>

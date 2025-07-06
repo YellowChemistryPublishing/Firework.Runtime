@@ -71,10 +71,53 @@ namespace Firework
             if (this->_font == value) [[unlikely]]
                 return;
 
+            // std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> swapToRender;
+            // for (char32_t c : this->_text)
+            // {
+            //     auto charPathIt = Text::characterPaths.find(Internal::FontCharacterQuery { .file = value, .c = c });
+            //     if (charPathIt != Text::characterPaths.end())
+            //     {
+            //         swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), GL::RenderTransform()));
+            //         continue;
+            //     }
+
+            //     Typography::Font& font = this->_font->fontHandle();
+            //     int glyphIndex = font.getGlyphIndex(c);
+            //     Typography::GlyphOutline go = font.getGlyphOutline(glyphIndex);
+
+            //     std::vector<size_t> spans;
+            //     std::vector<FilledPathPoint> paths;
+            //     for (sys::integer<int> i = 0; i < go.vertsSize; i++)
+            //     {
+            //         if (go.verts[+i].type == STBTT_vmove)
+            //             spans.emplace_back(paths.size());
+            //         paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
+            //     }
+            //     spans.emplace_back(paths.size());
+
+            //     if (spans.size() <= 1)
+            //         continue;
+
+            //     std::shared_ptr<std::vector<FilledPathRenderer>> pathRenderers = std::make_shared<std::vector<FilledPathRenderer>>();
+            //     for (auto it = spans.begin(); it != --spans.end(); ++it)
+            //     {
+            //         size_t beg = *it;
+            //         size_t end = *++decltype(it)(it);
+
+            //         pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + beg, paths.begin() + end)));
+            //     }
+            //     Text::characterPaths.emplace(Internal::FontCharacterQuery { .file = value, .c = c }, pathRenderers);
+            //     swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), GL::RenderTransform()));
+            // }
+
+            this->_font = value;
+        }
+        void setText(std::u32string&& value)
+        {
             std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> swapToRender;
-            for (char32_t c : this->_text)
+            for (char32_t c : value)
             {
-                auto charPathIt = Text::characterPaths.find(Internal::FontCharacterQuery { .file = value, .c = c });
+                auto charPathIt = Text::characterPaths.find(Internal::FontCharacterQuery { .file = this->_font, .c = c });
                 if (charPathIt != Text::characterPaths.end())
                 {
                     swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), GL::RenderTransform()));
@@ -106,11 +149,14 @@ namespace Firework
 
                     pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + beg, paths.begin() + end)));
                 }
-                Text::characterPaths.emplace(Internal::FontCharacterQuery { .file = value, .c = c }, pathRenderers);
+                Text::characterPaths.emplace(Internal::FontCharacterQuery { .file = this->_font, .c = c }, pathRenderers);
                 swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), GL::RenderTransform()));
             }
 
-            this->_font = value;
+            {
+                std::lock_guard guard(this->renderData->toRenderLock);
+                this->renderData->toRender = std::move(this->renderData->toRender);
+            }
         }
 
         void renderOffload(sz renderIndex);
@@ -120,8 +166,14 @@ namespace Firework
         {
             this->setFont(value);
         } };
+        Property<std::u32string, std::u32string> text { [this]() -> const std::u32string& { return this->_text; }, [this](std::u32string value)
+        {
+            this->setText(std::move(value));
+        } };
 
         friend struct std::hash<Internal::FontCharacterQuery>;
+        
         friend class Firework::Entity;
+        friend struct Firework::Internal::ComponentCore2DStaticInit;
     };
 } // namespace Firework
