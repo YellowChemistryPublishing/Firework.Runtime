@@ -123,7 +123,6 @@ namespace Firework
 
             const RectFloat& r = this->rectTransform->rect();
             const sysm::vector2& sc = this->rectTransform->scale();
-            const float xExtent = r.right * sc.x;
             const Typography::Font& font = this->_font->fontHandle();
             const float glSc = fontHeight / float(font.height());
             const Typography::GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(c));
@@ -153,7 +152,7 @@ namespace Firework
                 auto charPathIt = Text::characterPaths.find(Internal::FontCharacterQuery { .file = this->_font, .c = c });
                 if (charPathIt != Text::characterPaths.end())
                 {
-                    swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), this->calcGlyphRenderTransformAndAdvance(gPos, c, 40)));
+                    swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), this->calcGlyphRenderTransformAndAdvance(gPos, c, this->_fontSize)));
                     continue;
                 }
 
@@ -183,7 +182,7 @@ namespace Firework
                     pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + beg, paths.begin() + end)));
                 }
                 Text::characterPaths.emplace(Internal::FontCharacterQuery { .file = this->_font, .c = c }, pathRenderers);
-                swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), this->calcGlyphRenderTransformAndAdvance(gPos, c, 40)));
+                swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), this->calcGlyphRenderTransformAndAdvance(gPos, c, this->_fontSize)));
             }
 
             this->_text = value;
