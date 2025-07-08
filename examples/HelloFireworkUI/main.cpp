@@ -82,10 +82,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         auto e = Entity::alloc();
         e->addComponent<EntityAttributes>()->name = "beans";
         auto rt = e->getOrAddComponent<RectTransform>();
-        rt->rect = RectFloat(200, 200, -200, -200);
+        rt->rect = RectFloat(400, 400, -400, -400);
         auto t = e->addComponent<Text>();
         t->font = file_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"Assets/Comic Sans MS.ttf"));
-        t->text = U"beans 2";
+        t->text = U"b";
 
         Debug::printHierarchy();
         Debug::showF3Menu();

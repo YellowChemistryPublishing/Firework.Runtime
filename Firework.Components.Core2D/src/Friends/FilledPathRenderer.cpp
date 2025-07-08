@@ -72,10 +72,10 @@ FilledPathRenderer::FilledPathRenderer(std::span<FilledPathPoint> closedPath)
         inds.push_back(+i);
     }
 
-    this->fill = GL::StaticMeshHandle::create(
-        std::data(verts), verts.size() * sizeof(decltype(verts)::value_type),
-        GL::VertexLayout::create({ GL::VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 } }), inds.data(),
-        inds.size() * sizeof(decltype(inds)::value_type));
+    this->fill =
+        GL::StaticMeshHandle::create(std::data(verts), verts.size() * sizeof(decltype(verts)::value_type),
+                                     GL::VertexLayout::create({ GL::VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 } }),
+                                     inds.data(), inds.size() * sizeof(decltype(inds)::value_type));
 }
 
 bool FilledPathRenderer::submitDrawStencil(sz renderIndex, RenderTransform shape, bool forceHole)

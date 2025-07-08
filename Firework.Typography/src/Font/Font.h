@@ -259,12 +259,15 @@ namespace Firework
             int ascent, descent, lineGap;
 
             Font(unsigned char* fontData);
-            Font(const Font&) = delete;
-            Font(Font&&) = delete;
 
-            GlyphOutline getGlyphOutline(int glyphIndex);
-            GlyphMetrics getGlyphMetrics(int glyphIndex);
-            int getGlyphIndex(char32_t codepoint);
+            int height() const
+            {
+                return ascent - descent;
+            }
+
+            GlyphOutline getGlyphOutline(int glyphIndex) const;
+            GlyphMetrics getGlyphMetrics(int glyphIndex) const;
+            int getGlyphIndex(char32_t codepoint) const;
         };
     }
 }

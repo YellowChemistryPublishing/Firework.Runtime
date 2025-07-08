@@ -449,10 +449,11 @@ endif()
 target_link_libraries(Firework.Runtime.CoreLib
     PUBLIC
     concurrentqueue
-    robin_hood
-    sys.Mathematics
     Firework.Runtime.RenderPipeline
     Firework.Runtime.GL
+    stdc++exp
+    robin_hood
+    sys.Mathematics
     PRIVATE
     SDL3-static
 )
@@ -534,6 +535,7 @@ target_include_directories(Firework.Components.Core2D
 target_link_libraries(Firework.Components.Core2D
     PUBLIC
     sys
+    sys.Mathematics
     Firework.Runtime.CoreLib
     Firework.Runtime.GL
     Firework.Typography

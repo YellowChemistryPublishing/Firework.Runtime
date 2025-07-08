@@ -9,6 +9,7 @@
 #include <Friends/PackageFileCore2D.h>
 #include <GL/Renderer.h>
 #include <Library/TypeInfo.h>
+#include <memory>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -33,6 +34,12 @@ namespace Firework::Internal
                 InternalEngineEvent::OnRenderShutdown += []
                 {
                     Text::characterPaths.clear();
+                };
+
+                InternalEngineEvent::OnRenderOffloadForComponent += [](std::type_index typeIndex, Entity&, std::shared_ptr<void> component, sz renderIndex)
+                {
+                    if (typeIndex == typeid(Text))
+                        std::static_pointer_cast<Text>(component)->renderOffload(renderIndex);
                 };
 
                 if (!FilledPathRenderer::renderInitialize()) [[unlikely]]

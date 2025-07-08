@@ -111,7 +111,7 @@ namespace Firework
         inline void operator()(Args... args)
         {
             for (auto it = this->children.begin(); it != this->children.end(); ++it)
-                (*it)(std::forward<Args>(args)...);
+                (*it)(args...);
         }
 
         inline bool unhandled()

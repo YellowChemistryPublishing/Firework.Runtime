@@ -164,7 +164,7 @@ namespace Firework
         /// @param value ```const Firework::RectFloat&```
         /// @return ```const Firework::RectFloat&```
         /// @note Main thread only.
-        const Property<const RectFloat&, const RectFloat&> rect { [this]() -> const RectFloat& { return this->_rect; }, [this](const RectFloat& value)
+        const Property<const RectFloat&, const RectFloat&> rect { [this]() -> const RectFloat& { return this->_rect; }, [this](const RectFloat& value) -> void
         {
             this->setRect(value);
         } };
@@ -173,11 +173,11 @@ namespace Firework
         /// @param value ```const Firework::RectFloat&```
         /// @return ```const Firework::RectFloat&```
         /// @note Main thread only.
-        const Property<const RectFloat&, const RectFloat&> rectAnchor { [this]() -> const RectFloat& { return this->_anchor; }, [this](const RectFloat& value)
+        const Property<const RectFloat&, const RectFloat&> rectAnchor { [this]() -> const RectFloat& { return this->_anchor; }, [this](const RectFloat& value) -> void
         {
             this->_anchor = value;
         } };
-        const Property<const RectFloat&, const RectFloat&> positionAnchor { [this]() -> const RectFloat& { return this->_positionAnchor; }, [this](const RectFloat& value)
+        const Property<const RectFloat&, const RectFloat&> positionAnchor { [this]() -> const RectFloat& { return this->_positionAnchor; }, [this](const RectFloat& value) -> void
         {
             this->_positionAnchor = value;
         } };
@@ -187,7 +187,7 @@ namespace Firework
         /// @param value ```sysm::vector2```
         /// @return ```sysm::vector2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> position { [this]() -> sysm::vector2 { return this->_position; }, [this](sysm::vector2 value)
+        const Property<sysm::vector2, sysm::vector2> position { [this]() -> sysm::vector2 { return this->_position; }, [this](sysm::vector2 value) -> void
         {
             this->setPosition(value);
         } };
@@ -196,7 +196,7 @@ namespace Firework
         /// @param value ```float```
         /// @return ```float```
         /// @note Main thread only.
-        const Property<float, float> rotation { [this]() -> float { return this->_rotation; }, [this](float value)
+        const Property<float, float> rotation { [this]() -> float { return this->_rotation; }, [this](float value) -> void
         {
             this->setRotation(value);
         } };
@@ -205,7 +205,7 @@ namespace Firework
         /// @param value ```sysm::vector2```
         /// @return ```sysm::vector2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> scale { [this]() -> sysm::vector2 { return this->_scale; }, [this](sysm::vector2 value)
+        const Property<sysm::vector2, sysm::vector2> scale { [this]() -> sysm::vector2 { return this->_scale; }, [this](sysm::vector2 value) -> void
         {
             this->setScale(value);
         } };
@@ -215,7 +215,7 @@ namespace Firework
         /// @param value ```sysm::vector2```
         /// @return ```sysm::vector2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> localPosition { [this]() -> sysm::vector2 { return this->getLocalPosition(); }, [this](sysm::vector2 value)
+        const Property<sysm::vector2, sysm::vector2> localPosition { [this]() -> sysm::vector2 { return this->getLocalPosition(); }, [this](sysm::vector2 value) -> void
         {
             this->setLocalPosition(value);
         } };
@@ -224,7 +224,7 @@ namespace Firework
         /// @param value ```float```
         /// @return ```float```
         /// @note Main thread only.
-        const Property<float, float> localRotation { [this]() -> float { return this->getLocalRotation(); }, [this](float value)
+        const Property<float, float> localRotation { [this]() -> float { return this->getLocalRotation(); }, [this](float value) -> void
         {
             this->setLocalRotation(value);
         } };
@@ -233,7 +233,7 @@ namespace Firework
         /// @param value ```sysm::vector2```
         /// @return ```sysm::vector2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> localScale { [this]() -> sysm::vector2 { return this->getLocalScale(); }, [this](sysm::vector2 value)
+        const Property<sysm::vector2, sysm::vector2> localScale { [this]() -> sysm::vector2 { return this->getLocalScale(); }, [this](sysm::vector2 value) -> void
         {
             this->setLocalScale(value);
         } };

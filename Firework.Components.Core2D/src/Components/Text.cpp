@@ -5,6 +5,11 @@ using namespace Firework::Internal;
 
 robin_hood::unordered_map<Internal::FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>> Text::characterPaths;
 
+Text::~Text()
+{
+    CoreEngine::queueRenderJobForFrame([renderData = this->renderData] { });
+}
+
 void Text::renderOffload(sz renderIndex)
 {
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get())]

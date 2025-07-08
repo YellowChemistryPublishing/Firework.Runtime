@@ -16,19 +16,19 @@ Font::Font(unsigned char* fontData)
     stbtt_GetFontVMetrics(&this->fontInfo, &this->ascent, &this->descent, &this->lineGap);
 }
 
-GlyphOutline Font::getGlyphOutline(int glyphIndex)
+GlyphOutline Font::getGlyphOutline(int glyphIndex) const
 {
     GlyphOutline ret;
     ret.vertsSize = stbtt_GetGlyphShape(&this->fontInfo, glyphIndex, &ret.verts);
     return ret;
 }
-GlyphMetrics Font::getGlyphMetrics(int glyphIndex)
+GlyphMetrics Font::getGlyphMetrics(int glyphIndex) const
 {
     GlyphMetrics ret;
     stbtt_GetGlyphHMetrics(&this->fontInfo, glyphIndex, &ret.advanceWidth, &ret.leftSideBearing);
     return ret;
 }
-int Font::getGlyphIndex(char32_t codepoint)
+int Font::getGlyphIndex(char32_t codepoint) const
 {
     return stbtt_FindGlyphIndex(&this->fontInfo, codepoint);
 }

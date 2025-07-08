@@ -2,6 +2,8 @@
 
 #include "Firework.Components.Core2D.Exports.h"
 
+#include <module/sys.Mathematics>
+
 #include <Components/RectTransform.h>
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/Entity.h>
@@ -52,6 +54,7 @@ namespace Firework
 
         std::shared_ptr<RectTransform> rectTransform;
         PackageSystem::TrueTypeFontPackageFile* _font = nullptr;
+        float _fontSize = 11.0f;
         std::u32string _text = U"";
 
         struct RenderData
@@ -112,15 +115,45 @@ namespace Firework
 
             this->_font = value;
         }
+
+        GL::RenderTransform calcGlyphRenderTransformAndAdvance(sysm::vector2& cLocalPos, char32_t c, float fontHeight)
+        {
+            _fence_contract_enforce(this->_font);
+            _fence_contract_enforce(this->rectTransform != nullptr);
+
+            const RectFloat& r = this->rectTransform->rect();
+            const sysm::vector2& sc = this->rectTransform->scale();
+            const float xExtent = r.right * sc.x;
+            const Typography::Font& font = this->_font->fontHandle();
+            const float glSc = fontHeight / float(font.height());
+            const Typography::GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(c));
+
+            GL::RenderTransform ret;
+            ret.scale(sysm::vector3(sc.x * glSc, sc.y * glSc, 0));
+            ret.translate(sysm::vector3(cLocalPos.x + gm.leftSideBearing * glSc + r.left * sc.x, cLocalPos.y - font.ascent * glSc + r.top * sc.y, 0));
+            ret.rotate(sysm::quaternion::fromEuler(sysm::vector3(0, 0, this->rectTransform->rotation())));
+            const sysm::vector2& pos = this->rectTransform->position();
+            ret.translate(sysm::vector3(pos.x, pos.y, 0));
+
+            cLocalPos.x += gm.advanceWidth * glSc;
+            if (cLocalPos.x >= r.width())
+            {
+                cLocalPos.x = 0;
+                cLocalPos.y -= fontHeight + font.lineGap * glSc;
+            }
+
+            return ret;
+        }
         void setText(std::u32string&& value)
         {
             std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> swapToRender;
+            sysm::vector2 gPos = sysm::vector2::zero;
             for (char32_t c : value)
             {
                 auto charPathIt = Text::characterPaths.find(Internal::FontCharacterQuery { .file = this->_font, .c = c });
                 if (charPathIt != Text::characterPaths.end())
                 {
-                    swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), GL::RenderTransform()));
+                    swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), this->calcGlyphRenderTransformAndAdvance(gPos, c, 40)));
                     continue;
                 }
 
@@ -150,12 +183,14 @@ namespace Firework
                     pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + beg, paths.begin() + end)));
                 }
                 Text::characterPaths.emplace(Internal::FontCharacterQuery { .file = this->_font, .c = c }, pathRenderers);
-                swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), GL::RenderTransform()));
+                swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), this->calcGlyphRenderTransformAndAdvance(gPos, c, 40)));
             }
+
+            this->_text = value;
 
             {
                 std::lock_guard guard(this->renderData->toRenderLock);
-                this->renderData->toRender = std::move(this->renderData->toRender);
+                this->renderData->toRender = std::move(swapToRender);
             }
         }
 
@@ -166,13 +201,20 @@ namespace Firework
         {
             this->setFont(value);
         } };
+        Property<float, float> fontSize { [this]() -> float { return this->_fontSize; }, [this](float value) -> void
+        {
+            this->_fontSize = value;
+        } };
+
         Property<std::u32string, std::u32string> text { [this]() -> const std::u32string& { return this->_text; }, [this](std::u32string value)
         {
             this->setText(std::move(value));
         } };
 
+        ~Text();
+
         friend struct std::hash<Internal::FontCharacterQuery>;
-        
+
         friend class Firework::Entity;
         friend struct Firework::Internal::ComponentCore2DStaticInit;
     };
