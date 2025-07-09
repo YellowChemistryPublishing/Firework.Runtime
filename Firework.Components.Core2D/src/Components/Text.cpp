@@ -2,12 +2,19 @@
 
 using namespace Firework;
 using namespace Firework::Internal;
+using namespace Typography;
+using namespace PackageSystem;
+using namespace GL;
 
 robin_hood::unordered_map<Text::FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>, Text::FontCharacterQueryHash> Text::characterPaths;
 
+void Text::onAttach(Entity& entity)
+{
+    this->rectTransform = entity.getOrAddComponent<RectTransform>();
+}
 Text::~Text()
 {
-    CoreEngine::queueRenderJobForFrame([renderData = this->renderData] { });
+    CoreEngine::queueRenderJobForFrame([renderData = std::move(this->renderData)] { });
 }
 
 std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(char32_t c)
@@ -15,9 +22,9 @@ std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(cha
     if (auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = this->_font, .c = c }); charPathIt != Text::characterPaths.end())
         return charPathIt->second;
 
-    Typography::Font& font = this->_font->fontHandle();
+    Font& font = this->_font->fontHandle();
     int glyphIndex = font.getGlyphIndex(c);
-    Typography::GlyphOutline go = font.getGlyphOutline(glyphIndex);
+    GlyphOutline go = font.getGlyphOutline(glyphIndex);
 
     std::vector<size_t> spans;
     std::vector<FilledPathPoint> paths;
@@ -38,7 +45,7 @@ std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(cha
         size_t beg = *it;
         size_t end = *++decltype(it)(it);
 
-        pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + beg, paths.begin() + end)));
+        pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + ptrdiff_t(beg), paths.begin() + ptrdiff_t(end))));
     }
     Text::characterPaths.emplace(FontCharacterQuery { .file = this->_font, .c = c }, pathRenderers);
 
@@ -52,6 +59,90 @@ void Text::tryBuryOrphanedGlyphPathSixFeetUnder(char32_t c)
 
     if (charPathIt->second.use_count() <= 1)
         Text::characterPaths.erase(charPathIt);
+}
+void Text::swapRenderBuffers()
+{
+    const RectFloat& r = this->rectTransform->rect();
+    const sysm::vector2& sc = this->rectTransform->scale();
+    const Font& font = this->_font->fontHandle();
+    const float glSc = this->_fontSize / float(font.height());
+
+    sysm::vector2 gPos = sysm::vector2::zero;
+
+    auto calcGlyphRenderTransformAndAdvance = [&](char32_t c) -> RenderTransform
+    {
+        _fence_contract_enforce(this->_font);
+        _fence_contract_enforce(this->rectTransform != nullptr);
+
+        const GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(c));
+
+        if (gPos.x != 0.0f && gPos.x + float(gm.advanceWidth) * glSc >= r.width())
+        {
+            gPos.x = 0;
+            gPos.y -= this->_fontSize + float(font.lineGap) * glSc;
+        }
+
+        RenderTransform ret;
+        ret.scale(sysm::vector3(sc.x * glSc, sc.y * glSc, 0));
+        ret.translate(sysm::vector3(gPos.x + float(gm.leftSideBearing) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0));
+        ret.rotate(sysm::quaternion::fromEuler(sysm::vector3(0, 0, this->rectTransform->rotation())));
+        const sysm::vector2& pos = this->rectTransform->position();
+        ret.translate(sysm::vector3(pos.x, pos.y, 0));
+
+        gPos.x += float(gm.advanceWidth) * glSc;
+
+        return ret;
+    };
+
+    std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, RenderTransform>> swapToRender;
+    for (char32_t c : this->_text)
+    {
+        std::shared_ptr<std::vector<FilledPathRenderer>> gPath = this->findOrCreateGlyphPath(c);
+        if (!gPath)
+            continue;
+
+        swapToRender.emplace_back(std::make_pair(std::move(gPath), calcGlyphRenderTransformAndAdvance(c)));
+    }
+
+    {
+        std::lock_guard guard(this->renderData->toRenderLock);
+        std::swap(this->renderData->toRender, swapToRender);
+    }
+}
+
+void Text::setFont(PackageSystem::TrueTypeFontPackageFile* value)
+{
+    if (this->_font == value) [[unlikely]]
+        return;
+
+    if (this->_font)
+        for (char32_t c : this->_text) this->tryBuryOrphanedGlyphPathSixFeetUnder(c);
+
+    this->_font = value;
+    if (this->_font)
+        this->swapRenderBuffers();
+    else
+    {
+        std::lock_guard guard(this->renderData->toRenderLock);
+        this->renderData->toRender.clear();
+    }
+}
+void Text::setFontSize(float value)
+{
+    this->_fontSize = value;
+    if (!this->_font)
+        return;
+
+    this->swapRenderBuffers();
+}
+void Text::setText(std::u32string&& value)
+{
+    std::swap(this->_text, value);
+    if (!this->_font)
+        return;
+
+    this->swapRenderBuffers();
+    for (char32_t c : value) this->tryBuryOrphanedGlyphPathSixFeetUnder(c);
 }
 
 void Text::renderOffload(sz renderIndex)

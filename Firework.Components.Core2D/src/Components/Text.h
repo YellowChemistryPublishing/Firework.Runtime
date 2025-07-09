@@ -37,7 +37,8 @@ namespace Firework
         // Main thread only.
         static robin_hood::unordered_map<FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>, FontCharacterQueryHash> characterPaths;
 
-        std::shared_ptr<RectTransform> rectTransform;
+        std::shared_ptr<RectTransform> rectTransform = nullptr;
+
         PackageSystem::TrueTypeFontPackageFile* _font = nullptr;
         float _fontSize = 11.0f;
         std::u32string _text = U"";
@@ -49,71 +50,15 @@ namespace Firework
         };
         std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
 
-        void onAttach(Entity& entity)
-        {
-            this->rectTransform = entity.getOrAddComponent<RectTransform>();
-        }
-
-        void setFont(PackageSystem::TrueTypeFontPackageFile* value)
-        {
-            if (this->_font == value) [[unlikely]]
-                return;
-
-            this->_font = value;
-        }
+        void onAttach(Entity& entity);
 
         std::shared_ptr<std::vector<FilledPathRenderer>> findOrCreateGlyphPath(char32_t c);
         void tryBuryOrphanedGlyphPathSixFeetUnder(char32_t c);
+        void swapRenderBuffers();
 
-        void setText(std::u32string&& value)
-        {
-            const RectFloat& r = this->rectTransform->rect();
-            const sysm::vector2& sc = this->rectTransform->scale();
-            const Typography::Font& font = this->_font->fontHandle();
-            const float glSc = this->_fontSize / float(font.height());
-
-            sysm::vector2 gPos = sysm::vector2::zero;
-
-            auto calcGlyphRenderTransformAndAdvance = [&](char32_t c) -> GL::RenderTransform
-            {
-                _fence_contract_enforce(this->_font);
-                _fence_contract_enforce(this->rectTransform != nullptr);
-
-                const Typography::GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(c));
-
-                GL::RenderTransform ret;
-                ret.scale(sysm::vector3(sc.x * glSc, sc.y * glSc, 0));
-                ret.translate(sysm::vector3(gPos.x + float(gm.leftSideBearing) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0));
-                ret.rotate(sysm::quaternion::fromEuler(sysm::vector3(0, 0, this->rectTransform->rotation())));
-                const sysm::vector2& pos = this->rectTransform->position();
-                ret.translate(sysm::vector3(pos.x, pos.y, 0));
-
-                gPos.x += gm.advanceWidth * glSc;
-                if (gPos.x >= r.width())
-                {
-                    gPos.x = 0;
-                    gPos.y -= this->_fontSize + font.lineGap * glSc;
-                }
-
-                return ret;
-            };
-
-            std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> swapToRender;
-            for (char32_t c : value)
-            {
-                std::shared_ptr<std::vector<Firework::FilledPathRenderer>> gPath = this->findOrCreateGlyphPath(c);
-                if (!gPath)
-                    continue;
-
-                swapToRender.emplace_back(std::make_pair(std::move(gPath), calcGlyphRenderTransformAndAdvance(c)));
-            }
-
-            this->_text = value;
-            {
-                std::lock_guard guard(this->renderData->toRenderLock);
-                std::swap(this->renderData->toRender, swapToRender);
-            }
-        }
+        void setFont(PackageSystem::TrueTypeFontPackageFile* value);
+        void setFontSize(float value);
+        void setText(std::u32string&& value);
 
         void renderOffload(sz renderIndex);
     public:
@@ -124,7 +69,7 @@ namespace Firework
         } };
         Property<float, float> fontSize { [this]() -> float { return this->_fontSize; }, [this](float value) -> void
         {
-            this->_fontSize = value;
+            this->setFontSize(value);
         } };
 
         Property<std::u32string, std::u32string> text { [this]() -> const std::u32string& { return this->_text; }, [this](std::u32string value)
