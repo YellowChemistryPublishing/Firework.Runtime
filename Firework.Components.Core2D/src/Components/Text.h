@@ -116,43 +116,46 @@ namespace Firework
             this->_font = value;
         }
 
-        GL::RenderTransform calcGlyphRenderTransformAndAdvance(sysm::vector2& cLocalPos, char32_t c, float fontHeight)
+        void setText(std::u32string&& value)
         {
-            _fence_contract_enforce(this->_font);
-            _fence_contract_enforce(this->rectTransform != nullptr);
-
             const RectFloat& r = this->rectTransform->rect();
             const sysm::vector2& sc = this->rectTransform->scale();
             const Typography::Font& font = this->_font->fontHandle();
-            const float glSc = fontHeight / float(font.height());
-            const Typography::GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(c));
+            const float glSc = this->_fontSize / float(font.height());
 
-            GL::RenderTransform ret;
-            ret.scale(sysm::vector3(sc.x * glSc, sc.y * glSc, 0));
-            ret.translate(sysm::vector3(cLocalPos.x + gm.leftSideBearing * glSc + r.left * sc.x, cLocalPos.y - font.ascent * glSc + r.top * sc.y, 0));
-            ret.rotate(sysm::quaternion::fromEuler(sysm::vector3(0, 0, this->rectTransform->rotation())));
-            const sysm::vector2& pos = this->rectTransform->position();
-            ret.translate(sysm::vector3(pos.x, pos.y, 0));
-
-            cLocalPos.x += gm.advanceWidth * glSc;
-            if (cLocalPos.x >= r.width())
-            {
-                cLocalPos.x = 0;
-                cLocalPos.y -= fontHeight + font.lineGap * glSc;
-            }
-
-            return ret;
-        }
-        void setText(std::u32string&& value)
-        {
-            std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> swapToRender;
             sysm::vector2 gPos = sysm::vector2::zero;
+
+            auto calcGlyphRenderTransformAndAdvance = [&](char32_t c) -> GL::RenderTransform
+            {
+                _fence_contract_enforce(this->_font);
+                _fence_contract_enforce(this->rectTransform != nullptr);
+
+                const Typography::GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(c));
+
+                GL::RenderTransform ret;
+                ret.scale(sysm::vector3(sc.x * glSc, sc.y * glSc, 0));
+                ret.translate(sysm::vector3(gPos.x + gm.leftSideBearing * glSc + r.left * sc.x, gPos.y - font.ascent * glSc + r.top * sc.y, 0));
+                ret.rotate(sysm::quaternion::fromEuler(sysm::vector3(0, 0, this->rectTransform->rotation())));
+                const sysm::vector2& pos = this->rectTransform->position();
+                ret.translate(sysm::vector3(pos.x, pos.y, 0));
+
+                gPos.x += gm.advanceWidth * glSc;
+                if (gPos.x >= r.width())
+                {
+                    gPos.x = 0;
+                    gPos.y -= this->_fontSize + font.lineGap * glSc;
+                }
+
+                return ret;
+            };
+
+            std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> swapToRender;
             for (char32_t c : value)
             {
                 auto charPathIt = Text::characterPaths.find(Internal::FontCharacterQuery { .file = this->_font, .c = c });
                 if (charPathIt != Text::characterPaths.end())
                 {
-                    swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), this->calcGlyphRenderTransformAndAdvance(gPos, c, this->_fontSize)));
+                    swapToRender.emplace_back(std::make_pair(std::move(charPathIt->second), calcGlyphRenderTransformAndAdvance(c)));
                     continue;
                 }
 
@@ -182,7 +185,7 @@ namespace Firework
                     pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + beg, paths.begin() + end)));
                 }
                 Text::characterPaths.emplace(Internal::FontCharacterQuery { .file = this->_font, .c = c }, pathRenderers);
-                swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), this->calcGlyphRenderTransformAndAdvance(gPos, c, this->_fontSize)));
+                swapToRender.emplace_back(std::make_pair(std::move(pathRenderers), calcGlyphRenderTransformAndAdvance(c)));
             }
 
             this->_text = value;
