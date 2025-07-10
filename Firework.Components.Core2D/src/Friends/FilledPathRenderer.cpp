@@ -80,8 +80,7 @@ FilledPathRenderer::FilledPathRenderer(std::span<FilledPathPoint> closedPath)
 
 bool FilledPathRenderer::submitDrawStencil(sz renderIndex, RenderTransform shape, bool forceHole)
 {
-    if (!this->fill || !FilledPathRenderer::program) [[unlikely]]
-        return false;
+    _fence_value_return(false, !this->fill || !FilledPathRenderer::program);
 
     shape.translate(sysm::vector3::forward * float(+renderIndex));
     Renderer::setDrawTransform(shape);
@@ -95,8 +94,7 @@ bool FilledPathRenderer::submitDrawStencil(sz renderIndex, RenderTransform shape
 }
 bool FilledPathRenderer::submitDraw(sz renderIndex, RenderTransform clip, u8 whenStencil)
 {
-    if (!FilledPathRenderer::unitSquare || !FilledPathRenderer::program) [[unlikely]]
-        return false;
+    _fence_value_return(false, !FilledPathRenderer::unitSquare || !FilledPathRenderer::program);
 
     float col[4] { 1.0f, 1.0f, 1.0f, 1.0f };
     FilledPathRenderer::program.setUniform("u_color", &col);

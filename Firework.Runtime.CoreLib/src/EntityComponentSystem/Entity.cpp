@@ -13,8 +13,12 @@ std::shared_ptr<Entity> Entity::alloc(std::shared_ptr<Entity> parent)
 }
 Entity::~Entity()
 {
-    for (auto& [typeIndex, componentTable] : Entities::table) componentTable.erase(this);
+    this->clear();
+}
+void Entity::clear()
+{
     this->orphan();
+    for (auto& [typeIndex, componentTable] : Entities::table) componentTable.erase(this);
 }
 
 void Entity::orphan() noexcept

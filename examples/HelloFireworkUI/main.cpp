@@ -92,6 +92,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         t->font = file_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"Assets/Comic Sans MS.ttf"));
         t->fontSize = 28;
 
+        auto e2 = Entity::alloc();
+        e2->parent = e;
+        auto e3 = Entity::alloc();
+
         Debug::printHierarchy();
         Debug::showF3Menu();
     };

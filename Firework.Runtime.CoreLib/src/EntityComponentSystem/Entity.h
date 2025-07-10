@@ -38,17 +38,17 @@ namespace Firework
             return this->current.get();
         }
 
-        constexpr friend bool operator==(const EntityIterator& a, const EntityIterator& b) = default;
+        constexpr friend bool operator==(const EntityIterator&, const EntityIterator&) = default;
 
         inline EntityIterator& operator++();
-        inline EntityIterator operator++(int)
+        EntityIterator operator++(int)
         {
             EntityIterator ret = *this;
             ++*this;
             return ret;
         }
         inline EntityIterator& operator--();
-        inline EntityIterator operator--(int)
+        EntityIterator operator--(int)
         {
             EntityIterator ret = *this;
             --*this;
@@ -97,9 +97,6 @@ namespace Firework
         requires (Get || Add)
         inline std::shared_ptr<T> fetchComponent();
     public:
-        static std::shared_ptr<Entity> alloc(std::shared_ptr<Entity> parent = nullptr);
-        ~Entity();
-
         const Property<std::shared_ptr<Entity>, std::shared_ptr<Entity>> parent { [this]() -> std::shared_ptr<Entity> { return this->_parent; },
                                                                                   [this](std::shared_ptr<Entity> value)
         {
@@ -107,6 +104,10 @@ namespace Firework
             this->orphan();
             this->reparentAfterOrphan(value);
         } };
+
+        static std::shared_ptr<Entity> alloc(std::shared_ptr<Entity> parent = nullptr);
+        ~Entity();
+        void clear();
 
         inline EntityIterator childrenBegin()
         {
@@ -121,11 +122,6 @@ namespace Firework
             return EntityRange(this->_childrenFront);
         }
 
-        inline bool orphaned()
-        {
-            return !this->_parent && !this->prev && !this->next;
-        }
-
         template <typename T>
         inline std::shared_ptr<T> addComponent();
         template <typename T>
@@ -136,7 +132,6 @@ namespace Firework
         inline bool removeComponent();
 
         friend struct Firework::EntityIterator;
-
         friend class Firework::Internal::CoreEngine;
     };
 

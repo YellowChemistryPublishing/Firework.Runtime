@@ -12,6 +12,11 @@
 #include <GL/Transform.h>
 #include <Library/Property.h>
 
+namespace
+{
+    struct ComponentStaticInit;
+}
+
 namespace Firework
 {
     class Entity;
@@ -53,7 +58,7 @@ namespace Firework
         void onAttach(Entity& entity);
 
         std::shared_ptr<std::vector<FilledPathRenderer>> findOrCreateGlyphPath(char32_t c);
-        void tryBuryOrphanedGlyphPathSixFeetUnder(char32_t c);
+        void tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery q);
         void swapRenderBuffers();
 
         void setFont(PackageSystem::TrueTypeFontPackageFile* value);
@@ -62,24 +67,22 @@ namespace Firework
 
         void renderOffload(sz renderIndex);
     public:
-        Property<PackageSystem::TrueTypeFontPackageFile*, PackageSystem::TrueTypeFontPackageFile*> font { [this]() -> PackageSystem::TrueTypeFontPackageFile*
+        const Property<PackageSystem::TrueTypeFontPackageFile*, PackageSystem::TrueTypeFontPackageFile*> font { [this]() -> PackageSystem::TrueTypeFontPackageFile*
         { return this->_font; }, [this](PackageSystem::TrueTypeFontPackageFile* value)
         {
             this->setFont(value);
         } };
-        Property<float, float> fontSize { [this]() -> float { return this->_fontSize; }, [this](float value) -> void
+        const Property<float, float> fontSize { [this]() -> float { return this->_fontSize; }, [this](float value) -> void
         {
             this->setFontSize(value);
         } };
 
-        Property<std::u32string, std::u32string> text { [this]() -> const std::u32string& { return this->_text; }, [this](std::u32string value)
+        const Property<std::u32string, std::u32string> text { [this]() -> const std::u32string& { return this->_text; }, [this](std::u32string value)
         {
             this->setText(std::move(value));
         } };
 
-        ~Text();
-
+        friend struct ::ComponentStaticInit;
         friend class Firework::Entity;
-        friend struct Firework::Internal::ComponentCore2DStaticInit;
     };
 } // namespace Firework

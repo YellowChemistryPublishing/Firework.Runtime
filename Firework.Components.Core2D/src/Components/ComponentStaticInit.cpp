@@ -19,32 +19,32 @@ using namespace Firework::Internal;
 using namespace Firework::GL;
 using namespace Firework::PackageSystem;
 
-namespace Firework::Internal
+namespace
 {
-    static struct ComponentCore2DStaticInit
+    static struct ComponentStaticInit
     {
-        ComponentCore2DStaticInit()
+        ComponentStaticInit()
         {
             PackageManager::addBinaryFileHandler<PortableGraphicPackageFile>({ 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a });
             PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x00, 0x01, 0x00, 0x00, 0x00 });
             PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x74, 0x72, 0x75, 0x65, 0x00 });
 
+            InternalEngineEvent::OnRenderShutdown += []
+            {
+                Text::characterPaths.clear();
+            };
+
+            InternalEngineEvent::OnRenderOffloadForComponent += [](std::type_index typeIndex, Entity&, std::shared_ptr<void> component, sz renderIndex)
+            {
+                if (typeIndex == typeid(Text))
+                    std::static_pointer_cast<Text>(component)->renderOffload(renderIndex);
+            };
+
             CoreEngine::queueRenderJobForFrame([]
             {
-                InternalEngineEvent::OnRenderShutdown += []
-                {
-                    Text::characterPaths.clear();
-                };
-
-                InternalEngineEvent::OnRenderOffloadForComponent += [](std::type_index typeIndex, Entity&, std::shared_ptr<void> component, sz renderIndex)
-                {
-                    if (typeIndex == typeid(Text))
-                        std::static_pointer_cast<Text>(component)->renderOffload(renderIndex);
-                };
-
                 if (!FilledPathRenderer::renderInitialize()) [[unlikely]]
                     Debug::logError("`FilledPathRenderer` failed to render initialize.");
             });
         }
     } init;
-} // namespace Firework::Internal
+} // namespace

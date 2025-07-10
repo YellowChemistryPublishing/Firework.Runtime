@@ -5,14 +5,19 @@
 #include <module/sys>
 
 #include <GL/Geometry.h>
-#include <GL/Shader.h>
-#include <GL/Transform.h>
+
+namespace
+{
+    struct ComponentStaticInit;
+}
 
 namespace Firework
 {
-    namespace Internal
+    namespace GL
     {
-        struct ComponentCore2DStaticInit;
+        struct RenderTransform;
+
+        class GeometryProgramHandle;
     }
 
     struct _packed FilledPathPoint
@@ -65,6 +70,6 @@ namespace Firework
             swap(a.fill, b.fill);
         }
 
-        friend struct Firework::Internal::ComponentCore2DStaticInit;
+        friend struct ::ComponentStaticInit;
     };
 } // namespace Firework

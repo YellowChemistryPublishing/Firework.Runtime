@@ -402,8 +402,8 @@ void CoreEngine::internalLoop()
     while (CoreEngine::pendingPreTickQueue.try_dequeue(job));
     while (CoreEngine::pendingPostTickQueue.try_dequeue(job));
 
-    if (Entities::front)
-        Entities::front.reset();
+    Entities::front->clear();
+    Entities::front.reset();
 
     // Render finalise.
     CoreEngine::renderQueue.enqueue(RenderJob::create([jobs = std::move(CoreEngine::frameRenderJobs)]
