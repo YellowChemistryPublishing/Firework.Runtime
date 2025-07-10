@@ -62,6 +62,7 @@ void Text::swapRenderBuffers()
     const sysm::vector2& sc = this->rectTransform->scale();
     const Font& font = this->_font->fontHandle();
     const float glSc = this->_fontSize / float(font.height());
+    const float scaledLineHeight = this->_fontSize + float(font.lineGap) * glSc;
 
     sysm::vector2 gPos = sysm::vector2::zero;
 
@@ -75,7 +76,7 @@ void Text::swapRenderBuffers()
         if (gPos.x != 0.0f && gPos.x + float(gm.advanceWidth) * glSc >= r.width())
         {
             gPos.x = 0;
-            gPos.y -= this->_fontSize + float(font.lineGap) * glSc;
+            gPos.y -= scaledLineHeight;
         }
 
         RenderTransform ret;
@@ -89,15 +90,54 @@ void Text::swapRenderBuffers()
 
         return ret;
     };
+    auto incrementLine = [&](float howMany = 1.0f)
+    {
+        gPos.x = 0.0f;
+        gPos.y -= scaledLineHeight * howMany;
+    };
 
     std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, RenderTransform>> swapToRender;
-    for (char32_t c : this->_text)
+    for (auto wordIt = ParagraphIterator<char32_t>::begin(this->_text); wordIt != ParagraphIterator<char32_t>::end(this->_text); ++wordIt)
     {
-        std::shared_ptr<std::vector<FilledPathRenderer>> gPath = this->findOrCreateGlyphPath(c);
-        if (!gPath)
-            continue;
+        float wordLenScaled = std::accumulate(wordIt.textBegin(), wordIt.textEnd(), 0.0f, [&](float a, char32_t b)
+        {
+            GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(b));
+            return a + float(gm.advanceWidth);
+        }) * glSc;
+        ssz newLineCount = 0;
+        float spaceLenScaled = std::accumulate(wordIt.spaceBegin(), wordIt.spaceEnd(), 0.0f, [&](float a, char32_t b)
+        {
+            if (b == U'\v' || b == U'\n')
+            {
+                ++newLineCount;
+                return 0.0f;
+            }
+            else
+            {
+                GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(b));
+                return a + float(gm.advanceWidth);
+            }
+        }) * glSc;
 
-        swapToRender.emplace_back(std::make_pair(std::move(gPath), calcGlyphRenderTransformAndAdvance(c)));
+        if (gPos.x + wordLenScaled >= r.width() && wordLenScaled < r.width())
+            incrementLine();
+
+        for (auto cIt = wordIt.textBegin(); cIt != wordIt.textEnd(); ++cIt)
+        {
+            std::shared_ptr<std::vector<FilledPathRenderer>> gPath = this->findOrCreateGlyphPath(*cIt);
+            if (!gPath)
+                continue;
+
+            swapToRender.emplace_back(std::make_pair(std::move(gPath), calcGlyphRenderTransformAndAdvance(*cIt)));
+        }
+
+        if (newLineCount > 0)
+            incrementLine(float(newLineCount));
+
+        if (gPos.x + spaceLenScaled >= r.width())
+            incrementLine();
+        else
+            gPos.x += spaceLenScaled;
     }
 
     {

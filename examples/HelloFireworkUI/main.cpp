@@ -88,7 +88,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         t->fontSize = 100;
         t->text = U"1000000what";
         t->fontSize = 4;
-        t->text = U"beans beans beans beans beans beans beans beans";
+        t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans";
         t->font = file_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"Assets/Comic Sans MS.ttf"));
         t->fontSize = 28;
 

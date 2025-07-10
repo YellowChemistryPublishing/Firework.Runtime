@@ -23,6 +23,8 @@ namespace Firework
 
         ParagraphIterator() = default;
 
+        friend bool operator==(const ParagraphIterator&, const ParagraphIterator&) = default;
+
         StringIterator textBegin()
         {
             return this->tBeg;
@@ -42,7 +44,7 @@ namespace Firework
 
         ParagraphIterator& operator++()
         {
-            IteratorTriplet ret = ParagraphIterator::createFromBegin(str, this->sEnd);
+            IteratorTriplet ret = ParagraphIterator::createFromBegin(*this->str, this->sEnd);
             this->tBeg = ret.tBeg;
             this->sBeg = ret.sBeg;
             this->sEnd = ret.end;
@@ -61,7 +63,7 @@ namespace Firework
         };
         static IteratorTriplet createFromBegin(const std::basic_string<CharType>& str, StringIterator beg)
         {
-            auto tBeg = str.begin();
+            auto tBeg = beg;
 
             auto sBeg = tBeg;
             while (sBeg != str.end() && !std::isspace(*sBeg)) ++sBeg;
