@@ -11,9 +11,7 @@
 #include <typeindex>
 
 #include <EntityComponentSystem/EntityManagement.inc>
-#include <Library/Hash.h>
 #include <Library/Property.h>
-#include <Library/TypeInfo.h>
 
 namespace Firework
 {

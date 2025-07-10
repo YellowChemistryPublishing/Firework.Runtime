@@ -19,6 +19,4 @@
 #include <EntityComponentSystem/Entity.h>
 
 #include <Library/Event.h>
-#include <Library/Hash.h>
 #include <Library/Property.h>
-#include <Library/TypeInfo.h>

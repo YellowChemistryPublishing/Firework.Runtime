@@ -5,10 +5,8 @@
 #include <filesystem>
 #include <map>
 #include <robin_hood.h>
+#include <typeinfo>
 #include <unordered_map>
-
-#include <Library/Hash.h>
-#include <Library/TypeInfo.h>
 
 namespace Firework
 {
@@ -25,11 +23,7 @@ namespace Firework
         /// @brief Base type for any package file loaded by runtime.
         struct __firework_corelib_api PackageFile
         {
-            struct Reflection {
-                uint64_t typeID;
-            } reflection;
-
-            std::filesystem::path fileLocalPath;
+            std::filesystem::path fileLocalPath = "";
 
             virtual ~PackageFile() = 0;
 
@@ -39,8 +33,7 @@ namespace Firework
         protected:
             inline PackageFile() = default;
         private:
-            inline PackageFile(uint64_t typeID, std::filesystem::path localPath) :
-            reflection { typeID }, fileLocalPath(std::move(localPath))
+            inline PackageFile(std::filesystem::path localPath) : fileLocalPath(std::move(localPath))
             { }
         };
 
@@ -48,9 +41,8 @@ namespace Firework
         class __firework_corelib_api BinaryPackageFile final : public PackageFile
         {
             std::vector<uint8_t> data;
-            
-            inline BinaryPackageFile(std::vector<uint8_t> data, std::filesystem::path localPath) :
-            PackageFile(__typeid(BinaryPackageFile).qualifiedNameHash(), std::move(localPath)), data(std::move(data))
+
+            inline BinaryPackageFile(std::vector<uint8_t> data, std::filesystem::path localPath) : PackageFile(std::move(localPath)), data(std::move(data))
             { }
         public:
             /// @brief Get the binary data of the file.
@@ -64,38 +56,16 @@ namespace Firework
             friend class Firework::PackageSystem::PackageManager;
         };
 
-        /// @brief Downcasts a package file to another more specific type.
-        /// @tparam T ```requires std::is_base_of<PackageFile, T>::value```
-        /// @param file Package file to cast.
-        /// @return Downcasted package file.
-        /// @retval - ```nullptr```: The package file is not of type ```T```.
-        /// @retval - Otherwise, a pointer to a package file of type ```T```.
-        /// @note Thread-safe, returned value is not.
-        template <typename T>
-        requires std::is_base_of<PackageFile, T>::value
-        inline T* file_cast(PackageFile* file)
-        {
-            return (file && file->reflection.typeID == __typeid(T).qualifiedNameHash()) ? static_cast<T*>(file) : nullptr;
-        }
-        
-        /// @brief Describes which endian this platform is.
-        enum class Endianness : uint_fast8_t
-        {
-            Big = 0,
-            Little = 1
-        };
         /// @brief Static class containing functionality relevant to management of runtime packages and their content.
         class __firework_corelib_api PackageManager final
         {
-            static Endianness endianness;
-
-            static std::map<std::streamoff, std::map<size_t, robin_hood::unordered_map<std::basic_string<uint8_t>, PackageFile* (*)(std::vector<uint8_t>)>, std::greater<size_t>>> binFileHandlers;
+            static std::map<std::streamoff, std::map<size_t, robin_hood::unordered_map<std::basic_string<uint8_t>, PackageFile* (*)(std::vector<uint8_t>)>, std::greater<size_t>>>
+                binFileHandlers;
             static robin_hood::unordered_map<std::wstring, PackageFile* (*)(std::u32string)> textFileHandlers;
 
-            //                                             v Package file.
-            //                               v File path.                          v Package path.
+            //                               v File path.  v Package file.         v Package path.
             static robin_hood::unordered_map<std::wstring, std::pair<PackageFile*, std::wstring>> loadedFiles;
-            
+
             static void normalizePath(std::wstring& path);
         public:
             PackageManager() = delete;
@@ -106,28 +76,17 @@ namespace Firework
             /// @param offset Byte index location of the signature.
             /// @note Main thread only.
             template <typename PackageFileType>
-            requires std::is_base_of<PackageFile, PackageFileType>::value && std::is_final<PackageFileType>::value && requires
-            {
-                new PackageFileType(std::vector<uint8_t>());
-            }
+            requires std::is_base_of<PackageFile, PackageFileType>::value && std::is_final<PackageFileType>::value && requires { new PackageFileType(std::vector<uint8_t>()); }
             inline static void addBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset = 0)
             {
-                PackageManager::binFileHandlers[offset][signature.size()].emplace
-                (
-                    std::basic_string<uint8_t>(signature.data(), signature.size()),
-                    [](std::vector<uint8_t> data) -> PackageFile*
-                    {
-                        PackageFileType* ret = new PackageFileType(std::move(data));
-                        ret->reflection.typeID = __typeid(PackageFileType).qualifiedNameHash();
-                        return ret;
-                    }
-                );
+                PackageManager::binFileHandlers[offset][signature.size()].emplace(std::basic_string<uint8_t>(signature.data(), signature.size()),
+                                                                                  [](std::vector<uint8_t> data) -> PackageFile* { return new PackageFileType(std::move(data)); });
             }
             /// @brief Remove a registered binary file reader.
             /// @param signature File signature as byte vector.
             /// @param offset Byte index location of the signature.
             /// @note Main thread only.
-            static void removeBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset);
+            [[nodiscard]] static bool removeBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset);
             /// @brief Install a text file reader for a particular file extension. Text files are read as utf-8, but converted to utf-32.
             /// @tparam PackageFileType ```requires std::is_final<PackageFileType>::value && std::is_base_of<PackageFile, PackageFileType>::value```
             /// @param extension File extension.
@@ -146,7 +105,7 @@ namespace Firework
             {
                 PackageManager::textFileHandlers.erase(extension);
             }
-            
+
             static bool loadPackageIntoMemory(const std::filesystem::path& packagePath);
             static void freePackageInMemory(const std::filesystem::path& packagePath);
 
@@ -157,8 +116,8 @@ namespace Firework
             /// @retval Otherwise, pointer to loaded package file.
             /// @note Main thread only.
             static PackageFile* lookupFileByPath(std::wstring filePath);
-            
+
             friend class Firework::Internal::CoreEngine;
         };
-    }
-}
+    } // namespace PackageSystem
+} // namespace Firework

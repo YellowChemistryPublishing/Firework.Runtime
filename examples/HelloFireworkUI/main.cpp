@@ -1,3 +1,5 @@
+#include <numbers>
+
 #include <Components/EntityAttributes.h>
 #include <Components/Text.h>
 #include <Core/CoreEngine.h>
@@ -89,10 +91,10 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         t->text = U"1000000what";
         t->fontSize = 4;
         t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans";
-        t->font = file_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"Assets/Comic Sans MS.ttf"));
-        t->fontSize = 100;
+        t->font = dynamic_cast<TrueTypeFontPackageFile*>(PackageManager::lookupFileByPath(L"Assets/Comic Sans MS.ttf"));
+        t->fontSize = 12;
         rt->rect = RectFloat(400, 25, -400, -25);
-        //rt->localRotation += 30.0f;
+        rt->localRotation += std::numbers::pi_v<float> / 2.0f;
 
         auto e2 = Entity::alloc();
         e2->parent = e;

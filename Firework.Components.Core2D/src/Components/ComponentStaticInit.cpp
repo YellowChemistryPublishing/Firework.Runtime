@@ -8,7 +8,6 @@
 #include <Friends/FilledPathRenderer.h>
 #include <Friends/PackageFileCore2D.h>
 #include <GL/Renderer.h>
-#include <Library/TypeInfo.h>
 #include <memory>
 
 #define STB_IMAGE_IMPLEMENTATION

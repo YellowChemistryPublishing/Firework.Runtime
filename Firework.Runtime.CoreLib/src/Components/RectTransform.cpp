@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <module/sys.Mathematics>
-#include <numbers>
 
 #include <EntityComponentSystem/Entity.h>
 #include <GL/Renderer.h>
@@ -13,8 +12,8 @@ using namespace Firework::GL;
 
 inline static void rotatePointAround(sysm::vector2& point, const sysm::vector2& rotateAround, float angle)
 {
-    float s = std::sinf(-angle * std::numbers::pi_v<float> / 180.0f);
-    float c = std::cosf(-angle * std::numbers::pi_v<float> / 180.0f);
+    float s = std::sinf(-angle);
+    float c = std::cosf(-angle);
 
     float x = point.x - rotateAround.x;
     float y = point.y - rotateAround.y;

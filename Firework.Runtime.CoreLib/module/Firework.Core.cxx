@@ -34,6 +34,5 @@ module;
 #include <Library/Property.h>
 #include <Library/StaticQueue.h>
 #include <Library/TupleHash.h>
-#include <Library/TypeInfo.h>
 
 export module Firework.Core;

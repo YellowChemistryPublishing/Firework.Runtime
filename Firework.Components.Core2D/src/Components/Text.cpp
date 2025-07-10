@@ -59,6 +59,7 @@ void Text::tryBuryOrphanedGlyphPathSixFeetUnder(const FontCharacterQuery q)
 void Text::swapRenderBuffers()
 {
     const RectFloat& r = this->rectTransform->rect();
+    const sysm::vector2& pos = this->rectTransform->position();
     const sysm::vector2& sc = this->rectTransform->scale();
     const Font& font = this->_font->fontHandle();
     const float glSc = this->_fontSize / float(font.height());
@@ -82,8 +83,7 @@ void Text::swapRenderBuffers()
         RenderTransform ret;
         ret.scale(sysm::vector3(sc.x * glSc, sc.y * glSc, 0));
         ret.translate(sysm::vector3(gPos.x + float(gm.leftSideBearing) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0));
-        ret.rotate(sysm::quaternion::fromEuler(sysm::vector3(0, 0, this->rectTransform->rotation())));
-        const sysm::vector2& pos = this->rectTransform->position();
+        ret.rotate(sysm::quaternion::fromEuler(sysm::vector3(0, 0, -this->rectTransform->rotation())));
         ret.translate(sysm::vector3(pos.x, pos.y, 0));
 
         gPos.x += float(gm.advanceWidth) * glSc;

@@ -45,7 +45,6 @@
 #include <Firework/Config.h>
 #include <GL/RenderPipeline.h>
 #include <GL/Renderer.h>
-#include <Library/Hash.h>
 
 namespace fs = std::filesystem;
 using namespace Firework;
@@ -99,11 +98,6 @@ int CoreEngine::execute(int argc, char* argv[])
     if (!fs::exists(dir))
         fs::create_directory(dir);
 
-    uint16_t word = 0x0001;
-    if (reinterpret_cast<uint8_t*>(&word)[0])
-        PackageManager::endianness = Endianness::Little;
-    else
-        PackageManager::endianness = Endianness::Big;
     fs::path corePackagePath(fs::current_path());
     corePackagePath.append("Runtime");
     corePackagePath.append("CorePackage.fwpkg");
