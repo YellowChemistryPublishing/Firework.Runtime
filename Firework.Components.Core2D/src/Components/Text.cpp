@@ -3,10 +3,10 @@
 #include <Friends/ParagraphIterator.h>
 
 using namespace Firework;
+using namespace Firework::GL;
 using namespace Firework::Internal;
-using namespace Typography;
-using namespace PackageSystem;
-using namespace GL;
+using namespace Firework::PackageSystem;
+using namespace Firework::Typography;
 
 robin_hood::unordered_map<Text::FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>, Text::FontCharacterQueryHash> Text::characterPaths;
 
@@ -146,41 +146,26 @@ void Text::swapRenderBuffers()
     }
 }
 
-void Text::setFont(PackageSystem::TrueTypeFontPackageFile* value)
-{
-    _fence_value_return(void(), this->_font == value);
-
-    if (this->_font) [[likely]]
-        this->swapRenderBuffers();
-    else
-    {
-        std::lock_guard guard(this->renderData->toRenderLock);
-        this->renderData->toRender.clear();
-    }
-
-    std::swap(this->_font, value);
-
-    if (value) [[likely]]
-        for (char32_t c : this->_text) this->tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery { .file = value, .c = c });
-}
-void Text::setFontSize(float value)
-{
-    this->_fontSize = value;
-    _fence_value_return(void(), !this->_font);
-
-    this->swapRenderBuffers(); // Never orphans.
-}
-void Text::setText(std::u32string&& value)
-{
-    std::swap(this->_text, value);
-    _fence_value_return(void(), !this->_font);
-
-    this->swapRenderBuffers();
-    for (char32_t c : value) this->tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery { .file = this->_font, .c = c });
-}
-
 void Text::renderOffload(sz renderIndex)
 {
+    if (this->rectTransform->dirty() || this->dirty)
+    {
+        if (this->_font && !this->_text.empty()) [[likely]]
+            this->swapRenderBuffers();
+        else
+        {
+            std::lock_guard guard(this->renderData->toRenderLock);
+            this->renderData->toRender.clear();
+        }
+
+        if ((this->deferOldFont != this->_font && this->deferOldFont) || (this->deferOldText != this->_text && !this->deferOldText.empty()))
+            for (char32_t c : this->deferOldText) this->tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery { .file = this->deferOldFont, .c = c });
+
+        this->deferOldText = this->_text;
+        this->deferOldFont = this->_font;
+        this->dirty = false;
+    }
+
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get())]
     {
         std::lock_guard guard(renderData->toRenderLock);

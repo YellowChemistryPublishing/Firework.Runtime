@@ -17,6 +17,14 @@ void Debug::hideF3Menu()
 {
     Renderer::hideDebugInformation();
 }
+void Debug::showWireframes()
+{
+    Renderer::showDebugWireframes();
+}
+void Debug::hideWireframes()
+{
+    Renderer::hideDebugWireframes();
+}
 
 void Debug::messageBox(LogLevel severity, std::string_view title, std::string_view message)
 {

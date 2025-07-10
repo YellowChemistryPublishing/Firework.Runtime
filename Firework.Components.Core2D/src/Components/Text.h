@@ -48,6 +48,10 @@ namespace Firework
         float _fontSize = 11.0f;
         std::u32string _text = U"";
 
+        bool dirty = true;
+        PackageSystem::TrueTypeFontPackageFile* deferOldFont = nullptr;
+        std::u32string deferOldText = U"";
+
         struct RenderData
         {
             std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, GL::RenderTransform>> toRender;
@@ -61,25 +65,28 @@ namespace Firework
         void tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery q);
         void swapRenderBuffers();
 
-        void setFont(PackageSystem::TrueTypeFontPackageFile* value);
-        void setFontSize(float value);
-        void setText(std::u32string&& value);
-
         void renderOffload(sz renderIndex);
     public:
         const Property<PackageSystem::TrueTypeFontPackageFile*, PackageSystem::TrueTypeFontPackageFile*> font { [this]() -> PackageSystem::TrueTypeFontPackageFile*
         { return this->_font; }, [this](PackageSystem::TrueTypeFontPackageFile* value)
         {
-            this->setFont(value);
+            _fence_value_return(void(), this->_font == value);
+
+            this->dirty = true;
+            this->_font = value;
         } };
         const Property<float, float> fontSize { [this]() -> float { return this->_fontSize; }, [this](float value) -> void
         {
-            this->setFontSize(value);
+            _fence_value_return(void(), this->_fontSize == value);
+
+            this->dirty = true;
+            this->_fontSize = value;
         } };
 
         const Property<std::u32string, std::u32string> text { [this]() -> const std::u32string& { return this->_text; }, [this](std::u32string value)
         {
-            this->setText(std::move(value));
+            this->dirty = true;
+            this->_text = std::move(value);
         } };
 
         friend struct ::ComponentStaticInit;

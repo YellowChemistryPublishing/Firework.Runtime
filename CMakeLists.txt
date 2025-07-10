@@ -443,6 +443,7 @@ target_include_directories(Firework.Runtime.CoreLib
 )
 if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "Clang")
     target_include_directories(Firework.Runtime.CoreLib PRIVATE "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bx/include/compat/mingw")
+    target_link_libraries(Firework.Runtime.CoreLib PRIVATE stdc++exp)
 elseif (FIREWORK_COMPILER STREQUAL "MSVC")
     target_include_directories(Firework.Runtime.CoreLib PRIVATE "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bx/include/compat/msvc")
 endif()
@@ -451,7 +452,6 @@ target_link_libraries(Firework.Runtime.CoreLib
     concurrentqueue
     Firework.Runtime.RenderPipeline
     Firework.Runtime.GL
-    stdc++exp
     robin_hood
     sys.Mathematics
     PRIVATE

@@ -79,13 +79,26 @@ void Renderer::shutdown()
     bgfx::shutdown();
 }
 
+static uint32_t debugFlags = BGFX_DEBUG_NONE;
 void Renderer::showDebugInformation()
 {
-    bgfx::setDebug(BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT);
+    debugFlags |= BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT;
+    bgfx::setDebug(debugFlags);
 }
 void Renderer::hideDebugInformation()
 {
-    bgfx::setDebug(BGFX_DEBUG_NONE);
+    debugFlags &= ~(BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT);
+    bgfx::setDebug(debugFlags);
+}
+void Renderer::showDebugWireframes()
+{
+    debugFlags |= BGFX_DEBUG_WIREFRAME;
+    bgfx::setDebug(debugFlags);
+}
+void Renderer::hideDebugWireframes()
+{
+    debugFlags &= ~(BGFX_DEBUG_WIREFRAME);
+    bgfx::setDebug(debugFlags);
 }
 
 RendererBackend Renderer::rendererBackend()

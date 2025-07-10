@@ -41,6 +41,8 @@ namespace Firework
 
             static void showDebugInformation();
             static void hideDebugInformation();
+            static void showDebugWireframes();
+            static void hideDebugWireframes();
 
             static RendererBackend rendererBackend();
             static std::vector<RendererBackend> platformBackends();

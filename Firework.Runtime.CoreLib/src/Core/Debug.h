@@ -297,6 +297,8 @@ namespace Firework
 
         static void showF3Menu();
         static void hideF3Menu();
+        static void showWireframes();
+        static void hideWireframes();
 
         /// @brief Triggers a breakpoint trap.
         /// @note Thread-safe.
