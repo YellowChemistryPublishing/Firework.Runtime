@@ -1,5 +1,7 @@
 #include "Text.h"
 
+#include <Friends/ParagraphIterator.h>
+
 using namespace Firework;
 using namespace Firework::Internal;
 using namespace Typography;
