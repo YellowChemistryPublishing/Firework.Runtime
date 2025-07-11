@@ -17,7 +17,7 @@ void Text::onAttach(Entity& entity)
 
 std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(char32_t c)
 {
-    auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = this->_font, .c = c });
+    auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = this->_font.get(), .c = c });
     _fence_value_return(charPathIt->second, charPathIt != Text::characterPaths.end());
 
     Font& font = this->_font->fontHandle();
@@ -44,7 +44,7 @@ std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(cha
 
         pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + ptrdiff_t(beg), paths.begin() + ptrdiff_t(end))));
     }
-    Text::characterPaths.emplace(FontCharacterQuery { .file = this->_font, .c = c }, pathRenderers);
+    Text::characterPaths.emplace(FontCharacterQuery { .file = this->_font.get(), .c = c }, pathRenderers);
 
     return pathRenderers;
 }
@@ -69,7 +69,7 @@ void Text::swapRenderBuffers()
 
     auto calcGlyphRenderTransformAndAdvance = [&](char32_t c) -> RenderTransform
     {
-        _fence_contract_enforce(this->_font);
+        _fence_contract_enforce(this->_font != nullptr);
         _fence_contract_enforce(this->rectTransform != nullptr);
 
         const GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(c));
@@ -159,7 +159,7 @@ void Text::renderOffload(sz renderIndex)
         }
 
         if ((this->deferOldFont != this->_font && this->deferOldFont) || (this->deferOldText != this->_text && !this->deferOldText.empty()))
-            for (char32_t c : this->deferOldText) this->tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery { .file = this->deferOldFont, .c = c });
+            for (char32_t c : this->deferOldText) this->tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery { .file = this->deferOldFont.get(), .c = c });
 
         this->deferOldText = this->_text;
         this->deferOldFont = this->_font;

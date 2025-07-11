@@ -44,12 +44,12 @@ namespace Firework
 
         std::shared_ptr<RectTransform> rectTransform = nullptr;
 
-        PackageSystem::TrueTypeFontPackageFile* _font = nullptr;
+        std::shared_ptr<PackageSystem::TrueTypeFontPackageFile> _font = nullptr;
         float _fontSize = 11.0f;
         std::u32string _text = U"";
 
         bool dirty = true;
-        PackageSystem::TrueTypeFontPackageFile* deferOldFont = nullptr;
+        std::shared_ptr<PackageSystem::TrueTypeFontPackageFile> deferOldFont = nullptr;
         std::u32string deferOldText = U"";
 
         struct RenderData
@@ -67,14 +67,16 @@ namespace Firework
 
         void renderOffload(sz renderIndex);
     public:
-        const Property<PackageSystem::TrueTypeFontPackageFile*, PackageSystem::TrueTypeFontPackageFile*> font { [this]() -> PackageSystem::TrueTypeFontPackageFile*
-        { return this->_font; }, [this](PackageSystem::TrueTypeFontPackageFile* value)
+        const Property<std::shared_ptr<PackageSystem::TrueTypeFontPackageFile>, std::shared_ptr<PackageSystem::TrueTypeFontPackageFile>> font {
+            [this]() -> std::shared_ptr<PackageSystem::TrueTypeFontPackageFile> { return this->_font; },
+            [this](std::shared_ptr<PackageSystem::TrueTypeFontPackageFile> value)
         {
             _fence_value_return(void(), this->_font == value);
 
             this->dirty = true;
-            this->_font = value;
-        } };
+            this->_font = std::move(value);
+        }
+        };
         const Property<float, float> fontSize { [this]() -> float { return this->_fontSize; }, [this](float value) -> void
         {
             _fence_value_return(void(), this->_fontSize == value);

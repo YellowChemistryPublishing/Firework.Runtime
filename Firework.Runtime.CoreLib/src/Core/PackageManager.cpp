@@ -4,7 +4,6 @@
 #include <cctype>
 #include <cmath>
 #include <fstream>
-#include <module/sys>
 
 #include <Core/Application.h>
 #include <Core/Debug.h>
@@ -29,32 +28,23 @@ constexpr auto toEndianness = [](auto intType, std::endian from, std::endian to)
 
 bool PackageManager::removeBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset)
 {
-    auto handlersWithOffsetIt = PackageManager::binFileHandlers.find(offset);
+    auto handlersWithOffsetIt = PackageManager::binFileHandlers.find(FileSignatureQuery { .where = offset, .size = signature.size() });
     _fence_value_return(false, handlersWithOffsetIt == PackageManager::binFileHandlers.end());
 
-    auto handlersAlsoWithSigLenIt = handlersWithOffsetIt->second.find(signature.size());
-    _fence_value_return(false, handlersAlsoWithSigLenIt == handlersWithOffsetIt->second.end());
+    _fence_value_return(false, !handlersWithOffsetIt->second.erase(std::basic_string<uint8_t>(signature.data(), signature.size())));
 
-    _fence_value_return(false, !handlersAlsoWithSigLenIt->second.erase(std::basic_string<uint8_t>(signature.data(), signature.size())));
+    if (handlersWithOffsetIt->second.empty())
+        PackageManager::binFileHandlers.erase(handlersWithOffsetIt);
 
-    if (!handlersAlsoWithSigLenIt->second.empty())
-        goto EarlyReturn;
-
-    handlersWithOffsetIt->second.erase(handlersAlsoWithSigLenIt);
-
-    if (!handlersWithOffsetIt->second.empty())
-        goto EarlyReturn;
-
-    PackageManager::binFileHandlers.erase(handlersWithOffsetIt);
-EarlyReturn:
     return true;
 }
 
-std::map<std::streamoff, std::map<size_t, robin_hood::unordered_map<std::basic_string<uint8_t>, PackageFile* (*)(std::vector<uint8_t>)>, std::greater<size_t>>>
+std::map<PackageManager::FileSignatureQuery, robin_hood::unordered_map<std::basic_string<byte>, std::shared_ptr<PackageFile> (*)(std::vector<byte>)>,
+         std::greater<PackageManager::FileSignatureQuery>>
     PackageManager::binFileHandlers;
-robin_hood::unordered_map<std::wstring, PackageFile* (*)(std::u32string)> PackageManager::textFileHandlers;
+robin_hood::unordered_map<std::wstring, std::shared_ptr<PackageFile> (*)(const std::u8string&)> PackageManager::textFileHandlers;
 
-robin_hood::unordered_map<std::wstring, std::pair<PackageFile*, std::wstring>> PackageManager::loadedFiles;
+robin_hood::unordered_map<std::wstring, PackageManager::PackageFileData> PackageManager::loadedFiles;
 
 bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
 {
@@ -63,56 +53,54 @@ bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
 
     _fence_value_return(false, !packageFile);
 
-    packageFile.ignore(std::numeric_limits<std::streamsize>::max());
-    std::streamsize length = packageFile.gcount();
-    packageFile.clear();
-    packageFile.seekg(0, std::ios_base::beg);
-
-    while (packageFile.tellg() < length)
+    do
     {
-        uint32_t filePathLength_endianUnconverted;
-        packageFile.read(reinterpret_cast<char*>(&filePathLength_endianUnconverted), sizeof(uint32_t));
-        uint32_t filePathLength = toEndianness(filePathLength_endianUnconverted, std::endian::big, std::endian::native);
+        u32 filePathLength;
+        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(&filePathLength), sizeof(u32)));
+        filePathLength = toEndianness(uint32_t(+filePathLength), std::endian::big, std::endian::native);
 
-        std::wstring filePath;
-        filePath.resize(filePathLength);
-        packageFile.read(reinterpret_cast<char*>(&filePath[0]), sizeof(wchar_t) * filePathLength);
+        std::wstring filePath(+filePathLength, L' ');
+        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(&filePath.front()), +(sizeof(wchar_t) * filePathLength)));
         PackageManager::normalizePath(filePath);
         Debug::logTrace("Package File - ", filePath, ".");
 
-        uint32_t fileLen_endianUnconverted;
-        packageFile.read(reinterpret_cast<char*>(&fileLen_endianUnconverted), sizeof(uint32_t));
-        uint32_t fileLen = toEndianness(fileLen_endianUnconverted, std::endian::big, std::endian::native);
-        Debug::logTrace("Package File Size - ", fileLen, "B.");
+        u32 fileLen;
+        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(&fileLen), sizeof(u32)));
+        fileLen = toEndianness(uint32_t(+fileLen), std::endian::big, std::endian::native);
+        Debug::logTrace("Package File Size - ", +fileLen, "B.");
 
-        std::vector<uint8_t> fileBytes(fileLen);
-        packageFile.read(reinterpret_cast<char*>(fileBytes.data()), fileLen);
+        std::vector<byte> fileBytes(+fileLen);
+        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(fileBytes.data()), +fileLen));
 
-        for (auto it1 = PackageManager::binFileHandlers.begin(); it1 != PackageManager::binFileHandlers.end(); ++it1)
-        {
-            for (auto it2 = it1->second.begin(); it2 != it1->second.end(); ++it2)
-            {
-                std::basic_string<uint8_t> sig(fileBytes.data() + it1->first, fileBytes.data() + it1->first + it2->first);
-                auto it3 = it2->second.find(sig);
-                if (it3 != it2->second.end())
-                {
-                    PackageFile* file = it3->second(std::move(fileBytes));
-                    file->fileLocalPath = filePath;
-                    PackageManager::loadedFiles.emplace(filePath, std::make_pair(file, packagePathNormalized));
-                    goto FileHandled;
-                }
-            }
-        }
         if (auto it = PackageManager::textFileHandlers.find(fs::path(filePath).extension().wstring().c_str()); it != PackageManager::textFileHandlers.end())
         {
             // TODO: Implement.
             Debug::logError("Text file loading has not been implemented. This file handler will not be run.");
         }
-        else
-            PackageManager::loadedFiles.emplace(filePath, std::make_pair(new BinaryPackageFile(std::move(fileBytes), filePath), packagePathNormalized));
 
-    FileHandled:;
+        for (auto& [sigData, handlers] : PackageManager::binFileHandlers)
+        {
+            const auto& [off, sigLen] = sigData;
+            if (off + sigLen > fileLen)
+                continue;
+
+            std::basic_string<uint8_t> sig(fileBytes.data() + off, fileBytes.data() + +(off + sigLen));
+            auto handlerIt = handlers.find(sig);
+            if (handlerIt != handlers.end())
+            {
+                std::shared_ptr<PackageFile> file = handlerIt->second(std::move(fileBytes));
+                file->packagePath = packagePathNormalized;
+                file->filePath = filePath;
+                PackageManager::loadedFiles.emplace(filePath, PackageFileData { .loadedFile = std::move(file), .packagePath = packagePathNormalized });
+                goto Done;
+            }
+        }
+
+        PackageManager::loadedFiles.emplace(filePath,
+                                            PackageFileData { .loadedFile = std::make_shared<BinaryPackageFile>(std::move(fileBytes)), .packagePath = packagePathNormalized });
+    Done:;
     }
+    while (packageFile);
 
     return true;
 }
@@ -120,10 +108,13 @@ void PackageManager::freePackageInMemory(const std::filesystem::path& packagePat
 {
     std::wstring packagePathNormalized = packagePath.wstring();
     PackageManager::normalizePath(packagePathNormalized);
-    for (auto& [_, packageFileInfo] : PackageManager::loadedFiles)
+    for (auto loadedFileIt = PackageManager::loadedFiles.begin(); loadedFileIt != PackageManager::loadedFiles.end();)
     {
-        if (packageFileInfo.second == packagePathNormalized)
-            delete packageFileInfo.first;
+        const auto& [file, packagePath] = loadedFileIt->second;
+        if (packagePath == packagePathNormalized)
+            loadedFileIt = PackageManager::loadedFiles.erase(loadedFileIt);
+        else
+            ++loadedFileIt;
     }
 }
 
@@ -138,14 +129,14 @@ void PackageManager::normalizePath(std::wstring& path)
         case L'.': extensionEnded = true; break;
         }
         if (!extensionEnded)
-            *it = std::tolower(*it);
+            *it = wchar_t(std::tolower(*it));
     }
 }
-PackageFile* PackageManager::lookupFileByPath(std::wstring filePath)
+std::shared_ptr<PackageFile> PackageManager::lookupFileByPath(std::wstring filePath)
 {
     PackageManager::normalizePath(filePath);
     if (auto it = PackageManager::loadedFiles.find(filePath); it != PackageManager::loadedFiles.end())
-        return it->second.first;
+        return it->second.loadedFile;
     else
         return nullptr;
 }

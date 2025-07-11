@@ -13,7 +13,7 @@ namespace Firework::PackageSystem
     {
         stbi_uc* loadedImage;
         int width, height;
-
+    public:
         inline PortableGraphicPackageFile(std::vector<uint8_t> data)
         {
             int channels;
@@ -23,7 +23,7 @@ namespace Firework::PackageSystem
         {
             stbi_image_free(this->loadedImage);
         }
-    public:
+
         /// @brief Retrieve the width of the image.
         /// @return The width of the image, in pixels.
         inline int imageWidth()
@@ -50,10 +50,10 @@ namespace Firework::PackageSystem
     {
         std::vector<uint8_t> data;
         Typography::Font font;
-
+    public:
         inline TrueTypeFontPackageFile(std::vector<uint8_t> data) : data(std::move(data)), font((unsigned char*)this->data.data())
         { }
-    public:
+
         inline Typography::Font& fontHandle()
         {
             return this->font;

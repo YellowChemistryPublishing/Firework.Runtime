@@ -91,7 +91,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         t->text = U"1000000what";
         t->fontSize = 4;
         t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans";
-        t->font = dynamic_cast<TrueTypeFontPackageFile*>(PackageManager::lookupFileByPath(L"Assets/Comic Sans MS.ttf"));
+        t->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"Assets/Comic Sans MS.ttf"));
         t->fontSize = 12;
         rt->rect = RectFloat(400, 25, -400, -25);
         rt->localRotation += std::numbers::pi_v<float> / 2.0f;
