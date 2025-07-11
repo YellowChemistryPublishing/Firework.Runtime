@@ -15,7 +15,7 @@ namespace Firework::PackageSystem
         stbi_uc* loadedImage;
         int width, height;
     public:
-        PortableGraphicPackageFile(std::vector<uint8_t> data)
+        PortableGraphicPackageFile(std::vector<uint8_t>&& data)
         {
             int channels;
             this->loadedImage = stbi_load_from_memory(data.data(), data.size(), &this->width, &this->height, &channels, 4);
@@ -52,7 +52,7 @@ namespace Firework::PackageSystem
         std::vector<uint8_t> data;
         Typography::Font font;
     public:
-        TrueTypeFontPackageFile(std::vector<uint8_t> data) : data(std::move(data)), font((unsigned char*)this->data.data())
+        TrueTypeFontPackageFile(std::vector<uint8_t>&& data) : data(std::move(data)), font((unsigned char*)this->data.data())
         { }
 
         Typography::Font& fontHandle()
@@ -69,7 +69,10 @@ namespace Firework::PackageSystem
         pugi::xml_document doc;
         pugi::xml_parse_result ok;
     public:
-        ExtensibleMarkupPackageFile(std::u8string contents);
+        ExtensibleMarkupPackageFile(std::u8string&& contents) : buffer(std::move(contents))
+        {
+            this->ok = this->doc.load_buffer_inplace(this->buffer.data(), this->buffer.size() * sizeof(char8_t));
+        }
 
         operator bool()
         {

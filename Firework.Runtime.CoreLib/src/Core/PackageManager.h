@@ -37,7 +37,7 @@ namespace Firework::PackageSystem
     {
         std::vector<uint8_t> data;
     public:
-        inline BinaryPackageFile(std::vector<uint8_t> data) : data(std::move(data))
+        inline BinaryPackageFile(std::vector<uint8_t>&& data) : data(std::move(data))
         { }
 
         /// @brief Get the binary data of the file.
