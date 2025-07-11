@@ -19,11 +19,7 @@ constexpr auto toEndianness = [](auto intType, std::endian from, std::endian to)
     if (from == to)
         return intType;
     else
-    {
-        decltype(intType) _int = 0;
-        for (size_t i = 0; i < sizeof(decltype(intType)); i++) reinterpret_cast<int8_t*>(&_int)[i] = reinterpret_cast<int8_t*>(&intType)[sizeof(decltype(intType)) - 1 - i];
-        return _int;
-    }
+        return std::byteswap(intType);
 };
 
 bool PackageManager::removeBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset)

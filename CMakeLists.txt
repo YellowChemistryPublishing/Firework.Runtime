@@ -561,12 +561,12 @@ if (FIREWORK_BUILD_EXAMPLES)
     foreach (EXAMPLE_NAME ${FIREWORK_EXAMPLES})
         add_custom_target(package_example_${EXAMPLE_NAME}
             COMMAND ${CMAKE_COMMAND}
-            -DFIREWORK_PACKAGER_EXECUTABLE="$<TARGET_FILE:Firework.Packager>"
-            -DPACKAGE_INPUT_FOLDER="${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/Assets"
+            -DFIREWORK_PACKAGER_EXECUTABLE="$<TARGET_FILE:tool_Firework.Packager>"
+            -DPACKAGE_INPUT_FOLDER="${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/assets"
             -DPACKAGE_OUTPUT_FILE="$<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>/Runtime/CorePackage.fwpkg"
             -P "${CMAKE_CURRENT_LIST_DIR}/cmake/PackageArchive.cmake"
         )
-        add_dependencies(package_example_${EXAMPLE_NAME} Firework.Packager)
+        add_dependencies(package_example_${EXAMPLE_NAME} tool_Firework.Packager)
 
         add_executable(example_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/main.cpp")
         add_dependencies(example_${EXAMPLE_NAME} package_example_${EXAMPLE_NAME})
