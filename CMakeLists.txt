@@ -136,30 +136,9 @@ add_compile_definitions(${FIREWORK_COMPILE_DEFINITIONS})
 add_compile_options(${FIREWORK_COMPILE_FLAGS})
 add_link_options(${FIREWORK_LINKER_FLAGS})
 
-macro(firework_push_nowarn)
-    if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc" OR FIREWORK_COMPILER STREQUAL "Clang")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w")
-    elseif (FIREWORK_COMPILER STREQUAL "MSVC")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /w")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w")
-    endif()
-endmacro()
-macro(firework_pop_nowarn)
-    if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc" OR FIREWORK_COMPILER STREQUAL "Clang")
-        string(REPLACE " -w" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-        string(REPLACE " -w" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    elseif (FIREWORK_COMPILER STREQUAL "MSVC")
-        string(REPLACE " /w" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-        string(REPLACE " /w" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-    endif()
-endmacro()
-
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ${FIREWORK_LTO})
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ${FIREWORK_LTO})
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ${FIREWORK_LTO})
-
-firework_push_nowarn()
 
 # concurrentqueue
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/concurrentqueue")
@@ -171,7 +150,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/robin-hood-hashing")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/uni-algo")
 
 # cpptrace
-firework_pop_nowarn()
 if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL "MacOS" OR FIREWORK_BUILD_PLATFORM STREQUAL "Linux")
     set(CPPTRACE_STATIC ON CACHE INTERNAL "" FORCE)
     set(CPPTRACE_PROVIDE_EXPORT_SET_FOR_LIBDWARF OFF CACHE INTERNAL "" FORCE)
@@ -181,7 +159,6 @@ if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL
     endif()
     set_target_properties(cpptrace-lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
-firework_push_nowarn()
 
 # SDL3
 set(SDL_STATIC_PIC ON CACHE INTERNAL "" FORCE)
@@ -192,10 +169,8 @@ set(SDL_RENDER_D3D OFF CACHE INTERNAL "" FORCE)
 set(SDL_RENDER_METAL OFF CACHE INTERNAL "" FORCE)
 set(HAVE_SHELLSCALINGAPI_H OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/SDL")
-# target_compile_definitions(SDL3-static PRIVATE HAVE_LIBC=1) i don't know if we still need this
 
 # assimp
-firework_pop_nowarn()
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_ZLIB ON CACHE INTERNAL "" FORCE)
@@ -207,7 +182,6 @@ get_target_property(ASSIMP_LINK_LIBRARIES assimp LINK_LIBRARIES)
 list(REMOVE_ITEM ASSIMP_LINK_LIBRARIES "-static-libgcc" "-static-libstdc++" "-Wl,-Bstatic" "-lstdc++" "-lwinpthread")
 set_target_properties(assimp PROPERTIES LINK_LIBRARIES "${ASSIMP_LINK_LIBRARIES}")
 unset(BUILD_SHARED_LIBS)
-firework_push_nowarn()
 
 # bgfx
 
@@ -226,7 +200,6 @@ set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 set(CMAKE_DEBUG_POSTFIX "" CACHE INTERNAL "")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
-firework_pop_nowarn()
 if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
@@ -243,6 +216,8 @@ message(STATUS "[FireworkConfigure] [INFO]  Compilation target ${FIREWORK_TARGET
 
 # Firework.Tools
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/Firework.Tools")
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/package_archive.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/precompile_shaders.cmake")
 
 # Firework.Typography
 
@@ -282,24 +257,14 @@ set_target_properties(Firework.Typography
 
 # Firework.Runtime.GL
 
-add_custom_target(PrecompileBuiltinShaders
-    COMMAND ${CMAKE_COMMAND}
-    -DSHADERC_PATH="$<TARGET_FILE:shaderc>"
-    -DSHADERC_DIR="$<TARGET_FILE_DIR:shaderc>"
-    -DSHADER_FILES_DIR="${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/shaders"
-    -DBGFX_SHADER_DIR="${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bgfx/src"
-    -DCMAKE_BUILD_TYPE=$<CONFIG>
-    -P "${CMAKE_CURRENT_LIST_DIR}/cmake/PrecompileShaders.cmake"
-)
-add_dependencies(PrecompileBuiltinShaders shaderc)
-
 file(GLOB_RECURSE GLSRCS configure_depends
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/*.h"
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/*.cpp"
 )
+target_compile_shaders(shaders_Firework.Runtime.GL "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/shaders")
 
 add_library(Firework.Runtime.GL SHARED ${GLSRCS})
-add_dependencies(Firework.Runtime.GL PrecompileBuiltinShaders)
+add_dependencies(Firework.Runtime.GL shaders_Firework.Runtime.GL)
 
 generate_export_header(Firework.Runtime.GL
     BASE_NAME FIREWORK_GL
@@ -361,24 +326,14 @@ set_target_properties(Firework.Runtime.GL
 
 # Firework.Runtime.RenderPipeline
 
-add_custom_target(PrecompileRenderPipelineShaders
-    COMMAND ${CMAKE_COMMAND}
-    -DSHADERC_PATH="$<TARGET_FILE:shaderc>"
-    -DSHADERC_DIR="$<TARGET_FILE_DIR:shaderc>"
-    -DSHADER_FILES_DIR="${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders"
-    -DBGFX_SHADER_DIR="${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bgfx/src"
-    -DCMAKE_BUILD_TYPE=$<CONFIG>
-    -P "${CMAKE_CURRENT_LIST_DIR}/cmake/PrecompileShaders.cmake"
-)
-add_dependencies(PrecompileRenderPipelineShaders shaderc)
-
 file(GLOB_RECURSE RPSRCS configure_depends
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/*.h"
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/*.cpp"
 )
+target_compile_shaders(shaders_Firework.Runtime.RenderPipeline "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders")
 
 add_library(Firework.Runtime.RenderPipeline SHARED ${RPSRCS})
-add_dependencies(Firework.Runtime.GL PrecompileRenderPipelineShaders)
+add_dependencies(Firework.Runtime.GL shaders_Firework.Runtime.RenderPipeline)
 
 generate_export_header(Firework.Runtime.RenderPipeline
     BASE_NAME FIREWORK_RP
@@ -419,16 +374,13 @@ file(GLOB_RECURSE ENGINESRCS configure_depends
 )
 
 add_library(Firework.Runtime.CoreLib SHARED ${ENGINESRCS})
-# target_sources(Firework.Runtime.CoreLib PUBLIC FILE_SET CXX_MODULES FILES "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/module/Firework.Core.cxx")
 
 generate_export_header(Firework.Runtime.CoreLib
     BASE_NAME FIREWORK_CORELIB
     EXPORT_MACRO_NAME __firework_corelib_api
     EXPORT_FILE_NAME Firework.Runtime.CoreLib.Exports.h
 )
-# file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/Firework.Runtime.CoreLib.Exports.h" "\n#ifndef FIREWORK_EXPORT_MODULE\n    #define FIREWORK_EXPORT_MODULE 0\n#endif\n#ifndef __fw_module_export\n    #define __fw_module_export\n#endif\n")
 
-# target_compile_definitions(Firework.Runtime.CoreLib PUBLIC SDL_MAIN_HANDLED)
 target_include_directories(Firework.Runtime.CoreLib
     PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}"
@@ -491,29 +443,14 @@ set_target_properties(Firework.Runtime.CoreLib
 
 # Firework.Components.Core2D
 
-add_custom_target(PrecompileComponentCore2DShaders
-    COMMAND ${CMAKE_COMMAND}
-    -DSHADERC_PATH="$<TARGET_FILE:shaderc>"
-    -DSHADERC_DIR="$<TARGET_FILE_DIR:shaderc>"
-    -DSHADER_FILES_DIR="${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core2D/shaders"
-    -DBGFX_SHADER_DIR="${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bgfx/src"
-    -DCMAKE_BUILD_TYPE=$<CONFIG>
-    -P "${CMAKE_CURRENT_LIST_DIR}/cmake/PrecompileShaders.cmake"
-)
-add_dependencies(PrecompileComponentCore2DShaders shaderc)
-
-file(GLOB_RECURSE GLSRCS configure_depends
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/*.h"
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/*.cpp"
-)
-
 file(GLOB_RECURSE CORE2DSRCS configure_depends
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core2D/*.h"
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core2D/*.cpp"
 )
+target_compile_shaders(shaders_Firework.Components.Core2D "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core2D/shaders")
 
 add_library(Firework.Components.Core2D SHARED ${CORE2DSRCS})
-add_dependencies(Firework.Components.Core2D PrecompileComponentCore2DShaders)
+add_dependencies(Firework.Components.Core2D shaders_Firework.Components.Core2D)
 
 generate_export_header(Firework.Components.Core2D
     BASE_NAME FIREWORK_COMPONENTCORE2D
@@ -559,17 +496,10 @@ file(GLOB FIREWORK_EXAMPLES LIST_DIRECTORIES TRUE RELATIVE "${CMAKE_CURRENT_SOUR
 
 if (FIREWORK_BUILD_EXAMPLES)
     foreach (EXAMPLE_NAME ${FIREWORK_EXAMPLES})
-        add_custom_target(package_example_${EXAMPLE_NAME}
-            COMMAND ${CMAKE_COMMAND}
-            -DFIREWORK_PACKAGER_EXECUTABLE="$<TARGET_FILE:tool_Firework.Packager>"
-            -DPACKAGE_INPUT_FOLDER="${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/assets"
-            -DPACKAGE_OUTPUT_FILE="$<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>/Runtime/CorePackage.fwpkg"
-            -P "${CMAKE_CURRENT_LIST_DIR}/cmake/PackageArchive.cmake"
-        )
-        add_dependencies(package_example_${EXAMPLE_NAME} tool_Firework.Packager)
+        target_package_archive(package_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/assets" "$<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>/Runtime/CorePackage.fwpkg")
 
         add_executable(example_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/main.cpp")
-        add_dependencies(example_${EXAMPLE_NAME} package_example_${EXAMPLE_NAME})
+        add_dependencies(example_${EXAMPLE_NAME} package_${EXAMPLE_NAME})
 
         target_link_libraries(example_${EXAMPLE_NAME} PUBLIC Firework.Components.Core2D)
         set_target_properties(example_${EXAMPLE_NAME}

@@ -27,7 +27,7 @@ bool Packager::packageFolder(fs::path folder, fs::path outFile)
         if (fs::is_directory(p))
             continue;
 
-        std::wcout << L"[Firework.Packager.CLI] [INFO]  File - \"" << p.wstring() << L"\".\n";
+        std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  File - \"" << p.wstring() << L"\".\n";
 
         std::wstring filePath = folder.stem().append(fs::relative(p, folder, ec).wstring()).wstring();
         _fence_value_return(false, ec);
@@ -36,7 +36,7 @@ bool Packager::packageFolder(fs::path folder, fs::path outFile)
         _fence_value_return(false, !package.write(reinterpret_cast<char*>(&len), sizeof(u32)));
         len = toEndianness(+len, std::endian::big, std::endian::native);
         _fence_value_return(false, !package.write(reinterpret_cast<char*>(&filePath.front()), +(sizeof(wchar_t) * len)));
-        std::wcout << L"[Firework.Packager.CLI] [INFO]  Relative File Path - \"" << filePath << L"\".\n";
+        std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  Relative File Path - \"" << filePath << L"\".\n";
 
         std::ifstream infile(p, std::ios::binary);
 
@@ -45,7 +45,7 @@ bool Packager::packageFolder(fs::path folder, fs::path outFile)
         len = u32(infile.gcount());
         infile.clear();
         infile.seekg(0, std::ios::beg);
-        std::wcout << L"[Firework.Packager.CLI] [INFO]  Filesize - " << +len << L".\n";
+        std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  Filesize - " << +len << L".\n";
 
         len = toEndianness(+len, std::endian::native, std::endian::big);
         package.write(reinterpret_cast<char*>(&len), sizeof(u32));
@@ -57,9 +57,9 @@ bool Packager::packageFolder(fs::path folder, fs::path outFile)
         {
             infile.read(reinterpret_cast<char*>(buffer.get()), +bufferSize);
             std::streamsize toWrite = infile.gcount();
-            std::wcout << L"[Firework.Packager.CLI] [INFO]  Read " << toWrite << " bytes.\n";
+            std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  Read " << toWrite << " bytes.\n";
             package.write(reinterpret_cast<char*>(buffer.get()), toWrite);
-            std::wcout << L"[Firework.Packager.CLI] [INFO]  Written " << toWrite << " bytes.\n";
+            std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  Written " << toWrite << " bytes.\n";
         }
     }
 }

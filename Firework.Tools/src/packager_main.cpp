@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
         {
         case strhash("--help"):
         case strhash("-h"):
-            std::cout << "[Firework.Packager.CLI] [INFO]  Firework.Packager Help Display\n"
+            std::cout << "[Firework.Packager | Firework.Tools] [INFO]  Firework.Packager Help Display\n"
                          "                                any: --help, -h                           -> Display this help text.\n"
                          "                                any: --output, -o      [value]            -> Specify the output file archive.\n"
                          "                                any: --unpack, -u, -ex                    -> Flag to specify to extract the target file instead.\n"
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
         case strhash("--output"):
             if (++i == argc) [[unlikely]]
             {
-                std::cerr << "[Firework.Packager.CLI] [FATAL] Expected following argument to " << argv[+(i - 1_z)] << ", found end of commandline arguments.\n";
+                std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Expected following argument to " << argv[+(i - 1_z)] << ", found end of commandline arguments.\n";
                 return 1;
             }
 
@@ -71,12 +71,12 @@ int main(int argc, char* argv[])
         default:
             if (i != 1 && i != argc - 1) [[unlikely]]
             {
-                std::cerr << "[Firework.Packager.CLI] [FATAL] Expected commandline argument parameter, found unexpected string.\n";
+                std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Expected commandline argument parameter, found unexpected string.\n";
                 return 1;
             }
             else if (!fs::exists(inPath = argv[+i], ec))
             {
-                std::cerr << "[Firework.Packager.CLI] [FATAL] Input path to package doesn't exist!\n";
+                std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Input path to package doesn't exist!\n";
                 return 1;
             }
         }
@@ -86,25 +86,25 @@ int main(int argc, char* argv[])
 
     if (inPath.empty())
     {
-        std::cerr << "[Firework.Packager.CLI] [FATAL] Input path hasn't been specified.\n";
+        std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Input path hasn't been specified.\n";
         return 1;
     }
     if (outPath.empty())
     {
-        std::cerr << "[Firework.Packager.CLI] [FATAL] Output path hasn't been specified.\n";
+        std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Output path hasn't been specified.\n";
         return 1;
     }
 
     if (extractInstead)
     {
-        std::cerr << "[Firework.Packager.CLI] [FATAL] Unpacking is currently unimplemented!\n";
+        std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Unpacking is currently unimplemented!\n";
         return 1;
     }
     else
     {
         if (!fs::is_directory(inPath))
         {
-            std::cerr << "[Firework.Packager.CLI] [FATAL] Path for input folder isn't a folder!\n";
+            std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Path for input folder isn't a folder!\n";
             return 1;
         }
 

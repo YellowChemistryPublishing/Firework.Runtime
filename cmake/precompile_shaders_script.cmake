@@ -10,7 +10,7 @@ else()
     set(GL_PLATFORM "UnknownPlatform")
 endif()
 
-message(STATUS "[ShaderPrecompiler] [TRACE] Compiling shaders...")
+message(STATUS "[Shader Precompile | Firework.Runtime] [TRACE] Compiling shaders...")
 
 file(MAKE_DIRECTORY "${SHADER_FILES_DIR}/build")
 
@@ -37,9 +37,9 @@ macro(ExecShaderCompiler SHADER_NAME SHADER_EXT PROFILE_ARG BACKEND_NAME)
 
     if (SHADERC_RETURN AND NOT SHADERC_RETURN EQUAL 0)
         file(REMOVE "${SHADER_FILES_DIR}/build/${SHADER_FULL_NAME}.md5")
-        message(FATAL_ERROR "[ShaderPrecompiler] [FATAL] Shader compilation of ${SHADER_TYPE} shader ${SHADER_NAME} for ${BACKEND_NAME} failed with code [${SHADERC_RETURN}].")
+        message(FATAL_ERROR "[Shader Precompile | Firework.Runtime] [FATAL] Shader compilation of ${SHADER_TYPE} shader ${SHADER_NAME} for ${BACKEND_NAME} failed with code [${SHADERC_RETURN}].")
     else()
-        message(STATUS "[ShaderPrecompiler] [INFO]  Shader compilation of ${SHADER_TYPE} shader ${SHADER_NAME} for ${BACKEND_NAME} succeeded.")
+        message(STATUS "[Shader Precompile | Firework.Runtime] [INFO]  Shader compilation of ${SHADER_TYPE} shader ${SHADER_NAME} for ${BACKEND_NAME} succeeded.")
     endif()
 
     bin2h(
@@ -72,7 +72,7 @@ macro(CreateShaderInclude SHADER_NAME SHADER_EXT)
         ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "430" "opengl")
         ExecShaderCompiler(${SHADER_NAME} ${SHADER_EXT} "spirv10-10" "vulkan")
     else()
-        message(FATAL_ERROR "[ShaderPrecompiler] [FATAL] Unrecognised shader type of file ${SHADER}! Must be one of *.vert.sc, *.frag.sc, or *.comp.sc.")
+        message(FATAL_ERROR "[Shader Precompile | Firework.Runtime] [FATAL] Unrecognised shader type of file ${SHADER}! Must be one of *.vert.sc, *.frag.sc, or *.comp.sc.")
     endif()
 endmacro()
 
@@ -119,9 +119,9 @@ foreach (SHADER ${SHADER_SOURCE_FILES})
 #include <${SHADER_NAME}.frag.vulkan.h>\n"
             )
         else()
-            message(STATUS "[ShaderPrecompiler] [INFO]  Skipping compilation of shader ${SHADER}; source file unchanged.")
+            message(STATUS "[Shader Precompile | Firework.Runtime] [INFO]  Skipping compilation of shader ${SHADER}; source file unchanged.")
         endif()
     endif()
 endforeach()
 
-message(STATUS "[ShaderPrecompiler] [TRACE] Shader precompilation complete.")
+message(STATUS "[Shader Precompile | Firework.Runtime] [TRACE] Shader precompilation complete.")
