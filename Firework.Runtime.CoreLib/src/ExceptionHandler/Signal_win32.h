@@ -3,14 +3,14 @@
 using namespace Firework;
 using namespace Firework::Internal;
 
-__firework_corelib_api void __fw_rt_hw_sighf()
+_fw_core_api void __fw_rt_hw_sighf()
 {
     SetUnhandledExceptionFilter(__fw_rt_hw_excpt_handler);
 }
-__firework_corelib_api void __fw_rt_hw_sigh(int)
+_fw_core_api void __fw_rt_hw_sigh(int)
 { }
 // This also hardly ever works outside of MSVC.
-__firework_corelib_api LONG WINAPI __fw_rt_hw_excpt_handler(LPEXCEPTION_POINTERS ex)
+_fw_core_api LONG WINAPI __fw_rt_hw_excpt_handler(LPEXCEPTION_POINTERS ex)
 {
     switch (ex->ExceptionRecord->ExceptionCode)
     {

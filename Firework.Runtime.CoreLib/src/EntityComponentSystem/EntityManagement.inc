@@ -17,7 +17,7 @@ namespace Firework
         class CoreEngine;
     } // namespace Internal
 
-    class __firework_corelib_api Entities final
+    class _fw_core_api Entities final
     {
         //                               v Component type.
         //                                                                          v Entity is key.

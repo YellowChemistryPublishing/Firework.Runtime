@@ -77,7 +77,7 @@ namespace Firework
         std::shared_ptr<Entity> front = nullptr;
     };
 
-    class __firework_corelib_api Entity final : public std::enable_shared_from_this<Entity>
+    class _fw_core_api Entity final : public std::enable_shared_from_this<Entity>
     {
         std::shared_ptr<Entity> next = nullptr;
         std::shared_ptr<Entity> prev = nullptr;

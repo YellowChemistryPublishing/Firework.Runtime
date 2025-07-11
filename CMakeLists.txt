@@ -235,7 +235,7 @@ target_link_libraries(Firework.Typography PRIVATE uni-algo)
 
 generate_export_header(Firework.Typography
     BASE_NAME FIREWORK_TYPOGRAPHY
-    EXPORT_MACRO_NAME __firework_typography_api
+    EXPORT_MACRO_NAME _fw_typ_api
     EXPORT_FILE_NAME Firework.Typography.Exports.h
 )
 
@@ -340,7 +340,7 @@ add_dependencies(Firework.Runtime.GL shaders_Firework.Runtime.RenderPipeline)
 
 generate_export_header(Firework.Runtime.RenderPipeline
     BASE_NAME FIREWORK_RP
-    EXPORT_MACRO_NAME __firework_rp_api
+    EXPORT_MACRO_NAME _fw_rp_api
     EXPORT_FILE_NAME Firework.Runtime.RenderPipeline.Exports.h
 )
 
@@ -380,7 +380,7 @@ add_library(Firework.Runtime.CoreLib SHARED ${ENGINESRCS})
 
 generate_export_header(Firework.Runtime.CoreLib
     BASE_NAME FIREWORK_CORELIB
-    EXPORT_MACRO_NAME __firework_corelib_api
+    EXPORT_MACRO_NAME _fw_core_api
     EXPORT_FILE_NAME Firework.Runtime.CoreLib.Exports.h
 )
 
@@ -457,7 +457,7 @@ add_dependencies(Firework.Components.Core2D shaders_Firework.Components.Core2D)
 
 generate_export_header(Firework.Components.Core2D
     BASE_NAME FIREWORK_COMPONENTCORE2D
-    EXPORT_MACRO_NAME __firework_componentcore2d_api
+    EXPORT_MACRO_NAME _fw_cc2d_api
     EXPORT_FILE_NAME Firework.Components.Core2D.Exports.h
 )
 

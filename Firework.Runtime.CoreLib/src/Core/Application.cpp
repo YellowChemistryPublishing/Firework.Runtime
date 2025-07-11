@@ -22,7 +22,7 @@ float Application::secondsPerFrame = 1.0f / 60.0f;
 
 namespace Firework::Internal
 {
-    __firework_corelib_api int __fw_rt_fwd_main_invoc(int argc, char* argv[], SDL_main_func mainFunction, void* reserved)
+    _fw_core_api int __fw_rt_fwd_main_invoc(int argc, char* argv[], SDL_main_func mainFunction, void* reserved)
     {
         return SDL_RunApp(argc, argv, mainFunction, reserved);
     }

@@ -15,7 +15,7 @@ namespace Firework
 
     /// @brief Static class containing functionality relevant to runtime handled events. You may add as many callbacks as you wish.
     /// @warning You are **not** allowed to invoke any of this events yourself!
-    class __firework_corelib_api EngineEvent final
+    class _fw_core_api EngineEvent final
     {
     public:
         EngineEvent() = delete;
@@ -103,7 +103,7 @@ namespace Firework
 
         /// @brief Static class containing functionality relevant to internal/low-level runtime handled events. You may add as many callbacks as you wish.
         /// @warning You are **not** allowed to invoke any of this events yourself!
-        class __firework_corelib_api InternalEngineEvent final
+        class _fw_core_api InternalEngineEvent final
         {
         public:
             InternalEngineEvent() = delete;

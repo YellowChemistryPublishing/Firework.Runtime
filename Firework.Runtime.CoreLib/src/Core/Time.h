@@ -9,7 +9,7 @@ namespace Firework
         class CoreEngine;
     }
 
-    class __firework_corelib_api Time final
+    class _fw_core_api Time final
     {
         static float frameDeltaTime;
     public:

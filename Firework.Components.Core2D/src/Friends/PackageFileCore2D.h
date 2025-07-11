@@ -10,7 +10,7 @@
 
 namespace Firework::PackageSystem
 {
-    class __firework_componentcore2d_api PortableGraphicPackageFile final : public PackageFile
+    class _fw_cc2d_api PortableGraphicPackageFile final : public PackageFile
     {
         stbi_uc* loadedImage;
         int width, height;
@@ -47,7 +47,7 @@ namespace Firework::PackageSystem
         friend class Firework::PackageSystem::PackageManager;
     };
 
-    class __firework_componentcore2d_api TrueTypeFontPackageFile final : public PackageFile
+    class _fw_cc2d_api TrueTypeFontPackageFile final : public PackageFile
     {
         std::vector<uint8_t> data;
         Typography::Font font;
@@ -63,7 +63,7 @@ namespace Firework::PackageSystem
         friend class Firework::PackageSystem::PackageManager;
     };
 
-    class __firework_componentcore2d_api ExtensibleMarkupPackageFile final : public PackageFile
+    class _fw_cc2d_api ExtensibleMarkupPackageFile final : public PackageFile
     {
         std::u8string buffer;
         pugi::xml_document doc;

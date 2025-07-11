@@ -55,7 +55,7 @@ namespace Firework
     };
 
     /// @brief Static class containing functionality relevant to debugging and logging.
-    class __firework_corelib_api Debug final
+    class _fw_core_api Debug final
     {
         /// @internal
         /// @brief Internal API. Concatenates args... into a string.

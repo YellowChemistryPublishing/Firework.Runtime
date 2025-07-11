@@ -28,18 +28,18 @@
 #include <Core/Application.h>
 #include <Firework/Config.h>
 
-extern __firework_corelib_api void __fw_rt_hw_sighf();
-extern __firework_corelib_api void __fw_rt_hw_sigh(int sig);
+extern _fw_core_api void __fw_rt_hw_sighf();
+extern _fw_core_api void __fw_rt_hw_sigh(int sig);
 #if defined(__GLIBC__)
-__firework_corelib_api extern void __fw_rt_hw_excpt_handler(int sig, siginfo_t*, void*);
+_fw_core_api extern void __fw_rt_hw_excpt_handler(int sig, siginfo_t*, void*);
 #elif __MINGW32__ && !__SEH__ && INTPTR_MAX == INT32_MAX
-extern "C" __firework_corelib_api EXCEPTION_DISPOSITION __fw_rt_hw_excpt_handler(PEXCEPTION_RECORD record, void*, PCONTEXT, void*);
+extern "C" _fw_core_api EXCEPTION_DISPOSITION __fw_rt_hw_excpt_handler(PEXCEPTION_RECORD record, void*, PCONTEXT, void*);
 #elif __MINGW32__ && !__SEH__ && INTPTR_MAX == INT64_MAX
-extern "C" __firework_corelib_api long __fw_rt_hw_excpt_handler(PEXCEPTION_POINTERS ex);
+extern "C" _fw_core_api long __fw_rt_hw_excpt_handler(PEXCEPTION_POINTERS ex);
 #elif defined(_WIN32)
-extern __firework_corelib_api LONG WINAPI __fw_rt_hw_excpt_handler(LPEXCEPTION_POINTERS ex);
+extern _fw_core_api LONG WINAPI __fw_rt_hw_excpt_handler(LPEXCEPTION_POINTERS ex);
 #else
-extern __firework_corelib_api void __fw_rt_hw_excpt_handler(int sig);
+extern _fw_core_api void __fw_rt_hw_excpt_handler(int sig);
 #endif
 
 #if __MINGW32__ && !__SEH__

@@ -42,7 +42,7 @@ namespace Firework
 
         /// @internal
         /// @brief Static class containing functionality relevant to the backend operations of the runtime.
-        class __firework_corelib_api CoreEngine final
+        class _fw_core_api CoreEngine final
         {
             static std::atomic<EngineState> state;
 

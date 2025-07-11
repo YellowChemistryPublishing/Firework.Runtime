@@ -20,7 +20,7 @@ namespace Firework
             uint32_t blendFactor = 0;
         };
 
-        class __firework_rp_api RenderPipeline final
+        class _fw_rp_api RenderPipeline final
         {
         public:
             RenderPipeline() = delete;

@@ -25,7 +25,7 @@ namespace Firework
         float x, y, z = 1.0f; // Leave `z` as 1.0f unless you're really confident in what you're doing.
     };
 
-    class __firework_componentcore2d_api FilledPathRenderer final
+    class _fw_cc2d_api FilledPathRenderer final
     {
         static GL::GeometryProgramHandle program;
         static GL::StaticMeshHandle unitSquare;

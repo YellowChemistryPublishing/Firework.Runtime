@@ -8,9 +8,9 @@
 using namespace Firework;
 using namespace Firework::Internal;
 
-__firework_corelib_api void __fw_rt_hw_sighf()
+_fw_core_api void __fw_rt_hw_sighf()
 { }
-__firework_corelib_api void __fw_rt_hw_sigh(int)
+_fw_core_api void __fw_rt_hw_sigh(int)
 { }
 #if INTPTR_MAX == INT32_MAX
 extern "C" EXCEPTION_DISPOSITION __fw_rt_hw_excpt_handler(PEXCEPTION_RECORD record, void*, PCONTEXT, void*)

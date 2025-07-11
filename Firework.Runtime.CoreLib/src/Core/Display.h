@@ -15,7 +15,7 @@ namespace Firework
 
     class Cursor;
 
-    class __firework_corelib_api Window final
+    class _fw_core_api Window final
     {
         static i32 width;
         static i32 height;
@@ -51,7 +51,7 @@ namespace Firework
         friend class Firework::Cursor;
     };
 
-    class __firework_corelib_api Screen final
+    class _fw_core_api Screen final
     {
         static i32 width;
         static i32 height;

@@ -47,7 +47,7 @@ namespace Firework
         Confined
     };
 
-    struct __firework_corelib_api CursorTexture final
+    struct _fw_core_api CursorTexture final
     {
         CursorTexture(BuiltinCursorTexture texture);
         ~CursorTexture();
@@ -57,7 +57,7 @@ namespace Firework
         friend class Firework::Cursor;
     };
 
-    class __firework_corelib_api Cursor final
+    class _fw_core_api Cursor final
     {
         static bool _visible;
         static CursorLockState _lockState;

@@ -31,7 +31,7 @@ namespace Firework
     };
 
     /// @brief Static class containing functionality relevant to the currently running program.
-    class __firework_corelib_api Application final
+    class _fw_core_api Application final
     {
         static moodycamel::ConcurrentQueue<func::function<void()>> mainThreadQueue;
         static moodycamel::ConcurrentQueue<func::function<void()>> workerThreadQueue;

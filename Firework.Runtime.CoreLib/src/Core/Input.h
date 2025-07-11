@@ -309,7 +309,7 @@ namespace Firework
     };
 
     /// @brief Static class containing functionality relevant to input processing.
-    class __firework_corelib_api Input final
+    class _fw_core_api Input final
     {
         static sysm::vector2 internalMousePosition;
         static sysm::vector2 internalMouseMotion;

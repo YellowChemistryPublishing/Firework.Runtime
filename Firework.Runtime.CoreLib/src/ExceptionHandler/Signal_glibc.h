@@ -5,7 +5,7 @@
 using namespace Firework;
 using namespace Firework::Internal;
 
-__firework_corelib_api void __fw_rt_hw_sighf()
+_fw_core_api void __fw_rt_hw_sighf()
 {
     sigset_t ub;
     sigemptyset(&ub);
@@ -17,13 +17,13 @@ __firework_corelib_api void __fw_rt_hw_sighf()
     sigaction(SIGSEGV, &act, nullptr);
     sigaction(SIGFPE, &act, nullptr);
 }
-__firework_corelib_api void __fw_rt_hw_sigh(int sig)
+_fw_core_api void __fw_rt_hw_sigh(int sig)
 {
     struct sigaction act;
     act.sa_sigaction = __fw_rt_hw_excpt_handler;
     sigaction(sig, &act, nullptr);
 }
-__firework_corelib_api void __fw_rt_hw_excpt_handler(int sig, siginfo_t*, void*)
+_fw_core_api void __fw_rt_hw_excpt_handler(int sig, siginfo_t*, void*)
 {
     sigset_t ub;
     sigemptyset(&ub);

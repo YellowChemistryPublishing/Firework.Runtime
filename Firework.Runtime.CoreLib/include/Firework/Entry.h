@@ -32,7 +32,7 @@ static_assert((static_cast<unsigned char>("💩"[0]) == 0xF0) && (static_cast<un
 
 namespace Firework::Internal
 {
-    extern __firework_corelib_api int __fw_rt_fwd_main_invoc(int argc, char* argv[], SDL_main_func mainFunction, void* reserved);
+    extern _fw_core_api int __fw_rt_fwd_main_invoc(int argc, char* argv[], SDL_main_func mainFunction, void* reserved);
 }
 inline int SDL_RunApp(int argc, char* argv[], SDL_main_func mainFunction, void* reserved)
 {

@@ -19,7 +19,7 @@ namespace Firework::PackageSystem
     class PackageManager;
 
     /// @brief Base type for any package file loaded by runtime.
-    struct __firework_corelib_api PackageFile
+    struct _fw_core_api PackageFile
     {
         std::wstring packagePath = L"";
         std::wstring filePath = L"";
@@ -33,7 +33,7 @@ namespace Firework::PackageSystem
     };
 
     /// @brief Package file for a generic binary format file.
-    class __firework_corelib_api BinaryPackageFile final : public PackageFile
+    class _fw_core_api BinaryPackageFile final : public PackageFile
     {
         std::vector<uint8_t> data;
     public:
@@ -50,7 +50,7 @@ namespace Firework::PackageSystem
     };
 
     /// @brief Static class containing functionality relevant to management of runtime packages and their content.
-    class __firework_corelib_api PackageManager final
+    class _fw_core_api PackageManager final
     {
         struct FileSignatureQuery
         {

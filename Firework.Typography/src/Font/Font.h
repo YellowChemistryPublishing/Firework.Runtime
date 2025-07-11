@@ -55,7 +55,7 @@ namespace Firework
                 other.vertsSize = 0;
             }
             // Not in header because STBTT_free not linked in.
-            __firework_typography_api ~GlyphOutline();
+            _fw_typ_api ~GlyphOutline();
 
             template <typename PointType>
             requires requires (PointType p)
@@ -252,7 +252,7 @@ namespace Firework
             inline GlyphMetrics() = default;
         };
         
-        class __firework_typography_api Font final
+        class _fw_typ_api Font final
         {
             stbtt_fontinfo fontInfo;
         public:

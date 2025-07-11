@@ -16,7 +16,7 @@ namespace Firework
         class RenderPipeline;
         struct DirectionalLightHandle;
 
-        class __firework_rp_api DirectionalLightManager final
+        class _fw_rp_api DirectionalLightManager final
         {
             static TextureSamplerHandle directionalLightsSampler;
             static TextureVector<2>* directionalLights;

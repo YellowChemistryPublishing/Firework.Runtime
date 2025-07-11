@@ -17,7 +17,7 @@ using namespace Firework::Internal;
 
 namespace Firework::Internal
 {
-    static struct __firework_corelib_api __fw_rt_hw_libexcpt_init final
+    static struct _fw_core_api __fw_rt_hw_libexcpt_init final
     {
         __fw_rt_hw_libexcpt_init()
         {

@@ -21,7 +21,7 @@ namespace Firework
 {
     class Entity;
 
-    class __firework_componentcore2d_api [[fw::component]] Text final
+    class _fw_cc2d_api [[fw::component]] Text final
     {
         struct FontCharacterQuery
         {
