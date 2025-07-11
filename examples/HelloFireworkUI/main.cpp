@@ -1,13 +1,17 @@
+#include <filesystem>
 #include <numbers>
 
 #include <Components/EntityAttributes.h>
 #include <Components/Text.h>
 #include <Core/CoreEngine.h>
+#include <Core/PackageManager.h>
 #include <Firework.Core.hpp>
 #include <Firework/Entry.h>
 #include <Friends/FilledPathRenderer.h>
 #include <GL/Geometry.h>
 #include <GL/Renderer.h>
+
+namespace fs = std::filesystem;
 
 using namespace Firework;
 using namespace Firework::Internal;
@@ -51,7 +55,7 @@ struct TestComponent
         CoreEngine::queueRenderJobForFrame([renderData = this->renderData] { });
     }
 
-    void renderOffload(sz renderIndex = 0)
+    void renderOffload(ssz renderIndex = 0)
     {
         CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData]
         {
@@ -73,7 +77,12 @@ struct TestComponent
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
 {
-    InternalEngineEvent::OnRenderOffloadForComponent += [](std::type_index type, Entity&, std::shared_ptr<void> component, sz renderIndex)
+    std::error_code ec;
+    fs::path curPath = fs::current_path(ec);
+    if (!ec)
+        PackageManager::loadPackageIntoMemory(curPath / "Runtime" / "CorePackage.fwpkg");
+
+    InternalEngineEvent::OnRenderOffloadForComponent += [](std::type_index type, Entity&, std::shared_ptr<void> component, ssz renderIndex)
     {
         if (type == std::type_index(typeid(TestComponent)))
             std::static_pointer_cast<TestComponent>(component)->renderOffload(renderIndex);
@@ -90,7 +99,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         t->fontSize = 100;
         t->text = U"1000000what";
         t->fontSize = 4;
-        t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans";
+        t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans "
+                  U"beans beans beans beans beans beans beans beans beans";
         t->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Comic Sans MS.ttf"));
         t->fontSize = 12;
         rt->rect = RectFloat(400, 25, -400, -25);

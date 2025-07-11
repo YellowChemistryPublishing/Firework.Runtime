@@ -65,7 +65,7 @@ namespace Firework
         void tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery q);
         void swapRenderBuffers();
 
-        void renderOffload(sz renderIndex);
+        void renderOffload(ssz renderIndex);
     public:
         const Property<std::shared_ptr<PackageSystem::TrueTypeFontPackageFile>, std::shared_ptr<PackageSystem::TrueTypeFontPackageFile>> font {
             [this]() -> std::shared_ptr<PackageSystem::TrueTypeFontPackageFile> { return this->_font; },

@@ -33,7 +33,7 @@ namespace
                 Text::characterPaths.clear();
             };
 
-            InternalEngineEvent::OnRenderOffloadForComponent += [](std::type_index typeIndex, Entity&, std::shared_ptr<void> component, sz renderIndex)
+            InternalEngineEvent::OnRenderOffloadForComponent += [](std::type_index typeIndex, Entity&, std::shared_ptr<void> component, ssz renderIndex)
             {
                 if (typeIndex == typeid(Text))
                     std::static_pointer_cast<Text>(component)->renderOffload(renderIndex);

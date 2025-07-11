@@ -92,28 +92,10 @@ int CoreEngine::execute(int argc, char* argv[])
         return EXIT_FAILURE;
     }
 
-    fs::path p = fs::current_path();
-    p.append("RuntimeInternal");
-    std::wstring dir = p.wstring();
-    if (!fs::exists(dir))
-        fs::create_directory(dir);
-
-    fs::path corePackagePath(fs::current_path());
-    corePackagePath.append("Runtime");
-    corePackagePath.append("CorePackage.fwpkg");
-    if (fs::exists(corePackagePath))
-    {
-        Debug::logInfo("Loading CorePackage...");
-        PackageManager::loadPackageIntoMemory(corePackagePath);
-        Debug::logInfo("CorePackage loaded!");
-    }
-    else
-        Debug::logError("The CorePackage could not be found in the Runtime folder. Did you accidentally delete it?");
-
     std::thread workerThread([]
     {
         func::function<void()> event;
-        while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowThreadDone)
+        while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::WindowThreadDone)
         {
             while (Application::workerThreadQueue.try_dequeue(event)) event();
 
@@ -125,13 +107,17 @@ int CoreEngine::execute(int argc, char* argv[])
         }
         while (Application::workerThreadQueue.try_dequeue(event)) event();
     });
+
     std::thread windowThread(internalWindowLoop);
+
     std::thread mainThread(internalLoop);
+
 #ifdef __EMSCRIPTEN__
     internalRenderLoop();
 #else
     std::thread renderThread(internalRenderLoop);
 #endif
+
     mainThread.join();
 #ifndef __EMSCRIPTEN__
     renderThread.join();
@@ -141,9 +127,6 @@ int CoreEngine::execute(int argc, char* argv[])
 
     // Cleanup here is done for stuff created in CoreEngine::execute, thread-specific cleanup is done per-thread, at the end of their lifetime.
 
-    PackageManager::freePackageInMemory(corePackagePath);
-    fs::remove_all(dir);
-
     SDL_Quit();
 
     return EXIT_SUCCESS;
@@ -152,7 +135,11 @@ int CoreEngine::execute(int argc, char* argv[])
 void CoreEngine::resetDisplayData()
 {
     if (!(CoreEngine::displMd = SDL_GetDesktopDisplayMode(SDL_GetPrimaryDisplay())))
+    {
         Debug::logError("Failed to get desktop display mode: ", SDL_GetError());
+        return;
+    }
+
     Application::mainThreadQueue.enqueue([w = CoreEngine::displMd->w, h = CoreEngine::displMd->h, rr = CoreEngine::displMd->refresh_rate]
     {
         Screen::width = w;
@@ -161,124 +148,100 @@ void CoreEngine::resetDisplayData()
     });
 }
 
+constexpr static auto userFunctionInvoker = []<typename Func>(Func&& func)
+{
+#if __has_include(<cpptrace/cpptrace.hpp>)
+    auto fmtTrace = [](cpptrace::stacktrace ret) -> std::string
+    {
+        for (auto& frame : ret.frames)
+        {
+            if (frame.symbol.empty())
+                frame.symbol = "[optimized out]";
+            if (frame.filename.empty())
+                frame.filename = "[Unknown / JIT Compiled Code]";
+        }
+        return ret.to_string();
+    };
+#endif
+
+    __hwTry
+    {
+        func();
+    }
+    __hwCatch(const cpptrace::exception_with_message& ex)
+    {
+        std::string traceback = "std::exception (";
+        traceback.append(cpptrace::demangle(typeid(ex).name())).append("): ").append(ex.message()).append("\nUnhandled exception thrown, at:\n").append(fmtTrace(ex.trace()));
+        Debug::logError(traceback);
+    }
+    __hwCatch(const cpptrace::exception& ex)
+    {
+        std::string traceback = "std::exception (";
+        traceback.append(cpptrace::demangle(typeid(ex).name())).append("): ").append(ex.what()).append("\nUnhandled exception thrown, at:\n").append(fmtTrace(ex.trace()));
+        Debug::logError(traceback);
+    }
+    __hwCatch(const Exception& ex)
+    {
+        std::string traceback = "std::exception (";
+        traceback.append(cpptrace::demangle(typeid(ex).name())).append("): ").append(ex.what()).append("\nUnhandled exception thrown, at:\n")
+            /*/.append(fmtTrace(ex.resolveStacktrace()))/*/;
+        Debug::logError(traceback);
+    }
+    __hwCatch(const std::exception& ex)
+    {
+        std::string traceback = "std::exception (";
+        traceback
+            .append(
+#if __has_include(<cpptrace/cpptrace.hpp>)
+                cpptrace::demangle(
+#endif
+                    typeid(ex).name()
+#if __has_include(<cpptrace/cpptrace.hpp>)
+                        )
+#endif
+                    )
+            .append("): ")
+            .append(ex.what());
+#if __has_include(<cpptrace/cpptrace.hpp>)
+        traceback.append("\nUnhandled exception thrown, at:\n").append(fmtTrace(cpptrace::stacktrace::current()));
+#endif
+        Debug::logError(traceback);
+    }
+    __hwCatch(...)
+    {
+#if defined(_GLIBCXX_RELEASE) && __has_include(<cpptrace/cpptrace.hpp>)
+        std::string traceback = cpptrace::demangle(std::current_exception().__cxa_exception_type()->name());
+        traceback.append(": ");
+#else
+        std::string traceback;
+#endif
+        traceback.append("[Unknown / JIT Compiled Code]");
+#if __has_include(<cpptrace/cpptrace.hpp>)
+        traceback.append("\nUnhandled exception thrown, at:\n").append(fmtTrace(cpptrace::stacktrace::current()));
+#endif
+        Debug::logError(traceback);
+    }
+    __hwEnd();
+};
+
 void CoreEngine::internalLoop()
 {
-    constexpr auto handled = []<typename Func>(Func&& func)
-    {
-#if __has_include(<cpptrace/cpptrace.hpp>)
-        auto fmtTrace = [](cpptrace::stacktrace ret) -> std::string
-        {
-            for (auto& frame : ret.frames)
-            {
-                if (frame.symbol.empty())
-                    frame.symbol = "[optimized out]";
-                if (frame.filename.empty())
-                    frame.filename = "[Unknown / JIT Compiled Code]";
-            }
-            return ret.to_string();
-        };
-#endif
-
-        // __hwTry
-        // {
-        func();
-        // }
-        // __hwCatch (const cpptrace::exception_with_message& ex)
-        // {
-        //     std::string traceback = "std::exception (";
-        //     traceback
-        //     .append(cpptrace::demangle(typeid(ex).name()))
-        //     .append("): ")
-        //     .append(ex.message())
-        //     .append("\nUnhandled exception thrown, at:\n")
-        //     .append(fmtTrace(ex.trace()));
-        //     Debug::logError(traceback);
-        // }
-        // __hwCatch (const cpptrace::exception& ex)
-        // {
-        //     std::string traceback = "std::exception (";
-        //     traceback
-        //     .append(cpptrace::demangle(typeid(ex).name()))
-        //     .append("): ")
-        //     .append(ex.what())
-        //     .append("\nUnhandled exception thrown, at:\n")
-        //     .append(fmtTrace(ex.trace()));
-        //     Debug::logError(traceback);
-        // }
-        // __hwCatch (const Exception& ex)
-        // {
-        //     std::string traceback = "std::exception (";
-        //     traceback
-        //     .append(cpptrace::demangle(typeid(ex).name()))
-        //     .append("): ")
-        //     .append(ex.what())
-        //     .append("\nUnhandled exception thrown, at:\n")
-        //     /*/.append(fmtTrace(ex.resolveStacktrace()))/*/;
-        //     Debug::logError(traceback);
-        // }
-        // __hwCatch (const std::exception& ex)
-        // {
-        //     std::string traceback = "std::exception (";
-        //     traceback
-        //     .append(
-        //     #if __has_include(<cpptrace/cpptrace.hpp>)
-        //     cpptrace::demangle(
-        //     #endif
-        //     typeid(ex).name()
-        //     #if __has_include(<cpptrace/cpptrace.hpp>)
-        //     )
-        //     #endif
-        //     )
-        //     .append("): ")
-        //     .append(ex.what());
-        //     #if __has_include(<cpptrace/cpptrace.hpp>)
-        //     traceback
-        //     .append("\nUnhandled exception thrown, at:\n")
-        //     .append(fmtTrace(cpptrace::stacktrace::current()));
-        //     #endif
-        //     Debug::logError(traceback);
-        // }
-        // __hwCatch (...)
-        // {
-        //     #if defined(_GLIBCXX_RELEASE) && __has_include(<cpptrace/cpptrace.hpp>)
-        //     std::string traceback = cpptrace::demangle(std::current_exception().__cxa_exception_type()->name());
-        //     traceback.append(": ");
-        //     #else
-        //     std::string traceback;
-        //     #endif
-        //     traceback
-        //     .append("[Unknown / JIT Compiled Code]");
-        //     #if __has_include(<cpptrace/cpptrace.hpp>)
-        //     traceback
-        //     .append("\nUnhandled exception thrown, at:\n")
-        //     .append(fmtTrace(cpptrace::stacktrace::current()));
-        //     #endif
-        //     Debug::logError(traceback);
-        // }
-        // __hwEnd();
-    };
-
     CoreEngine::state.store(EngineState::WindowInit, std::memory_order_relaxed); // Spin off window handling thread.
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadReady)
-    {
-#ifdef __EMSCRIPTEN__
-        emscripten_sleep(1);
-#endif
-    }
+    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadReady) std::this_thread::yield();
     CoreEngine::state.store(EngineState::Playing, std::memory_order_relaxed);
 
-    EngineEvent::OnInitialize();
+    userFunctionInvoker(EngineEvent::OnInitialize);
 
     func::function<void()> job;
-    Uint64 frameBegin = SDL_GetPerformanceCounter();
-    Uint64 perfFreq = SDL_GetPerformanceFrequency();
+    u64 frameBegin = SDL_GetPerformanceCounter();
+    u64 perfFreq = SDL_GetPerformanceFrequency();
     float targetDeltaTime = Application::secondsPerFrame;
     float deltaTime = -1.0f;
-    float prevw = +Window::width, prevh = +Window::height;
+    float prevw = float(+Window::width), prevh = float(+Window::height);
 
-    EngineEvent::OnWindowResize(sysm::vector2i32 { Window::width, Window::height });
+    userFunctionInvoker([&] { EngineEvent::OnWindowResize(sysm::vector2i32 { Window::width, Window::height }); });
 
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::ExitRequested)
+    while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::ExitRequested)
     {
         deltaTime = (float)(SDL_GetPerformanceCounter() - frameBegin) / (float)perfFreq;
         if (Application::mainThreadQueue.try_dequeue(job))
@@ -291,17 +254,17 @@ void CoreEngine::internalLoop()
             for (uint_fast16_t i = 0; i < (uint_fast16_t)MouseButton::Count; i++)
             {
                 if (Input::heldMouseInputs[i])
-                    EngineEvent::OnMouseHeld((MouseButton)i);
+                    userFunctionInvoker([&] { EngineEvent::OnMouseHeld(MouseButton(i)); });
             }
             for (uint_fast16_t i = 0; i < (uint_fast16_t)Key::Count; i++)
             {
                 if (Input::heldKeyInputs[i])
-                    EngineEvent::OnKeyHeld((Key)i);
+                    userFunctionInvoker([&] { EngineEvent::OnKeyHeld(Key(i)); });
             }
 #pragma endregion
 
-            handled([] { EngineEvent::OnTick(); });
-            handled([] { EngineEvent::OnLateTick(); });
+            userFunctionInvoker(EngineEvent::OnTick);
+            userFunctionInvoker(EngineEvent::OnLateTick);
 
 #pragma region Render Offload
             // My code is held together with glue and duct tape. And not the good stuff either.
@@ -310,21 +273,21 @@ void CoreEngine::internalLoop()
                 CoreEngine::frameRenderJobs.push_back(RenderJob::create([w = Window::width, h = Window::height]
                 {
                     RenderPipeline::resetBackbuffer(+u32(w), +u32(h));
-                    RenderPipeline::resetViewArea(+u32(w), +u32(h));
+                    RenderPipeline::resetViewArea(+u16(w), +u16(h));
                 }));
-                prevw = +Window::width;
-                prevh = +Window::height;
+                prevw = float(+Window::width);
+                prevh = float(+Window::height);
             }
             CoreEngine::frameRenderJobs.push_back(RenderJob::create([] { RenderPipeline::clearViewArea(); }, false));
 
-            sz renderIndex = 0;
+            ssz renderIndex = 0;
             Entities::forEachEntity([&](Entity& entity)
             {
                 for (auto& [typeIndex, componentSet] : Entities::table)
                 {
                     auto componentIt = componentSet.find(&entity);
                     if (componentIt != componentSet.end())
-                        InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, entity, componentIt->second, renderIndex++);
+                        userFunctionInvoker([&] { InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, entity, componentIt->second, renderIndex++); });
                 }
             });
 
@@ -333,6 +296,7 @@ void CoreEngine::internalLoop()
                 RenderPipeline::renderFrame();
                 frameInProgress.clear(std::memory_order_relaxed);
             }, false));
+
             if (frameInProgress.test(std::memory_order_relaxed))
             {
                 std::erase_if(CoreEngine::frameRenderJobs, [](const auto& job)
@@ -348,6 +312,7 @@ void CoreEngine::internalLoop()
             }
             else
                 frameInProgress.test_and_set(std::memory_order_relaxed);
+
             if (!CoreEngine::frameRenderJobs.empty())
             {
                 CoreEngine::renderQueue.enqueue(RenderJob::create([jobs = std::move(CoreEngine::frameRenderJobs)]
@@ -380,14 +345,9 @@ void CoreEngine::internalLoop()
             std::this_thread::yield();
 #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
             std::this_thread::sleep_for(
-                std::chrono::nanoseconds((uint64_t)((targetDeltaTime - ((float)(SDL_GetPerformanceCounter() - frameBegin) / (float)perfFreq)) * 1000000000.0f)));
+                std::chrono::nanoseconds(uint64_t((targetDeltaTime - (float(SDL_GetPerformanceCounter() - frameBegin) / float(perfFreq))) * 1000000000.0f)));
 #endif
         }
-
-#ifdef __EMSCRIPTEN__
-        Debug::logTrace("Main loop end.");
-        emscripten_sleep(std::max(unsigned(Application::secondsPerFrame * 1000.0f - 100.0f), 0u));
-#endif
     }
 
     EngineEvent::OnQuit();
@@ -412,23 +372,11 @@ void CoreEngine::internalLoop()
     CoreEngine::frameRenderJobs.clear();
 
     CoreEngine::state.store(EngineState::MainThreadDone, std::memory_order_relaxed);
-    // Wait for window handling thread to finish.
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowThreadDone)
-    {
-#ifdef __EMSCRIPTEN__
-        emscripten_sleep(1);
-#endif
-    }
 }
 
 void CoreEngine::internalWindowLoop()
 {
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowInit)
-    {
-#ifdef __EMSCRIPTEN__
-        emscripten_sleep(1);
-#endif
-    }
+    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowInit) std::this_thread::yield();
 
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) [[unlikely]]
     {
@@ -452,7 +400,7 @@ void CoreEngine::internalWindowLoop()
 
     CoreEngine::wind = SDL_CreateWindow(Application::_initializationOptions.windowName.c_str(), +Application::_initializationOptions.resolution.x,
                                         +Application::_initializationOptions.resolution.y, SDL_WINDOW_HIGH_PIXEL_DENSITY);
-    if (!wind)
+    if (!CoreEngine::wind)
     {
         Debug::logError("Could not create window: ", SDL_GetError(), ".");
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
@@ -471,11 +419,9 @@ void CoreEngine::internalWindowLoop()
             func::function<void()>& job;
         } resizeData { .job = job };
 
-        bool (*eventWatcher)(void*, SDL_Event*) = [](void* _data, SDL_Event* event) -> bool
-        // These few lines of code were literal years in the making. It formed part of my journey in learning C++.
-        // I hope you like the rendering-while-resizing...
+        auto eventWatcher = +[](void* data, SDL_Event* event) -> bool
         {
-            decltype(resizeData)& windowSizeData = *(decltype(resizeData)*)_data;
+            decltype(resizeData)& windowSizeData = *_as(decltype(resizeData)*, data);
 
             while (Application::windowThreadQueue.try_dequeue(windowSizeData.job)) windowSizeData.job();
 
@@ -486,9 +432,10 @@ void CoreEngine::internalWindowLoop()
             }
             if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
             {
-                windowSizeData.shouldUnlockLock.lock();
-                windowSizeData.shouldUnlock = true;
-                windowSizeData.shouldUnlockLock.unlock();
+                {
+                    std::lock_guard guard(windowSizeData.shouldUnlockLock);
+                    windowSizeData.shouldUnlock = true;
+                }
 
                 int32_t w = event->window.data1, h = event->window.data2;
                 Application::mainThreadQueue.enqueue([w, h]
@@ -505,7 +452,7 @@ void CoreEngine::internalWindowLoop()
                         (float)(-w + prevw) / 2.0f,
                     };
 
-                    EngineEvent::OnWindowResize(sysm::vector2i32 { prevw, prevh });
+                    userFunctionInvoker([&] { EngineEvent::OnWindowResize(sysm::vector2i32 { prevw, prevh }); });
                 });
 
                 renderResizeLock.lock();
@@ -521,7 +468,7 @@ void CoreEngine::internalWindowLoop()
         CoreEngine::state.store(EngineState::RenderInit, std::memory_order_relaxed); // Spin off rendering thread.
 
         SDL_Event ev;
-        while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadDone)
+        while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::RenderThreadDone)
         {
             while (Application::windowThreadQueue.try_dequeue(job)) job();
 
@@ -535,9 +482,8 @@ void CoreEngine::internalWindowLoop()
                     resizeData.shouldUnlock = false;
                 }
 
-                renderResizeLock.lock();
+                std::lock_guard guard(renderResizeLock);
                 SDL_PollEvent(&ev);
-                renderResizeLock.unlock();
             }
             else if (SDL_PollEvent(&ev))
             {
@@ -552,45 +498,45 @@ void CoreEngine::internalWindowLoop()
                         Input::internalMousePosition.y = -posY + Window::height / 2_u32;
                         Input::internalMouseMotion.x += motX;
                         Input::internalMouseMotion.y -= motY;
-                        EngineEvent::OnMouseMove(from);
+                        userFunctionInvoker([&] { EngineEvent::OnMouseMove(from); });
                     });
                     break;
                 case SDL_EVENT_MOUSE_WHEEL:
-                    Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y] { EngineEvent::OnMouseScroll(sysm::vector2(scrX, scrY)); });
+                    Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y]
+                    { userFunctionInvoker([&] { EngineEvent::OnMouseScroll(sysm::vector2(scrX, scrY)); }); });
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                     Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
                     {
-                        Input::heldMouseInputs[(size_t)button] = true;
-                        EngineEvent::OnMouseDown(button);
+                        Input::heldMouseInputs[size_t(button)] = true;
+                        userFunctionInvoker([&] { EngineEvent::OnMouseDown(button); });
                     });
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_UP:
                     Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
                     {
-                        Input::heldMouseInputs[(size_t)button] = false;
-                        EngineEvent::OnMouseUp(button);
+                        Input::heldMouseInputs[size_t(button)] = false;
+                        userFunctionInvoker([&] { EngineEvent::OnMouseUp(button); });
                     });
                     break;
 #pragma endregion
 #pragma region Key Events
                 case SDL_EVENT_KEY_DOWN:
-                    switch (ev.key.repeat)
+                    if (ev.key.repeat)
+                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)] { EngineEvent::OnKeyRepeat(key); });
+                    else
                     {
-                    case true: Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)] { EngineEvent::OnKeyRepeat(key); }); break;
-                    case false:
                         Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
                         {
-                            Input::heldKeyInputs[(size_t)key] = true;
+                            Input::heldKeyInputs[size_t(key)] = true;
                             EngineEvent::OnKeyDown(key);
                         });
-                        break;
                     }
                     break;
                 case SDL_EVENT_KEY_UP:
                     Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
                     {
-                        Input::heldKeyInputs[(size_t)key] = false;
+                        Input::heldKeyInputs[size_t(key)] = false;
                         EngineEvent::OnKeyUp(key);
                     });
                     break;
@@ -603,24 +549,24 @@ void CoreEngine::internalWindowLoop()
                             char8_t c = *it;
                             if ((c & 0b11110000) == 0b11110000) // 4 bytes.
                             {
-                                char32_t cAppend = (char32_t)(c & 0b00000111) << 18 | (char32_t)(*(++it) & 0b00111111) << 12 | (char32_t)(*(++it) & 0b00111111) << 6 |
-                                    (char32_t)(*(++it) & 0b00111111);
+                                char32_t cAppend =
+                                    char32_t(c & 0b00000111) << 18 | char32_t(*(++it) & 0b00111111) << 12 | char32_t(*(++it) & 0b00111111) << 6 | char32_t(*(++it) & 0b00111111);
                                 input.push_back(cAppend);
                             }
                             else if ((c & 0b11100000) == 0b11100000) // 3 bytes.
                             {
-                                char32_t cAppend = (char32_t)(c & 0b00001111) << 12 | (char32_t)(*(++it) & 0b00111111) << 6 | (char32_t)(*(++it) & 0b00111111);
+                                char32_t cAppend = char32_t(c & 0b00001111) << 12 | char32_t(*(++it) & 0b00111111) << 6 | char32_t(*(++it) & 0b00111111);
                                 input.push_back(cAppend);
                             }
                             else if ((c & 0b11000000) == 0b11000000) // 2 bytes.
                             {
-                                char32_t cAppend = (char32_t)(c & 0b00011111) << 6 | (char32_t)(*(++it) & 0b00111111);
+                                char32_t cAppend = char32_t(c & 0b00011111) << 6 | char32_t(*(++it) & 0b00111111);
                                 input.push_back(cAppend);
                             }
                             else
-                                input.push_back((char32_t)c); // 1 byte.
+                                input.push_back(char32_t(c)); // 1 byte.
                         }
-                        Application::mainThreadQueue.enqueue([input = std::move(input)] { EngineEvent::OnTextInput(input); });
+                        Application::mainThreadQueue.enqueue([input = std::move(input)] { userFunctionInvoker([&] { EngineEvent::OnTextInput(input); }); });
                     }
                     break;
                 case SDL_EVENT_WINDOW_MOVED: break;
@@ -636,11 +582,6 @@ void CoreEngine::internalWindowLoop()
                 std::this_thread::sleep_for(std::chrono::milliseconds(1));
 #endif
             }
-
-#ifdef __EMSCRIPTEN__
-            Debug::logTrace("Event loop end.");
-            emscripten_sleep(1);
-#endif
         }
 
         SDL_DestroyWindow(CoreEngine::wind);
@@ -648,28 +589,23 @@ void CoreEngine::internalWindowLoop()
 
         SDL_RemoveEventWatch(eventWatcher, &resizeData);
     }
-
 EarlyReturn:
     CoreEngine::state.store(EngineState::WindowThreadDone, std::memory_order_relaxed); // Signal main thread.
 }
 
 void CoreEngine::internalRenderLoop()
 {
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderInit)
-    {
-#ifdef __EMSCRIPTEN__
-        emscripten_sleep(1);
-#endif
-    }
+    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderInit) std::this_thread::yield();
 
     RendererBackend initBackend = RendererBackend::Default;
     RendererBackend backendPriorityOrder[] {
 #if _WIN32
-        RendererBackend::OpenGL, RendererBackend::Vulkan, RendererBackend::Direct3D12, RendererBackend::Direct3D11
+        RendererBackend::Direct3D12, RendererBackend::OpenGL, RendererBackend::Vulkan, RendererBackend::Direct3D11
 #else
         RendererBackend::Vulkan, RendererBackend::OpenGL
 #endif
     };
+
     std::vector<RendererBackend> backends = Renderer::platformBackends();
     for (auto targetBackend : std::span(backendPriorityOrder, sizeof(backendPriorityOrder) / sizeof(*backendPriorityOrder)))
     {
@@ -682,8 +618,7 @@ void CoreEngine::internalRenderLoop()
             }
         }
     }
-BreakAll:;
-
+BreakAll:
     void *nwh = nullptr, *ndt = nullptr;
 #if defined(SDL_PLATFORM_WIN32)
     nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
@@ -734,7 +669,7 @@ BreakAll:;
 
     {
         RenderJob job;
-        while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::MainThreadDone)
+        while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::MainThreadDone)
         {
             while (renderQueue.try_dequeue(job))
             {
@@ -750,11 +685,6 @@ BreakAll:;
 #elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
 #endif
-
-#ifdef __EMSCRIPTEN__
-            Debug::logTrace("Render loop end.");
-            emscripten_sleep(1);
-#endif
         }
 
         // Cleanup.
@@ -767,9 +697,7 @@ BreakAll:;
     }
 
     InternalEngineEvent::OnRenderShutdown();
-    if (!(FIREWORK_BUILD_PLATFORM == FIREWORK_BUILD_PLATFORM_LINUX && initBackend == RendererBackend::OpenGL))
-        Renderer::shutdown();
-
+    Renderer::shutdown();
 EarlyReturn:
     CoreEngine::state.store(EngineState::RenderThreadDone, std::memory_order_relaxed); // Signal window thread.
 }

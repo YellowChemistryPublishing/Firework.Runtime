@@ -91,8 +91,7 @@ namespace Firework
             /// @param job Job to queue.
             /// @param required Whether this job has to run if the runtime is behind.
             /// @note Thread-safe.
-            template <typename Func>
-            requires std::constructible_from<func::function<void()>, Func&&>
+            template <std::invocable<> Func>
             inline static void queueRenderJobForFrame(Func&& job, bool required = true)
             {
                 CoreEngine::frameRenderJobs.push_back(RenderJob::create(job, required));
@@ -108,3 +107,8 @@ namespace Firework
         };
     } // namespace Internal
 } // namespace Firework
+
+constexpr auto operator<=>(Firework::Internal::EngineState a, Firework::Internal::EngineState b)
+{
+    return std::to_underlying(a) <=> std::to_underlying(b);
+}

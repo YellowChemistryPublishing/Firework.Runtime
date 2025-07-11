@@ -146,7 +146,7 @@ void Text::swapRenderBuffers()
     }
 }
 
-void Text::renderOffload(sz renderIndex)
+void Text::renderOffload(ssz renderIndex)
 {
     if (this->rectTransform->dirty() || this->dirty)
     {

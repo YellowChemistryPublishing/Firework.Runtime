@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <function.h>
 #include <type_traits>
 
@@ -19,23 +20,11 @@ struct RenderJob
     /// @param func Function to create job from.
     /// @param required Whether this job has to run if the runtime is behind.
     /// @return Render job that will call the given function.
-    template <typename Func>
+    template <std::invocable<> Func>
     inline static RenderJob create(Func&& func, bool required = true)
-    requires requires { func::function<void()>(func); }
     {
-        return RenderJob
-        {
-            new typename std::remove_cvref<Func>::type(func),
-            [](void* function)
-            {
-                (*static_cast<typename std::remove_cvref<Func>::type*>(function))();
-            },
-            [](void* function)
-            {
-                delete static_cast<typename std::remove_cvref<Func>::type*>(function);
-            },
-            required
-        };
+        return RenderJob { new typename std::remove_cvref<Func>::type(func), [](void* function) { (*static_cast<typename std::remove_cvref<Func>::type*>(function))(); },
+                           [](void* function) { delete static_cast<typename std::remove_cvref<Func>::type*>(function); }, required };
     }
     /// @internal
     /// @brief Internal API. Destroys this RenderJob.

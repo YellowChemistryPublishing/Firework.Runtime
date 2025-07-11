@@ -78,7 +78,7 @@ FilledPathRenderer::FilledPathRenderer(std::span<FilledPathPoint> closedPath)
                                      inds.data(), inds.size() * sizeof(decltype(inds)::value_type));
 }
 
-bool FilledPathRenderer::submitDrawStencil(sz renderIndex, RenderTransform shape, bool forceHole)
+bool FilledPathRenderer::submitDrawStencil(ssz renderIndex, RenderTransform shape, bool forceHole)
 {
     _fence_value_return(false, !this->fill || !FilledPathRenderer::program);
 
@@ -92,7 +92,7 @@ bool FilledPathRenderer::submitDrawStencil(sz renderIndex, RenderTransform shape
 
     return true;
 }
-bool FilledPathRenderer::submitDraw(sz renderIndex, RenderTransform clip, u8 whenStencil)
+bool FilledPathRenderer::submitDraw(ssz renderIndex, RenderTransform clip, u8 whenStencil)
 {
     _fence_value_return(false, !FilledPathRenderer::unitSquare || !FilledPathRenderer::program);
 

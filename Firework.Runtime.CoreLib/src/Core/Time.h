@@ -14,7 +14,9 @@ namespace Firework
         static float frameDeltaTime;
     public:
         static float timeScale;
-        
+
+        Time() = delete;
+
         /// @brief Retrive the frame delta time.
         /// @return The time since the last frame in seconds.
         inline static float deltaTime()
@@ -24,4 +26,4 @@ namespace Firework
 
         friend class Firework::Internal::CoreEngine;
     };
-}
+} // namespace Firework
