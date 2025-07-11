@@ -105,9 +105,12 @@ namespace Firework::PackageSystem
         /// @note Main thread only.
         template <typename PackageFileType>
         requires std::is_final<PackageFileType>::value && std::is_base_of<PackageFile, PackageFileType>::value
-        inline static void addTextFileHandler(std::wstring extension, std::shared_ptr<PackageFile> (*handler)(std::u8string))
+        inline static void addTextFileHandler(std::wstring extension)
         {
-            PackageManager::textFileHandlers[std::move(extension)] = handler;
+            PackageManager::textFileHandlers[std::move(extension)] = [](std::u8string contents) -> std::shared_ptr<PackageFile>
+            {
+                return std::make_shared<PackageFileType>(std::move(contents));
+            };
         }
         /// @brief Remove a registered text file reader.
         /// @param extension File extension.
