@@ -65,7 +65,7 @@ namespace Firework::PackageSystem
         static std::map<FileSignatureQuery, robin_hood::unordered_map<std::basic_string<byte>, std::shared_ptr<PackageFile> (*)(std::vector<byte>)>,
                         std::greater<FileSignatureQuery>>
             binFileHandlers;
-        static robin_hood::unordered_map<std::wstring, std::shared_ptr<PackageFile> (*)(const std::u8string&)> textFileHandlers;
+        static robin_hood::unordered_map<std::wstring, std::shared_ptr<PackageFile> (*)(std::u8string)> textFileHandlers;
 
         struct PackageFileData
         {
@@ -105,7 +105,7 @@ namespace Firework::PackageSystem
         /// @note Main thread only.
         template <typename PackageFileType>
         requires std::is_final<PackageFileType>::value && std::is_base_of<PackageFile, PackageFileType>::value
-        inline static void addTextFileHandler(std::wstring extension, std::shared_ptr<PackageFile> (*handler)(const std::u8string&))
+        inline static void addTextFileHandler(std::wstring extension, std::shared_ptr<PackageFile> (*handler)(std::u8string))
         {
             PackageManager::textFileHandlers[std::move(extension)] = handler;
         }

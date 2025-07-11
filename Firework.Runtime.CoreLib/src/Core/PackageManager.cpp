@@ -38,7 +38,7 @@ bool PackageManager::removeBinaryFileHandler(const std::vector<uint8_t>& signatu
 std::map<PackageManager::FileSignatureQuery, robin_hood::unordered_map<std::basic_string<byte>, std::shared_ptr<PackageFile> (*)(std::vector<byte>)>,
          std::greater<PackageManager::FileSignatureQuery>>
     PackageManager::binFileHandlers;
-robin_hood::unordered_map<std::wstring, std::shared_ptr<PackageFile> (*)(const std::u8string&)> PackageManager::textFileHandlers;
+robin_hood::unordered_map<std::wstring, std::shared_ptr<PackageFile> (*)(std::u8string)> PackageManager::textFileHandlers;
 
 robin_hood::unordered_map<std::wstring, PackageManager::PackageFileData> PackageManager::loadedFiles;
 
@@ -56,7 +56,7 @@ bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
         filePathLength = toEndianness(uint32_t(+filePathLength), std::endian::big, std::endian::native);
 
         std::wstring filePath(+filePathLength, L' ');
-        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(&filePath.front()), +(sizeof(wchar_t) * filePathLength)));
+        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(filePath.data()), +(sizeof(wchar_t) * filePathLength)));
         PackageManager::normalizePath(filePath);
         Debug::logTrace("Package File - ", filePath, ".");
 
@@ -68,10 +68,18 @@ bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
         std::vector<byte> fileBytes(+fileLen);
         _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(fileBytes.data()), +fileLen));
 
-        if (auto it = PackageManager::textFileHandlers.find(fs::path(filePath).extension().wstring().c_str()); it != PackageManager::textFileHandlers.end())
+        auto pushLoadedFile = [&](std::shared_ptr<PackageFile> file)
         {
-            // TODO: Implement.
-            Debug::logError("Text file loading has not been implemented. This file handler will not be run.");
+            file->packagePath = packagePathNormalized;
+            file->filePath = filePath;
+            PackageManager::loadedFiles.emplace(filePath, PackageFileData { .loadedFile = std::move(file), .packagePath = packagePathNormalized });
+        };
+
+        if (auto handlerIt = PackageManager::textFileHandlers.find(fs::path(filePath).extension().wstring()); handlerIt != PackageManager::textFileHandlers.end())
+        {
+            std::u8string fileContents(fileBytes.begin(), fileBytes.end());
+            pushLoadedFile(handlerIt->second(std::move(fileContents)));
+            goto Done;
         }
 
         for (auto& [sigData, handlers] : PackageManager::binFileHandlers)
@@ -84,10 +92,7 @@ bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
             auto handlerIt = handlers.find(sig);
             if (handlerIt != handlers.end())
             {
-                std::shared_ptr<PackageFile> file = handlerIt->second(std::move(fileBytes));
-                file->packagePath = packagePathNormalized;
-                file->filePath = filePath;
-                PackageManager::loadedFiles.emplace(filePath, PackageFileData { .loadedFile = std::move(file), .packagePath = packagePathNormalized });
+                pushLoadedFile(handlerIt->second(std::move(fileBytes)));
                 goto Done;
             }
         }

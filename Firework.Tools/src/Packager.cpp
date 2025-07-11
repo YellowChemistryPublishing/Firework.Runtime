@@ -35,7 +35,7 @@ bool Packager::packageFolder(fs::path folder, fs::path outFile)
         u32 len = toEndianness(+u32(filePath.size()), std::endian::native, std::endian::big);
         _fence_value_return(false, !package.write(reinterpret_cast<char*>(&len), sizeof(u32)));
         len = toEndianness(+len, std::endian::big, std::endian::native);
-        _fence_value_return(false, !package.write(reinterpret_cast<char*>(&filePath.front()), +(sizeof(wchar_t) * len)));
+        _fence_value_return(false, !package.write(reinterpret_cast<char*>(filePath.data()), +(sizeof(wchar_t) * len)));
         std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  Relative File Path - \"" << filePath << L"\".\n";
 
         std::ifstream infile(p, std::ios::binary);

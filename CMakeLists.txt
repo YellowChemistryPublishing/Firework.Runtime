@@ -149,6 +149,9 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/robin-hood-hashing")
 # uni-algo
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/uni-algo")
 
+# pugixml
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
+
 # cpptrace
 if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL "MacOS" OR FIREWORK_BUILD_PLATFORM STREQUAL "Linux")
     set(CPPTRACE_STATIC ON CACHE INTERNAL "" FORCE)
@@ -471,6 +474,7 @@ target_include_directories(Firework.Components.Core2D
 )
 target_link_libraries(Firework.Components.Core2D
     PUBLIC
+    pugixml-static
     sys
     sys.Mathematics
     Firework.Runtime.CoreLib
