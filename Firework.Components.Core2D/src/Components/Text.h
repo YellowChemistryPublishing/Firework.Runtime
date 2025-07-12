@@ -4,11 +4,9 @@
 
 #include <module/sys.Mathematics>
 
-#include <Components/RectTransform.h>
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/Entity.h>
 #include <Friends/FilledPathRenderer.h>
-#include <Friends/PackageFileCore2D.h>
 #include <GL/Transform.h>
 #include <Library/Property.h>
 
@@ -17,9 +15,15 @@ namespace
     struct ComponentStaticInit;
 }
 
+namespace Firework::PackageSystem
+{
+    class TrueTypeFontPackageFile;
+}
+
 namespace Firework
 {
     class Entity;
+    class RectTransform;
 
     class _fw_cc2d_api [[fw::component]] Text final
     {
@@ -48,8 +52,8 @@ namespace Firework
         float _fontSize = 11.0f;
         std::u32string _text = U"";
 
-        bool dirty = true;
-        std::shared_ptr<PackageSystem::TrueTypeFontPackageFile> deferOldFont = nullptr;
+        bool dirty = false;
+        PackageSystem::TrueTypeFontPackageFile* deferOldFont = nullptr;
         std::u32string deferOldText = U"";
 
         struct RenderData

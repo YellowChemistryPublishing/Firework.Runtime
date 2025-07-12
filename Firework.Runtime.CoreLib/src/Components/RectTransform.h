@@ -87,7 +87,7 @@ namespace Firework
     };
 
     /// @brief The transform component of a 2D entity.
-    class _fw_core_api RectTransform final
+    class _fw_core_api [[fw::component]] RectTransform final
     {
         std::shared_ptr<class Entity> attachedEntity;
 

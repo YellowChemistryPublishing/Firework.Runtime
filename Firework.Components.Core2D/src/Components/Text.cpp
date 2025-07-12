@@ -1,5 +1,8 @@
 #include "Text.h"
 
+#include <Components/RectTransform.h>
+#include <Font/Font.h>
+#include <Friends/PackageFileCore2D.h>
 #include <Friends/ParagraphIterator.h>
 
 using namespace Firework;
@@ -33,7 +36,9 @@ std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(cha
         {
         case STBTT_vmove: spans.emplace_back(paths.size()); [[fallthrough]];
         case STBTT_vcubic: // TODO: Approximate as two quadratic.
-        case STBTT_vline: paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f }); break;
+        case STBTT_vline:
+            paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            break;
         case STBTT_vcurve:
             paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .xCtrl = 0.0f, .yCtrl = -1.0f });
             paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
@@ -166,11 +171,11 @@ void Text::renderOffload(ssz renderIndex)
             this->renderData->toRender.clear();
         }
 
-        if ((this->deferOldFont != this->_font && this->deferOldFont) || (this->deferOldText != this->_text && !this->deferOldText.empty()))
-            for (char32_t c : this->deferOldText) this->tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery { .file = this->deferOldFont.get(), .c = c });
+        if ((this->deferOldFont != this->_font.get() && this->deferOldFont) || (this->deferOldText != this->_text && !this->deferOldText.empty()))
+            for (char32_t c : this->deferOldText) this->tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery { .file = this->deferOldFont, .c = c });
 
         this->deferOldText = this->_text;
-        this->deferOldFont = this->_font;
+        this->deferOldFont = this->_font.get();
         this->dirty = false;
     }
 

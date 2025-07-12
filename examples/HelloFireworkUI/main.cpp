@@ -8,6 +8,7 @@
 #include <Firework.Core.hpp>
 #include <Firework/Entry.h>
 #include <Friends/FilledPathRenderer.h>
+#include <Friends/PackageFileCore2D.h>
 #include <GL/Geometry.h>
 #include <GL/Renderer.h>
 

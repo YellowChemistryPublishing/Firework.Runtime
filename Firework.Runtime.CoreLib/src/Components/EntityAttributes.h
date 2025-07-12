@@ -4,7 +4,7 @@
 
 namespace Firework
 {
-    struct EntityAttributes
+    struct [[fw::component]] EntityAttributes
     {
         std::string name;
     };
