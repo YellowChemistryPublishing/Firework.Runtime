@@ -20,17 +20,25 @@ std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(cha
     auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = this->_font.get(), .c = c });
     _fence_value_return(charPathIt->second, charPathIt != Text::characterPaths.end());
 
-    Font& font = this->_font->fontHandle();
-    int glyphIndex = font.getGlyphIndex(c);
-    GlyphOutline go = font.getGlyphOutline(glyphIndex);
+    const Font& f = this->_font->fontHandle();
+    int glyphIndex = f.getGlyphIndex(c);
+    GlyphOutline go = f.getGlyphOutline(glyphIndex);
 
     std::vector<size_t> spans;
     std::vector<FilledPathPoint> paths;
+    float alternatePtCtrl = 1.0f;
     for (sys::integer<int> i = 0; i < go.vertsSize; i++)
     {
-        if (go.verts[+i].type == STBTT_vmove)
-            spans.emplace_back(paths.size());
-        paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
+        switch (go.verts[+i].type)
+        {
+        case STBTT_vmove: spans.emplace_back(paths.size()); [[fallthrough]];
+        case STBTT_vcubic: // TODO: Approximate as two quadratic.
+        case STBTT_vline: paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f }); break;
+        case STBTT_vcurve:
+            paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .xCtrl = 0.0f, .yCtrl = -1.0f });
+            paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            break;
+        }
     }
     spans.emplace_back(paths.size());
 

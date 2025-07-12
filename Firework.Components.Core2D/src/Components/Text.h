@@ -29,11 +29,11 @@ namespace Firework
             PackageSystem::TrueTypeFontPackageFile* file;
             char32_t c;
 
-            friend inline bool operator==(const FontCharacterQuery&, const FontCharacterQuery&) = default;
+            friend bool operator==(const FontCharacterQuery&, const FontCharacterQuery&) = default;
         };
         struct FontCharacterQueryHash
         {
-            inline size_t operator()(const FontCharacterQuery& value) const
+            size_t operator()(const FontCharacterQuery& value) const
             {
                 return sys::dhc2(value.c, value.file);
             }

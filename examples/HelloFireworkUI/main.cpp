@@ -102,8 +102,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans "
                   U"beans beans beans beans beans beans beans beans beans";
         t->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Comic Sans MS.ttf"));
-        t->fontSize = 12;
-        rt->rect = RectFloat(400, 25, -400, -25);
+        t->fontSize = 200;
+        rt->rect = RectFloat(400, 200, -400, -200);
         rt->localRotation += std::numbers::pi_v<float> / 2.0f;
 
         auto e2 = Entity::alloc();

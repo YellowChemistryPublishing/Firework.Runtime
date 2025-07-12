@@ -1,3 +1,5 @@
+#include <memory>
+
 #include <Components/RectTransform.h>
 #include <Components/Text.h>
 #include <Core/CoreEngine.h>
@@ -8,7 +10,6 @@
 #include <Friends/FilledPathRenderer.h>
 #include <Friends/PackageFileCore2D.h>
 #include <GL/Renderer.h>
-#include <memory>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
