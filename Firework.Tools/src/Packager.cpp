@@ -40,26 +40,28 @@ bool Packager::packageFolder(fs::path folder, fs::path outFile)
 
         std::ifstream infile(p, std::ios::binary);
 
-        infile.seekg(0, std::ios::beg);
-        infile.ignore(std::numeric_limits<std::streamsize>::max());
+        _fence_value_return(false, !infile.seekg(0, std::ios::beg));
+        _fence_value_return(false, !infile.ignore(std::numeric_limits<std::streamsize>::max()));
         len = u32(infile.gcount());
         infile.clear();
-        infile.seekg(0, std::ios::beg);
+        _fence_value_return(false, !infile.seekg(0, std::ios::beg));
         std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  Filesize - " << +len << L".\n";
 
         len = toEndianness(+len, std::endian::native, std::endian::big);
-        package.write(reinterpret_cast<char*>(&len), sizeof(u32));
+        _fence_value_return(false, !package.write(reinterpret_cast<char*>(&len), sizeof(u32)));
 
         constexpr ssz bufferSize = 1048576;
         std::unique_ptr<byte[]> buffer = std::make_unique<byte[]>(+bufferSize);
 
         while (infile)
         {
-            infile.read(reinterpret_cast<char*>(buffer.get()), +bufferSize);
+            _fence_value_return(false, infile.read(reinterpret_cast<char*>(buffer.get()), +bufferSize).bad());
             std::streamsize toWrite = infile.gcount();
             std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  Read " << toWrite << " bytes.\n";
-            package.write(reinterpret_cast<char*>(buffer.get()), toWrite);
+            _fence_value_return(false, !package.write(reinterpret_cast<char*>(buffer.get()), toWrite));
             std::wcout << L"[Firework.Packager | Firework.Tools] [INFO]  Written " << toWrite << " bytes.\n";
         }
     }
+
+    return true;
 }

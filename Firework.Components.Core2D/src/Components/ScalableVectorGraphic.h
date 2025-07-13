@@ -9,6 +9,11 @@
 #include <GL/Transform.h>
 #include <Library/Property.h>
 
+namespace
+{
+    struct ComponentStaticInit;
+}
+
 namespace Firework::PackageSystem
 {
     class ExtensibleMarkupPackageFile;
@@ -40,8 +45,8 @@ namespace Firework
 
         void onAttach(Entity& entity);
 
-        std::shared_ptr<std::vector<FilledPathRenderer>> findOrCreateRenderablePath(PackageSystem::ExtensibleMarkupPackageFile* svg);
-        void buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile* svg);
+        std::shared_ptr<std::vector<FilledPathRenderer>> findOrCreateRenderablePath(PackageSystem::ExtensibleMarkupPackageFile& svg);
+        void buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile& svg);
 
         void renderOffload(ssz renderIndex);
     public:
@@ -49,9 +54,13 @@ namespace Firework
             [this]() -> std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile> { return this->_svgFile; },
             [this](std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile> value) -> void
         {
+            _fence_value_return(void(), this->_svgFile == value);
+
             this->dirty = true;
             this->_svgFile = std::move(value);
         }
         };
+
+        friend struct ::ComponentStaticInit;
     };
 } // namespace Firework

@@ -146,9 +146,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/concurrentqueue")
 # robin-hood-hashing
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/robin-hood-hashing")
 
-# uni-algo
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/uni-algo")
-
 # pugixml
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
 
@@ -230,8 +227,6 @@ file(GLOB_RECURSE FONTSRCS configure_depends
 )
 
 add_library(Firework.Typography SHARED ${FONTSRCS})
-
-target_link_libraries(Firework.Typography PRIVATE uni-algo)
 
 generate_export_header(Firework.Typography
     BASE_NAME FIREWORK_TYPOGRAPHY
@@ -333,10 +328,8 @@ file(GLOB_RECURSE RPSRCS configure_depends
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/*.h"
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/*.cpp"
 )
-target_compile_shaders(shaders_Firework.Runtime.RenderPipeline "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders")
 
 add_library(Firework.Runtime.RenderPipeline SHARED ${RPSRCS})
-add_dependencies(Firework.Runtime.GL shaders_Firework.Runtime.RenderPipeline)
 
 generate_export_header(Firework.Runtime.RenderPipeline
     BASE_NAME FIREWORK_RP
@@ -398,7 +391,7 @@ target_include_directories(Firework.Runtime.CoreLib
 )
 if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "Clang")
     target_include_directories(Firework.Runtime.CoreLib PRIVATE "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bx/include/compat/mingw")
-    target_link_libraries(Firework.Runtime.CoreLib PRIVATE stdc++exp)
+    target_link_libraries(Firework.Runtime.CoreLib PUBLIC stdc++exp)
 elseif (FIREWORK_COMPILER STREQUAL "MSVC")
     target_include_directories(Firework.Runtime.CoreLib PRIVATE "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bx/include/compat/msvc")
 endif()

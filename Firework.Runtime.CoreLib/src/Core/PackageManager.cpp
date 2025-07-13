@@ -12,8 +12,6 @@ using namespace Firework;
 using namespace Firework::PackageSystem;
 namespace fs = std::filesystem;
 
-PackageFile::~PackageFile() = default;
-
 constexpr auto toEndianness = [](auto intType, std::endian from, std::endian to) -> decltype(intType)
 {
     if (from == to)

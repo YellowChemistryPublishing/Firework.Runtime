@@ -34,12 +34,15 @@
 [submodule "external/cpptrace"]
 	path = external/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git
-[submodule "external/uni-algo"]
-	path = external/uni-algo
-	url = https://github.com/uni-algo/uni-algo.git
 [submodule "external/libcxxext"]
 	path = external/libcxxext
 	url = https://github.com/YellowChemistryPublishing/libcxxext.git
 [submodule "external/pugixml"]
 	path = external/pugixml
 	url = https://github.com/zeux/pugixml.git
+[submodule "external/svgpp"]
+	path = external/svgpp
+	url = https://github.com/svgpp/svgpp.git
+[submodule "external/boost"]
+	path = external/boost
+	url = https://github.com/boostorg/boost.git

@@ -6,8 +6,7 @@
 #include <map>
 #include <module/sys>
 #include <robin_hood.h>
-#include <typeinfo>
-#include <unordered_map>
+#include <string>
 
 namespace Firework::Internal
 {
@@ -31,6 +30,8 @@ namespace Firework::PackageSystem
     protected:
         inline PackageFile() = default;
     };
+
+    PackageFile::~PackageFile() = default;
 
     /// @brief Package file for a generic binary format file.
     class _fw_core_api BinaryPackageFile final : public PackageFile

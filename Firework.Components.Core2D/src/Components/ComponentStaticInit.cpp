@@ -1,6 +1,7 @@
 #include <memory>
 
 #include <Components/RectTransform.h>
+#include <Components/ScalableVectorGraphic.h>
 #include <Components/Text.h>
 #include <Core/CoreEngine.h>
 #include <Core/Debug.h>
@@ -8,8 +9,10 @@
 #include <EntityComponentSystem/EngineEvent.h>
 #include <EntityComponentSystem/EntityManagement.h>
 #include <Friends/FilledPathRenderer.h>
-#include <Friends/PackageFileCore2D.h>
 #include <GL/Renderer.h>
+#include <PackageSystem/ExtensibleMarkupFile.h>
+#include <PackageSystem/PortableNetworkGraphicFile.h>
+#include <PackageSystem/TrueTypeFontFile.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -40,6 +43,8 @@ namespace
             {
                 if (typeIndex == typeid(Text))
                     std::static_pointer_cast<Text>(component)->renderOffload(renderIndex);
+                else if (typeIndex == typeid(ScalableVectorGraphic))
+                    std::static_pointer_cast<ScalableVectorGraphic>(component)->renderOffload(renderIndex);
             };
 
             CoreEngine::queueRenderJobForFrame([]

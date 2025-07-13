@@ -2,6 +2,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fcntl.h>
 #include <fstream>
@@ -41,6 +42,12 @@ int main(int argc, char* argv[])
     fs::path outPath;
     bool extractInstead = false;
 
+    if (argc <= 1)
+    {
+        std::cerr << "[Firework.Packager | Firework.Tools] [ERROR] Not enough arguments!\n";
+        return EXIT_FAILURE;
+    }
+
     std::error_code ec;
     ssz i = 1;
     while (true)
@@ -60,7 +67,7 @@ int main(int argc, char* argv[])
             if (++i == argc) [[unlikely]]
             {
                 std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Expected following argument to " << argv[+(i - 1_z)] << ", found end of commandline arguments.\n";
-                return 1;
+                return EXIT_FAILURE;
             }
 
             outPath = argv[+i];
@@ -72,12 +79,12 @@ int main(int argc, char* argv[])
             if (i != 1 && i != argc - 1) [[unlikely]]
             {
                 std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Expected commandline argument parameter, found unexpected string.\n";
-                return 1;
+                return EXIT_FAILURE;
             }
             else if (!fs::exists(inPath = argv[+i], ec))
             {
                 std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Input path to package doesn't exist!\n";
-                return 1;
+                return EXIT_FAILURE;
             }
         }
         if (++i == argc)
@@ -87,27 +94,29 @@ int main(int argc, char* argv[])
     if (inPath.empty())
     {
         std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Input path hasn't been specified.\n";
-        return 1;
+        return EXIT_FAILURE;
     }
     if (outPath.empty())
     {
         std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Output path hasn't been specified.\n";
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (extractInstead)
     {
         std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Unpacking is currently unimplemented!\n";
-        return 1;
+        return EXIT_FAILURE;
     }
     else
     {
         if (!fs::is_directory(inPath))
         {
             std::cerr << "[Firework.Packager | Firework.Tools] [FATAL] Path for input folder isn't a folder!\n";
-            return 1;
+            return EXIT_FAILURE;
         }
 
-        Packager::packageFolder(inPath, outPath.c_str());
+        _fence_value_return(EXIT_FAILURE, !Packager::packageFolder(inPath, outPath));
+
+        return EXIT_SUCCESS;
     }
 }
