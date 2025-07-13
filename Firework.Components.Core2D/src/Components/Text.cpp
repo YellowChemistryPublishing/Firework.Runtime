@@ -2,8 +2,8 @@
 
 #include <Components/RectTransform.h>
 #include <Font/Font.h>
-#include <Friends/PackageFileCore2D.h>
 #include <Friends/ParagraphIterator.h>
+#include <PackageSystem/TrueTypeFontFile.h>
 
 using namespace Firework;
 using namespace Firework::GL;
