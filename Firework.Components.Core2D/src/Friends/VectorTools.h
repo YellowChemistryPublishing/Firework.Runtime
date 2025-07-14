@@ -37,36 +37,38 @@ namespace Firework
             case 'A':
             case 'a':
             case 'Z':
-            case 'z': return true;
-            default: return false;
+            case 'z':
+                return true;
+            default:
+                return false;
             }
         }
     public:
         VectorTools() = delete;
 
-        struct VectorPathCommandMoveTo
+        struct PathCommandMoveTo
         {
             sysm::vector2 to;
         };
-        struct VectorPathCommandLineTo
+        struct PathCommandLineTo
         {
             sysm::vector2 from;
             sysm::vector2 to;
         };
-        struct VectorPathCommandQuadraticTo
+        struct PathCommandQuadraticTo
         {
             sysm::vector2 from;
             sysm::vector2 ctrl;
             sysm::vector2 to;
         };
-        struct VectorPathCommandCubicTo
+        struct PathCommandCubicTo
         {
             sysm::vector2 from;
             sysm::vector2 ctrl1;
             sysm::vector2 ctrl2;
             sysm::vector2 to;
         };
-        struct VectorPathCommandArcTo
+        struct PathCommandArcTo
         {
             sysm::vector2 from;
             sysm::vector2 radius;
@@ -74,12 +76,12 @@ namespace Firework
             bool largeArcFlag, sweepFlag;
             sysm::vector2 to;
         };
-        struct VectorPathCommandClose
+        struct PathCommandClose
         {
             ssz begin, end;
         };
 
-        enum class VectorPathCommandType : uint_fast8_t
+        enum class PathCommandType : uint_fast8_t
         {
             MoveTo,
             LineTo,
@@ -88,20 +90,20 @@ namespace Firework
             ArcTo,
             ClosePath
         };
-        struct VectorPathCommand
+        struct PathCommand
         {
             union
             {
-                VectorPathCommandMoveTo moveTo;
-                VectorPathCommandLineTo lineTo;
-                VectorPathCommandQuadraticTo quadraticTo;
-                VectorPathCommandCubicTo cubicTo;
-                VectorPathCommandArcTo arcTo;
-                VectorPathCommandClose closePath;
+                PathCommandMoveTo moveTo;
+                PathCommandLineTo lineTo;
+                PathCommandQuadraticTo quadraticTo;
+                PathCommandCubicTo cubicTo;
+                PathCommandArcTo arcTo;
+                PathCommandClose closePath;
             };
-            VectorPathCommandType type;
+            PathCommandType type;
         };
 
-        static bool parse(const char* path, std::vector<VectorPathCommand>& out);
+        static bool parsePath(std::string_view attrVal, std::vector<PathCommand>& out);
     };
 } // namespace Firework

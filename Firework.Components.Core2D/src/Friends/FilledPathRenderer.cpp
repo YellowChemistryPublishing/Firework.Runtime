@@ -61,37 +61,45 @@ bool FilledPathRenderer::renderInitialize()
     return FilledPathRenderer::program && FilledPathRenderer::unitSquare;
 }
 
-FilledPathRenderer::FilledPathRenderer(std::span<FilledPathPoint> closedPath)
+FilledPathRenderer::FilledPathRenderer(const std::span<const FilledPathPoint> points, const std::span<const ssz> closedPathRanges)
 {
-    _fence_value_return(, closedPath.size() < 3);
+    _fence_value_return(, points.size() < 3);
+    _fence_value_return(, closedPathRanges.size() < 2);
 
     std::vector<FilledPathPoint> verts;
-    verts.reserve(+sz(closedPath.size()));
-    verts.insert(verts.begin(), closedPath.begin(), closedPath.end());
+    verts.reserve(+sz(points.size()));
+    verts.insert(verts.begin(), points.begin(), points.end());
 
     std::vector<uint16_t> inds;
-    inds.reserve(+((sz(closedPath.size()) - 2_uz) * 3_uz));
+    inds.reserve(+((sz(points.size()) - 2_uz) * 3_uz)); // Enough when one path of just lines, still minimizing unnecessary reallocations.
 
-    for (u16 i = 1; i < u16(closedPath.size()) - 1_u16; i++)
+    for (auto boundBegIt = closedPathRanges.begin(); boundBegIt != --closedPathRanges.end(); ++boundBegIt)
     {
-        if (verts[+i].xCtrl == 0.0f) // Quadratic control point, defer.
-            continue;
+        auto boundEndIt = ++decltype(boundBegIt)(boundBegIt);
+        for (u16 i = u16(*boundBegIt) + 1_u16; i < u16(*boundEndIt) - 1_u16; i++)
+        {
+            if (verts[+i].xCtrl == 0.0f) // Quadratic control point, defer.
+                continue;
 
-        inds.push_back(0);
-        inds.push_back(+i);
-        if (verts[+(i + 1_u16)].xCtrl != 0.0f)
+            inds.push_back(+u16(*boundBegIt));
+            inds.push_back(+i);
+            if (verts[+(i + 1_u16)].xCtrl != 0.0f)
+                inds.push_back(+(i + 1_u16));
+            else
+                inds.push_back(+(i + 2_u16));
+        }
+        for (u16 i = u16(*boundBegIt); i < u16(*boundEndIt) - 1_u16; i++)
+        {
+            if (verts[+(i + 1_u16)].xCtrl != 0.0f) // Check quadratic control point.
+                continue;
+
+            inds.push_back(+i);
             inds.push_back(+(i + 1_u16));
-        else
-            inds.push_back(+(i + 2_u16));
-    }
-    for (u16 i = 0; i < u16(closedPath.size()) - 1_u16; i++)
-    {
-        if (verts[+(i + 1_u16)].xCtrl != 0.0f) // Check quadratic control point.
-            continue;
-
-        inds.push_back(+i);
-        inds.push_back(+(i + 1_u16));
-        inds.push_back(+(i + 2_u16) % +u16(closedPath.size()));
+            if (i + 2_u16 < u16(*boundEndIt))
+                inds.push_back(+(i + 2_u16));
+            else
+                inds.push_back(+u16(*boundBegIt));
+        }
     }
 
     this->fill = StaticMeshHandle::create(std::data(verts), +u32(verts.size() * sizeof(decltype(verts)::value_type)),
@@ -100,7 +108,7 @@ FilledPathRenderer::FilledPathRenderer(std::span<FilledPathPoint> closedPath)
                                           inds.data(), +u32(inds.size() * sizeof(decltype(inds)::value_type)));
 }
 
-bool FilledPathRenderer::submitDrawStencil(ssz renderIndex, RenderTransform shape, bool forceHole)
+bool FilledPathRenderer::submitDrawStencil(const ssz renderIndex, RenderTransform shape, const bool forceHole)
 {
     _fence_value_return(false, !this->fill || !FilledPathRenderer::program);
 
@@ -114,7 +122,7 @@ bool FilledPathRenderer::submitDrawStencil(ssz renderIndex, RenderTransform shap
 
     return true;
 }
-bool FilledPathRenderer::submitDraw(ssz renderIndex, RenderTransform clip, u8 whenStencil)
+bool FilledPathRenderer::submitDraw(const ssz renderIndex, RenderTransform clip, const u8 whenStencil)
 {
     _fence_value_return(false, !FilledPathRenderer::unitSquare || !FilledPathRenderer::program);
 

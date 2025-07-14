@@ -18,7 +18,7 @@ namespace Firework
         struct RenderTransform;
 
         class GeometryProgramHandle;
-    }
+    } // namespace GL
 
     struct _packed FilledPathPoint
     {
@@ -37,7 +37,9 @@ namespace Firework
     public:
         inline FilledPathRenderer(std::nullptr_t = nullptr)
         { }
-        FilledPathRenderer(std::span<FilledPathPoint> closedPath);
+        FilledPathRenderer(std::span<const FilledPathPoint> points, std::span<const ssz> closedPathRanges);
+        FilledPathRenderer(std::span<const FilledPathPoint> points) : FilledPathRenderer(points, std::array<ssz, 2> { 0_z, ssz(points.size()) })
+        { }
         inline FilledPathRenderer(const FilledPathRenderer&) = delete;
         inline FilledPathRenderer(FilledPathRenderer&& other)
         {

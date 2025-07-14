@@ -226,9 +226,9 @@ constexpr static auto userFunctionInvoker = []<typename Func>(Func&& func)
 
 void CoreEngine::internalLoop()
 {
-    CoreEngine::state.store(EngineState::WindowInit, std::memory_order_relaxed); // Spin off window handling thread.
+    CoreEngine::state.store(EngineState::WindowInit, std::memory_order_seq_cst); // Spin off window handling thread.
     while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadReady) std::this_thread::yield();
-    CoreEngine::state.store(EngineState::Playing, std::memory_order_relaxed);
+    CoreEngine::state.store(EngineState::Playing, std::memory_order_seq_cst);
 
     userFunctionInvoker(EngineEvent::OnInitialize);
 
@@ -371,7 +371,7 @@ void CoreEngine::internalLoop()
     }));
     CoreEngine::frameRenderJobs.clear();
 
-    CoreEngine::state.store(EngineState::MainThreadDone, std::memory_order_relaxed);
+    CoreEngine::state.store(EngineState::MainThreadDone, std::memory_order_seq_cst);
 }
 
 void CoreEngine::internalWindowLoop()
@@ -465,7 +465,7 @@ void CoreEngine::internalWindowLoop()
         if (Application::_initializationOptions.windowResizeable)
             SDL_SetWindowResizable(CoreEngine::wind, true);
 
-        CoreEngine::state.store(EngineState::RenderInit, std::memory_order_relaxed); // Spin off rendering thread.
+        CoreEngine::state.store(EngineState::RenderInit, std::memory_order_seq_cst); // Spin off rendering thread.
 
         SDL_Event ev;
         while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::RenderThreadDone)
@@ -571,7 +571,7 @@ void CoreEngine::internalWindowLoop()
                     break;
                 case SDL_EVENT_WINDOW_MOVED: break;
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                case SDL_EVENT_QUIT: CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_relaxed); break;
+                case SDL_EVENT_QUIT: CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_seq_cst); break;
                 }
             }
             else
@@ -590,7 +590,7 @@ void CoreEngine::internalWindowLoop()
         SDL_RemoveEventWatch(eventWatcher, &resizeData);
     }
 EarlyReturn:
-    CoreEngine::state.store(EngineState::WindowThreadDone, std::memory_order_relaxed); // Signal main thread.
+    CoreEngine::state.store(EngineState::WindowThreadDone, std::memory_order_seq_cst); // Signal main thread.
 }
 
 void CoreEngine::internalRenderLoop()
@@ -665,7 +665,7 @@ BreakAll:
     RenderPipeline::resetViewArea(+u16(Window::width), +u16(Window::height));
     RenderPipeline::clearViewArea();
 
-    CoreEngine::state.store(EngineState::RenderThreadReady, std::memory_order_relaxed); // Signal main thread.
+    CoreEngine::state.store(EngineState::RenderThreadReady, std::memory_order_seq_cst); // Signal main thread.
 
     {
         RenderJob job;
@@ -699,5 +699,5 @@ BreakAll:
     InternalEngineEvent::OnRenderShutdown();
     Renderer::shutdown();
 EarlyReturn:
-    CoreEngine::state.store(EngineState::RenderThreadDone, std::memory_order_relaxed); // Signal window thread.
+    CoreEngine::state.store(EngineState::RenderThreadDone, std::memory_order_seq_cst); // Signal window thread.
 }

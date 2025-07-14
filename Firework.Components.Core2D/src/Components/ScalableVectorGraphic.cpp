@@ -25,13 +25,8 @@ std::shared_ptr<std::vector<FilledPathRenderer>> ScalableVectorGraphic::findOrCr
     sysm::vector2 viewBox = sysm::vector2(100.0f);
 
     std::string d = svg.document().root().first_child().first_child().find_child_by_attribute("id", "g50").first_child().attribute("d").value();
-    std::vector<Firework::VectorTools::VectorPathCommand> pc;
-    bool flag = VectorTools::parse(d.c_str(), pc);
-    freopen("stdout.txt", "w", stdout);
-    for (auto cmd : pc)
-    {
-        std::println("{}", (int)cmd.type);
-    }
+    std::vector<Firework::VectorTools::PathCommand> pc;
+    bool flag = VectorTools::parsePath(d, pc);
 
     return nullptr;
 }

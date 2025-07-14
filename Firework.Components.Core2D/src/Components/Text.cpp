@@ -11,14 +11,14 @@ using namespace Firework::Internal;
 using namespace Firework::PackageSystem;
 using namespace Firework::Typography;
 
-robin_hood::unordered_map<Text::FontCharacterQuery, std::shared_ptr<std::vector<FilledPathRenderer>>, Text::FontCharacterQueryHash> Text::characterPaths;
+robin_hood::unordered_map<Text::FontCharacterQuery, std::shared_ptr<FilledPathRenderer>, Text::FontCharacterQueryHash> Text::characterPaths;
 
 void Text::onAttach(Entity& entity)
 {
     this->rectTransform = entity.getOrAddComponent<RectTransform>();
 }
 
-std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(char32_t c)
+std::shared_ptr<FilledPathRenderer> Text::findOrCreateGlyphPath(char32_t c)
 {
     auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = this->_font.get(), .c = c });
     _fence_value_return(charPathIt->second, charPathIt != Text::characterPaths.end());
@@ -27,14 +27,16 @@ std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(cha
     int glyphIndex = f.getGlyphIndex(c);
     GlyphOutline go = f.getGlyphOutline(glyphIndex);
 
-    std::vector<size_t> spans;
+    std::vector<ssz> spans;
     std::vector<FilledPathPoint> paths;
     float alternatePtCtrl = 1.0f;
     for (sys::integer<int> i = 0; i < go.vertsSize; i++)
     {
         switch (go.verts[+i].type)
         {
-        case STBTT_vmove: spans.emplace_back(paths.size()); [[fallthrough]];
+        case STBTT_vmove:
+            spans.emplace_back(ssz(paths.size()));
+            [[fallthrough]];
         case STBTT_vcubic: // TODO: Approximate as two quadratic.
         case STBTT_vline:
             paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
@@ -49,14 +51,7 @@ std::shared_ptr<std::vector<FilledPathRenderer>> Text::findOrCreateGlyphPath(cha
 
     _fence_value_return(nullptr, spans.size() <= 1);
 
-    std::shared_ptr<std::vector<FilledPathRenderer>> pathRenderers = std::make_shared<std::vector<FilledPathRenderer>>();
-    for (auto it = spans.begin(); it != --spans.end(); ++it)
-    {
-        size_t beg = *it;
-        size_t end = *++decltype(it)(it);
-
-        pathRenderers->emplace_back(FilledPathRenderer(std::span(paths.begin() + ptrdiff_t(beg), paths.begin() + ptrdiff_t(end))));
-    }
+    std::shared_ptr<FilledPathRenderer> pathRenderers = std::make_shared<FilledPathRenderer>(paths, spans);
     Text::characterPaths.emplace(FontCharacterQuery { .file = this->_font.get(), .c = c }, pathRenderers);
 
     return pathRenderers;
@@ -109,7 +104,7 @@ void Text::swapRenderBuffers()
         gPos.y -= scaledLineHeight * howMany;
     };
 
-    std::vector<std::pair<std::shared_ptr<std::vector<FilledPathRenderer>>, RenderTransform>> swapToRender;
+    std::vector<std::pair<std::shared_ptr<FilledPathRenderer>, RenderTransform>> swapToRender;
     for (auto wordIt = ParagraphIterator<char32_t>::begin(this->_text); wordIt != ParagraphIterator<char32_t>::end(this->_text); ++wordIt)
     {
         float wordLenScaled = std::accumulate(wordIt.textBegin(), wordIt.textEnd(), 0.0f, [&](float a, char32_t b)
@@ -137,7 +132,7 @@ void Text::swapRenderBuffers()
 
         for (auto cIt = wordIt.textBegin(); cIt != wordIt.textEnd(); ++cIt)
         {
-            std::shared_ptr<std::vector<FilledPathRenderer>> gPath = this->findOrCreateGlyphPath(*cIt);
+            std::shared_ptr<FilledPathRenderer> gPath = this->findOrCreateGlyphPath(*cIt);
             if (!gPath)
                 continue;
 
@@ -182,8 +177,7 @@ void Text::renderOffload(ssz renderIndex)
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get())]
     {
         std::lock_guard guard(renderData->toRenderLock);
-        for (auto& [paths, transform] : renderData->toRender)
-            for (auto& path : *paths) (void)path.submitDrawStencil(renderIndex, transform);
+        for (auto& [paths, transform] : renderData->toRender) (void)paths->submitDrawStencil(renderIndex, transform);
         (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform);
     }, false);
 }

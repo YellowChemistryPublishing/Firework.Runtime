@@ -60,7 +60,7 @@ SpaceBeforeCpp11BracedList: true
 Cpp11BracedListStyle: false
 
 # Control Flow
-AllowShortCaseLabelsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: false
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: true
 AllowShortBlocksOnASingleLine: false

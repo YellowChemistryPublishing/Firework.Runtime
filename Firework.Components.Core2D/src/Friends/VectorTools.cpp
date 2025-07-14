@@ -2,22 +2,23 @@
 
 using namespace Firework;
 
-bool VectorTools::parse(const char* path, std::vector<VectorPathCommand>& out)
+bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& out)
 {
-    _fence_contract_enforce(path);
+    _fence_value_return(false, attrVal.empty());
 
-    _fence_value_return(false, !*path);
+    const char* it = std::to_address(attrVal.begin());
+    const char* end = std::to_address(attrVal.end());
 
-    const char* it = path;
-
-    auto ignoreWhitespace = [&]
+    auto ignoreWhitespace = [&]() -> void
     {
-        while (*it && std::isspace(*it)) ++it;
+        while (it != end && std::isspace(*it)) ++it;
     };
     ignoreWhitespace(); // Start ourselves at the first real character.
 
     auto readNextCommand = [&]() -> char
     {
+        _fence_value_return(false, it == end);
+
         if (VectorTools::isCommand(*it))
         {
             char ret = *it;
@@ -30,10 +31,12 @@ bool VectorTools::parse(const char* path, std::vector<VectorPathCommand>& out)
     };
     auto readAddNextFloat = [&](float& out) -> bool
     {
+        _fence_value_return(false, it == end);
+
         char* newIt = nullptr;
         float ret = std::strtof(it, &newIt);
         _fence_value_return(false, !newIt || it == newIt || ret == float(HUGE_VAL) || ret == float(HUGE_VALF) || ret == float(HUGE_VALL) || std::isinf(ret) || std::isnan(ret));
-        it = newIt;
+        it = newIt > end ? end : newIt;
         out += ret;
 
         ignoreWhitespace();
@@ -42,26 +45,38 @@ bool VectorTools::parse(const char* path, std::vector<VectorPathCommand>& out)
     };
     auto readDelimiter = [&]() -> bool
     {
-        if (*it == ',' || *it == '-')
-        {
-            if (*it == ',')
-                ++it;
-            ignoreWhitespace();
-            return true;
-        }
-        else
-            return false;
+        _fence_value_return(false, it == end);
+        _fence_value_return(false, *it != ',' && *it != '-');
+
+        if (*it == ',')
+            ++it;
+        ignoreWhitespace();
+        return true;
+    };
+    auto readAddNextFloatPair = [&](float& a, float& b) -> bool
+    {
+        _fence_value_return(false, !readAddNextFloat(a));
+        _fence_value_return(false, !readDelimiter());
+        _fence_value_return(false, !readAddNextFloat(b));
+        return true;
     };
 
     ssz pathBegin = ssz(out.size());
     sysm::vector2 cur = sysm::vector2::zero;
 
+    char command; // Always reinitialized in loop.
     char injectedNextCommand = 0;
-    sysm::vector2 to, c1, c2;
-    float* horizReadTo;
-    while (*it)
+    auto readNextSetInjectedCommandIfNeeded = [&](char injectAs) -> void
     {
-        char command;
+        if (readDelimiter())
+            injectedNextCommand = command;
+    };
+
+    while (it != end)
+    {
+        sysm::vector2 to, c1, c2;
+        float* horizReadTo;
+
         if (injectedNextCommand)
         {
             command = injectedNextCommand;
@@ -72,34 +87,27 @@ bool VectorTools::parse(const char* path, std::vector<VectorPathCommand>& out)
 
         switch (command)
         {
-        case 'M': to = sysm::vector2::zero; goto AnyMoveTo;
+        case 'M':
+            to = sysm::vector2::zero;
+            goto AnyMoveTo;
         case 'm':
             to = cur;
         AnyMoveTo:
-            pathBegin = it - path;
-
-            _fence_value_return(false, !readAddNextFloat(to.x));
-            _fence_value_return(false, !readDelimiter());
-            _fence_value_return(false, !readAddNextFloat(to.y));
-
-            out.emplace_back(VectorPathCommand { .moveTo = VectorPathCommandMoveTo { .to = to }, .type = VectorPathCommandType::MoveTo });
-
-            if (readDelimiter())
-                injectedNextCommand = command == 'M' ? 'L' : 'l';
+            pathBegin = ssz(out.size());
+            _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
+            out.emplace_back(PathCommand { .moveTo = PathCommandMoveTo { .to = to }, .type = PathCommandType::MoveTo });
+            readNextSetInjectedCommandIfNeeded(command == 'M' ? 'L' : 'l');
             break;
 
-        case 'L': to = sysm::vector2::zero; goto AnyLineTo;
+        case 'L':
+            to = sysm::vector2::zero;
+            goto AnyLineTo;
         case 'l':
             to = cur;
         AnyLineTo:
-            _fence_value_return(false, !readAddNextFloat(to.x));
-            _fence_value_return(false, !readDelimiter());
-            _fence_value_return(false, !readAddNextFloat(to.y));
-
-            out.emplace_back(VectorPathCommand { .lineTo = VectorPathCommandLineTo { .from = cur, .to = to }, .type = VectorPathCommandType::LineTo });
-
-            if (readDelimiter())
-                injectedNextCommand = command;
+            _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
+            out.emplace_back(PathCommand { .lineTo = PathCommandLineTo { .from = cur, .to = to }, .type = PathCommandType::LineTo });
+            readNextSetInjectedCommandIfNeeded(command);
             break;
 
         case 'H':
@@ -119,87 +127,89 @@ bool VectorTools::parse(const char* path, std::vector<VectorPathCommand>& out)
             horizReadTo = &to.y;
         AnyHorizTo:
             _fence_value_return(false, !readAddNextFloat(*horizReadTo));
-            out.emplace_back(VectorPathCommand { .lineTo = VectorPathCommandLineTo { .from = cur, .to = to }, .type = VectorPathCommandType::LineTo });
-            if (readDelimiter())
-                injectedNextCommand = command;
+            out.emplace_back(PathCommand { .lineTo = PathCommandLineTo { .from = cur, .to = to }, .type = PathCommandType::LineTo });
+            readNextSetInjectedCommandIfNeeded(command);
             break;
 
-        case 'C': c1 = sysm::vector2::zero; [[fallthrough]];
+        case 'C':
+            c1 = sysm::vector2::zero;
+            [[fallthrough]];
         case 'S':
             c2 = sysm::vector2::zero;
             to = sysm::vector2::zero;
             goto AnyCubicTo;
-        case 'c': c1 = cur; [[fallthrough]];
+        case 'c':
+            c1 = cur;
+            [[fallthrough]];
         case 's':
             c2 = cur;
             to = cur;
         AnyCubicTo:
-            if (command == 'S' || command == 's')
             {
-                if (!out.empty() && out.back().type == VectorPathCommandType::CubicTo)
-                    c1 = cur - (out.back().cubicTo.ctrl2 - cur);
+                if (command == 'S' || command == 's')
+                {
+                    if (!out.empty() && out.back().type == PathCommandType::CubicTo)
+                        c1 = cur - (out.back().cubicTo.ctrl2 - cur);
+                    else
+                        c1 = cur;
+                }
                 else
-                    c1 = cur;
-            }
-            else
-            {
-                _fence_value_return(false, !readAddNextFloat(c1.x));
+                {
+                    _fence_value_return(false, !readAddNextFloatPair(c1.x, c1.y));
+                    _fence_value_return(false, !readDelimiter());
+                }
+
+                _fence_value_return(false, !readAddNextFloatPair(c2.x, c2.y));
                 _fence_value_return(false, !readDelimiter());
-                _fence_value_return(false, !readAddNextFloat(c1.y));
-                _fence_value_return(false, !readDelimiter());
+                _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
+
+                out.emplace_back(
+                    PathCommand { .cubicTo = PathCommandCubicTo { .from = cur, .ctrl1 = c1, .ctrl2 = c2, .to = to }, .type = PathCommandType::CubicTo });
+
+                readNextSetInjectedCommandIfNeeded(command);
             }
-
-            _fence_value_return(false, !readAddNextFloat(c2.x));
-            _fence_value_return(false, !readDelimiter());
-            _fence_value_return(false, !readAddNextFloat(c2.y));
-            _fence_value_return(false, !readDelimiter());
-            _fence_value_return(false, !readAddNextFloat(to.x));
-            _fence_value_return(false, !readDelimiter());
-            _fence_value_return(false, !readAddNextFloat(to.y));
-
-            out.emplace_back(VectorPathCommand { .cubicTo = VectorPathCommandCubicTo { .from = cur, .ctrl1 = c1, .ctrl2 = c2, .to = to }, .type = VectorPathCommandType::CubicTo });
-
-            if (readDelimiter())
-                injectedNextCommand = command;
             break;
 
-        case 'Q': c1 = sysm::vector2::zero; [[fallthrough]];
-        case 'T': to = sysm::vector2::zero; goto AnyQuadraticTo;
-        case 'q': c1 = cur; [[fallthrough]];
+        case 'Q':
+            c1 = sysm::vector2::zero;
+            [[fallthrough]];
+        case 'T':
+            to = sysm::vector2::zero;
+            goto AnyQuadraticTo;
+        case 'q':
+            c1 = cur;
+            [[fallthrough]];
         case 't':
             to = cur;
         AnyQuadraticTo:
-            if (command == 'T' || command == 't')
             {
-                if (!out.empty() && out.back().type == VectorPathCommandType::QuadraticTo)
-                    c1 = cur - (out.back().quadraticTo.ctrl - cur);
+                if (command == 'T' || command == 't')
+                {
+                    if (!out.empty() && out.back().type == PathCommandType::QuadraticTo)
+                        c1 = cur - (out.back().quadraticTo.ctrl - cur);
+                    else
+                        c1 = cur;
+                }
                 else
-                    c1 = cur;
+                {
+                    _fence_value_return(false, !readAddNextFloatPair(c1.x, c1.y));
+                    _fence_value_return(false, !readDelimiter());
+                }
+
+                _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
+                out.emplace_back(
+                    PathCommand { .quadraticTo = PathCommandQuadraticTo { .from = cur, .ctrl = c1, .to = to }, .type = PathCommandType::QuadraticTo });
+                readNextSetInjectedCommandIfNeeded(command);
             }
-            else
-            {
-                _fence_value_return(false, !readAddNextFloat(c1.x));
-                _fence_value_return(false, !readDelimiter());
-                _fence_value_return(false, !readAddNextFloat(c1.y));
-                _fence_value_return(false, !readDelimiter());
-            }
-
-            _fence_value_return(false, !readAddNextFloat(to.x));
-            _fence_value_return(false, !readDelimiter());
-            _fence_value_return(false, !readAddNextFloat(to.y));
-
-            out.emplace_back(VectorPathCommand { .quadraticTo = VectorPathCommandQuadraticTo { .from = cur, .ctrl = c1, .to = to }, .type = VectorPathCommandType::QuadraticTo });
-
-            if (readDelimiter())
-                injectedNextCommand = command;
             break;
 
         case 'A':
-        case 'a': return false; // Not even going to try.
+        case 'a':
+            return false; // Not even going to try.
 
         case 'Z':
         case 'z':
-            out.emplace_back(VectorPathCommand { .closePath = VectorPathCommandClose { .begin = pathBegin, .end = ssz(out.size()) }, .type = VectorPathCommandType::ClosePath });
+            out.emplace_back(PathCommand { .closePath = PathCommandClose { .begin = pathBegin, .end = ssz(out.size()) }, .type = PathCommandType::ClosePath });
             pathBegin = ssz(out.size());
             break;
         }
