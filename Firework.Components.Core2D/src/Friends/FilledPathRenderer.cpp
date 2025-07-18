@@ -76,7 +76,7 @@ FilledPathRenderer::FilledPathRenderer(const std::span<const FilledPathPoint> po
     for (auto boundBegIt = closedPathRanges.begin(); boundBegIt != --closedPathRanges.end(); ++boundBegIt)
     {
         auto boundEndIt = ++decltype(boundBegIt)(boundBegIt);
-        for (u16 i = u16(*boundBegIt) + 1_u16; i < u16(*boundEndIt) - 1_u16; i++)
+        for (u16 i = u16(*boundBegIt + 1_z); i < u16(*boundEndIt - 1_z); i++)
         {
             if (verts[+i].xCtrl == 0.0f) // Quadratic control point, defer.
                 continue;
@@ -88,7 +88,7 @@ FilledPathRenderer::FilledPathRenderer(const std::span<const FilledPathPoint> po
             else
                 inds.push_back(+(i + 2_u16));
         }
-        for (u16 i = u16(*boundBegIt); i < u16(*boundEndIt) - 1_u16; i++)
+        for (u16 i = u16(*boundBegIt); i < u16(*boundEndIt - 1_z); i++)
         {
             if (verts[+(i + 1_u16)].xCtrl != 0.0f) // Check quadratic control point.
                 continue;

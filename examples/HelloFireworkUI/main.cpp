@@ -35,15 +35,15 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         e->addComponent<EntityAttributes>()->name = "beans";
         auto rt = e->getOrAddComponent<RectTransform>();
         rt->rect = RectFloat(400, 400, -400, -400);
-        auto t = e->addComponent<Text>();
-        t->font = nullptr;
-        t->fontSize = 100;
-        t->text = U"1000000what";
-        t->fontSize = 4;
-        t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans "
-                  U"beans beans beans beans beans beans beans beans beans";
-        t->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Comic Sans MS.ttf"));
-        t->fontSize = 200;
+        // auto t = e->addComponent<Text>();
+        // t->font = nullptr;
+        // t->fontSize = 100;
+        // t->text = U"1000000what";
+        // t->fontSize = 4;
+        // t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans "
+        //           U"beans beans beans beans beans beans beans beans beans";
+        // t->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Comic Sans MS.ttf"));
+        // t->fontSize = 200;
         rt->rect = RectFloat(400, 200, -400, -200);
         rt->localRotation += std::numbers::pi_v<float> / 2.0f;
         auto s = e->addComponent<ScalableVectorGraphic>();

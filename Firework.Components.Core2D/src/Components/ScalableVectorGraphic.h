@@ -46,7 +46,8 @@ namespace Firework
         void onAttach(Entity& entity);
 
         std::shared_ptr<std::vector<FilledPathRenderer>> findOrCreateRenderablePath(PackageSystem::ExtensibleMarkupPackageFile& svg);
-        void buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile& svg);
+        //                           v Never null, but also may be invalid, so passed by ptr, not ref.
+        void buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile* svg);
 
         void renderOffload(ssz renderIndex);
     public:
@@ -62,5 +63,6 @@ namespace Firework
         };
 
         friend struct ::ComponentStaticInit;
+        friend class Firework::Entity;
     };
 } // namespace Firework

@@ -569,9 +569,12 @@ void CoreEngine::internalWindowLoop()
                         Application::mainThreadQueue.enqueue([input = std::move(input)] { userFunctionInvoker([&] { EngineEvent::OnTextInput(input); }); });
                     }
                     break;
-                case SDL_EVENT_WINDOW_MOVED: break;
+                case SDL_EVENT_WINDOW_MOVED:
+                    break;
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-                case SDL_EVENT_QUIT: CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_seq_cst); break;
+                case SDL_EVENT_QUIT:
+                    CoreEngine::state.store(EngineState::ExitRequested, std::memory_order_seq_cst);
+                    break;
                 }
             }
             else
@@ -600,7 +603,7 @@ void CoreEngine::internalRenderLoop()
     RendererBackend initBackend = RendererBackend::Default;
     RendererBackend backendPriorityOrder[] {
 #if _WIN32
-        RendererBackend::Vulkan, RendererBackend::OpenGL, RendererBackend::Direct3D12, RendererBackend::Direct3D11
+        RendererBackend::OpenGL, RendererBackend::Vulkan, RendererBackend::Direct3D12, RendererBackend::Direct3D11
 #else
         RendererBackend::Vulkan, RendererBackend::OpenGL
 #endif

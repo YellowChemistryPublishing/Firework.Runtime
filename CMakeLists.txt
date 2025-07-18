@@ -178,7 +178,7 @@ set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/assimp")
 get_target_property(ASSIMP_LINK_LIBRARIES assimp LINK_LIBRARIES)
 # external/assimp/code/CMakeLists.txt - 1348: TARGET_LINK_LIBRARIES ( assimp -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lwinpthread ) -> Breaks our binary.
-# This doesn't actually work. Thanks assimp for ruining my day. TODO: File bug report later.
+# This doesn't actually work. Thanks assimp for ruining my day.
 list(REMOVE_ITEM ASSIMP_LINK_LIBRARIES "-static-libgcc" "-static-libstdc++" "-Wl,-Bstatic" "-lstdc++" "-lwinpthread")
 set_target_properties(assimp PROPERTIES LINK_LIBRARIES "${ASSIMP_LINK_LIBRARIES}")
 unset(BUILD_SHARED_LIBS)

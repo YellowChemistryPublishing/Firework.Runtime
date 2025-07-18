@@ -105,5 +105,12 @@ namespace Firework
         };
 
         static bool parsePath(std::string_view attrVal, std::vector<PathCommand>& out);
+
+        struct QuadApproxCubic
+        {
+            sysm::vector2 p1, c1, p2, c2, p3;
+        };
+
+        static QuadApproxCubic cubicBeizerToQuadratic(sysm::vector2 p1, sysm::vector2 c1, sysm::vector2 c2, sysm::vector2 p2);
     };
 } // namespace Firework

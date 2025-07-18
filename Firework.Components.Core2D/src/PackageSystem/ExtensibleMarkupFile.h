@@ -24,6 +24,15 @@ namespace Firework::PackageSystem
             return this->ok;
         }
 
+        pugi::xml_node_iterator begin() const
+        {
+            return this->doc.begin();
+        }
+        pugi::xml_node_iterator end() const
+        {
+            return this->doc.end();
+        }
+
         const pugi::xml_document& document()
         {
             return this->doc;

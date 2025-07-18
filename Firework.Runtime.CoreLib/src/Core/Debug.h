@@ -103,7 +103,8 @@ namespace Firework
         {
             switch (seq)
             {
-            case EscapeSequence::Reset: return L"\x1b[0m";
+            case EscapeSequence::Reset:
+                return L"\x1b[0m";
             }
             return L"";
         }
@@ -128,10 +129,14 @@ namespace Firework
             {
                 switch (severity)
                 {
-                case LogLevel::Trace: return L"";
-                case LogLevel::Info: return Debug::escapeCodeFromColor(10);
-                case LogLevel::Warn: return Debug::escapeCodeFromColor(255, 255, 0);
-                case LogLevel::Error: return Debug::escapeCodeFromColor(9);
+                case LogLevel::Trace:
+                    return L"";
+                case LogLevel::Info:
+                    return Debug::escapeCodeFromColor(10);
+                case LogLevel::Warn:
+                    return Debug::escapeCodeFromColor(255, 255, 0);
+                case LogLevel::Error:
+                    return Debug::escapeCodeFromColor(9);
                 }
                 std::unreachable();
             }();
@@ -147,10 +152,18 @@ namespace Firework
 
             switch (severity)
             {
-            case LogLevel::Trace: out << L" [TRACE]"; break;
-            case LogLevel::Info: out << L" [INFO] "; break;
-            case LogLevel::Warn: out << L" [WARN] "; break;
-            case LogLevel::Error: out << L" [ERROR]"; break;
+            case LogLevel::Trace:
+                out << L" [TRACE]";
+                break;
+            case LogLevel::Info:
+                out << L" [INFO] ";
+                break;
+            case LogLevel::Warn:
+                out << L" [WARN] ";
+                break;
+            case LogLevel::Error:
+                out << L" [ERROR]";
+                break;
             }
 
             out << endLogLevel;
@@ -241,7 +254,8 @@ namespace Firework
             }
             switch (lines.size())
             {
-            case 0: break;
+            case 0:
+                break;
             case 1:
                 out.append(L"< ").append(lines.front());
                 for (size_t i = width - lines.front().size(); i--;) out.push_back(L' ');
@@ -290,7 +304,7 @@ namespace Firework
                 for (Entity& child : entity.children()) recurse(recurse, child, depth + 1_z);
             };
             for (Entity& entity : Entities::range()) recurse(recurse, entity);
-            
+
             logStr.append("--------\n");
             std::cout << logStr;
         }
@@ -302,11 +316,11 @@ namespace Firework
 
         /// @brief Triggers a breakpoint trap.
         /// @note Thread-safe.
-        inline static void breakPoint()
+        _inline_always static void breakPoint()
         {
 #if _WIN32
             __debugbreak();
-#elif __linux__
+#else // Hope target platform has this.
             raise(SIGTRAP);
 #endif
         }

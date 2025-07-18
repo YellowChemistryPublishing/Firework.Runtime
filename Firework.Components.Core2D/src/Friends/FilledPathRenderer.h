@@ -11,15 +11,14 @@ namespace
     struct ComponentStaticInit;
 }
 
+namespace Firework::GL
+{
+    struct RenderTransform;
+    class GeometryProgramHandle;
+} // namespace Firework::GL
+
 namespace Firework
 {
-    namespace GL
-    {
-        struct RenderTransform;
-
-        class GeometryProgramHandle;
-    } // namespace GL
-
     struct _packed FilledPathPoint
     {
         float x, y, z = 1.0f; // Leave `z` as 1.0f unless you're really confident in what you're doing.

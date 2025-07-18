@@ -163,8 +163,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
                 _fence_value_return(false, !readDelimiter());
                 _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
 
-                out.emplace_back(
-                    PathCommand { .cubicTo = PathCommandCubicTo { .from = cur, .ctrl1 = c1, .ctrl2 = c2, .to = to }, .type = PathCommandType::CubicTo });
+                out.emplace_back(PathCommand { .cubicTo = PathCommandCubicTo { .from = cur, .ctrl1 = c1, .ctrl2 = c2, .to = to }, .type = PathCommandType::CubicTo });
 
                 readNextSetInjectedCommandIfNeeded(command);
             }
@@ -197,8 +196,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
                 }
 
                 _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
-                out.emplace_back(
-                    PathCommand { .quadraticTo = PathCommandQuadraticTo { .from = cur, .ctrl = c1, .to = to }, .type = PathCommandType::QuadraticTo });
+                out.emplace_back(PathCommand { .quadraticTo = PathCommandQuadraticTo { .from = cur, .ctrl = c1, .to = to }, .type = PathCommandType::QuadraticTo });
                 readNextSetInjectedCommandIfNeeded(command);
             }
             break;
@@ -218,4 +216,18 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
     }
 
     return true;
+}
+
+// https://www.cemyuksel.com/research/papers/quadratic_approximation_of_cubic_curves.pdf
+VectorTools::QuadApproxCubic VectorTools::cubicBeizerToQuadratic(sysm::vector2 p1, sysm::vector2 c1, sysm::vector2 c2, sysm::vector2 p2)
+{
+    constexpr float gamma = 0.5f;
+
+    VectorTools::QuadApproxCubic ret;
+    ret.c1 = p1 + 1.5f * gamma * (c1 - p1);
+    ret.c2 = p2 + 1.5f * (1.0f - gamma) * (c2 - p2);
+    ret.p2 = (1.0f - gamma) * ret.c1 + gamma * ret.c2;
+    ret.p1 = p1;
+    ret.p3 = p2;
+    return ret;
 }
