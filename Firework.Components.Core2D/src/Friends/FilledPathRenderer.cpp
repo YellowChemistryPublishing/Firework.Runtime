@@ -3,62 +3,45 @@
 #include <EntityComponentSystem/EngineEvent.h>
 #include <GL/Renderer.h>
 
-#include <Path.vfAll.h>
+#include <Colored.vfAll.h>
+#include <StencilPath.vfAll.h>
 
 using namespace Firework;
 using namespace Firework::Internal;
 using namespace Firework::GL;
 
-GeometryProgramHandle FilledPathRenderer::program;
+GeometryProgramHandle FilledPathRenderer::stencilProgram;
+GeometryProgramHandle FilledPathRenderer::drawProgram;
+
 StaticMeshHandle FilledPathRenderer::unitSquare;
 
 bool FilledPathRenderer::renderInitialize()
 {
     InternalEngineEvent::OnRenderShutdown += []
     {
-        if (FilledPathRenderer::program) [[likely]]
-            FilledPathRenderer::program.destroy();
+        if (FilledPathRenderer::stencilProgram) [[likely]]
+            FilledPathRenderer::stencilProgram.destroy();
+        if (FilledPathRenderer::drawProgram) [[likely]]
+            FilledPathRenderer::drawProgram.destroy();
         if (FilledPathRenderer::unitSquare) [[likely]]
             FilledPathRenderer::unitSquare.destroy();
     };
 
-    switch (Renderer::rendererBackend())
-    {
-#if _WIN32
-    case RendererBackend::Direct3D11:
-        FilledPathRenderer::program =
-            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Path, d3d11), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
-        break;
-    case RendererBackend::Direct3D12:
-        FilledPathRenderer::program =
-            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Path, d3d12), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
-        break;
-#endif
-    case RendererBackend::OpenGL:
-        FilledPathRenderer::program =
-            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Path, opengl), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
-        break;
-    case RendererBackend::Vulkan:
-        FilledPathRenderer::program =
-            GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(Path, vulkan), { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
-        break;
-    default:;
-    }
+    createShaderFromPrecompiled(FilledPathRenderer::stencilProgram, StencilPath);
+    createShaderFromPrecompiled(FilledPathRenderer::drawProgram, Colored, { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
 
     float unitSquareVerts[] {
-        -1.0f, -1.0f, 1.0f, 0.0f, 0.0f, // [0]
-        -1.0f, 1.0f,  1.0f, 0.0f, 0.0f, // [1]
-        1.0f,  1.0f,  1.0f, 0.0f, 0.0f, // [2]
-        1.0f,  -1.0f, 1.0f, 0.0f, 0.0f  // [3]
+        -1.0f, -1.0f, 1.0f, // [0]
+        -1.0f, 1.0f,  1.0f, // [1]
+        1.0f,  1.0f,  1.0f, // [2]
+        1.0f,  -1.0f, 1.0f  // [3]
     };
     uint16_t unitSquareInds[] { 2, 1, 0, 3, 2, 0 };
-    FilledPathRenderer::unitSquare =
-        StaticMeshHandle::create(unitSquareVerts, sizeof(unitSquareVerts),
-                                 VertexLayout::create({ VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 },
-                                                        VertexDescriptor { .attribute = bgfx::Attrib::TexCoord0, .type = bgfx::AttribType::Float, .count = 2 } }),
-                                 unitSquareInds, sizeof(unitSquareInds));
+    FilledPathRenderer::unitSquare = StaticMeshHandle::create(
+        unitSquareVerts, sizeof(unitSquareVerts), VertexLayout::create({ VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 } }),
+        unitSquareInds, sizeof(unitSquareInds));
 
-    return FilledPathRenderer::program && FilledPathRenderer::unitSquare;
+    return FilledPathRenderer::stencilProgram && FilledPathRenderer::drawProgram && FilledPathRenderer::unitSquare;
 }
 
 FilledPathRenderer::FilledPathRenderer(const std::span<const FilledPathPoint> points, const std::span<const ssz> closedPathRanges)
@@ -110,7 +93,7 @@ FilledPathRenderer::FilledPathRenderer(const std::span<const FilledPathPoint> po
 
 bool FilledPathRenderer::submitDrawStencil(const ssz renderIndex, RenderTransform shape, const bool forceHole)
 {
-    _fence_value_return(false, !this->fill || !FilledPathRenderer::program);
+    _fence_value_return(false, !this->fill || !FilledPathRenderer::stencilProgram || !FilledPathRenderer::drawProgram);
 
     shape.translate(sysm::vector3::forward * float(+renderIndex));
     Renderer::setDrawTransform(shape);
@@ -118,23 +101,23 @@ bool FilledPathRenderer::submitDrawStencil(const ssz renderIndex, RenderTransfor
     Renderer::setDrawStencil(BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_FUNC_RMASK(0) |
                              (forceHole ? BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE
                                         : BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_INVERT));
-    Renderer::submitDraw(1, this->fill, FilledPathRenderer::program, BGFX_STATE_DEPTH_TEST_LESS);
+    Renderer::submitDraw(1, this->fill, FilledPathRenderer::stencilProgram, BGFX_STATE_DEPTH_TEST_LESS);
 
     return true;
 }
-bool FilledPathRenderer::submitDraw(const ssz renderIndex, RenderTransform clip, const u8 whenStencil)
+bool FilledPathRenderer::submitDraw(const ssz renderIndex, RenderTransform clip, const u8 whenStencil, const Color color)
 {
-    _fence_value_return(false, !FilledPathRenderer::unitSquare || !FilledPathRenderer::program);
+    _fence_value_return(false, !FilledPathRenderer::unitSquare || !FilledPathRenderer::stencilProgram || !FilledPathRenderer::drawProgram);
 
-    float col[4] { 1.0f, 1.0f, 1.0f, 1.0f };
-    FilledPathRenderer::program.setUniform("u_color", &col);
+    float colUniform[4] { float(color.r) / 255.0f, float(color.g) / 255.0f, float(color.b) / 255.0f, float(color.a) / 255.0f };
+    FilledPathRenderer::drawProgram.setUniform("u_color", &colUniform);
 
     clip.translate(sysm::vector3::forward * float(+renderIndex));
     Renderer::setDrawTransform(clip);
 
     Renderer::setDrawStencil(BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_FUNC_REF(+whenStencil) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_S_KEEP |
                              BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
-    Renderer::submitDraw(1, FilledPathRenderer::unitSquare, FilledPathRenderer::program);
+    Renderer::submitDraw(1, FilledPathRenderer::unitSquare, FilledPathRenderer::drawProgram);
 
     return true;
 }

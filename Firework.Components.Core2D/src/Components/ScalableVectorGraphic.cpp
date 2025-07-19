@@ -113,7 +113,10 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get())]
     {
         std::lock_guard guard(renderData->toRenderLock);
-        for (auto& paths : *renderData->toRender) (void)paths.submitDrawStencil(renderIndex, GL::RenderTransform());
-        (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform);
+        for (auto& paths : *renderData->toRender)
+        {
+            (void)paths.submitDrawStencil(renderIndex, GL::RenderTransform());
+            (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform);
+        }
     }, false);
 }

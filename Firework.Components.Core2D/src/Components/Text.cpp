@@ -3,6 +3,7 @@
 #include <Components/RectTransform.h>
 #include <Font/Font.h>
 #include <Friends/ParagraphIterator.h>
+#include <Friends/VectorTools.h>
 #include <PackageSystem/TrueTypeFontFile.h>
 
 using namespace Firework;
@@ -37,13 +38,27 @@ std::shared_ptr<FilledPathRenderer> Text::findOrCreateGlyphPath(char32_t c)
         case STBTT_vmove:
             spans.emplace_back(ssz(paths.size()));
             [[fallthrough]];
-        case STBTT_vcubic: // TODO: Approximate as two quadratic.
         case STBTT_vline:
             paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
             break;
         case STBTT_vcurve:
             paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .xCtrl = 0.0f, .yCtrl = -1.0f });
             paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            break;
+        case STBTT_vcubic:
+            {
+                if (paths.empty())
+                    break;
+
+                VectorTools::QuadApproxCubic converted =
+                    VectorTools::cubicBeizerToQuadratic(sysm::vector2(paths.back().x, paths.back().y), sysm::vector2(float(go.verts[+i].cx), float(go.verts[+i].cy)),
+                                                        sysm::vector2(go.verts[+i].cx1, go.verts[+i].cy1), sysm::vector2(float(go.verts[+i].x), float(go.verts[+i].y)));
+
+                paths.emplace_back(FilledPathPoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                paths.emplace_back(FilledPathPoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                paths.emplace_back(FilledPathPoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                paths.emplace_back(FilledPathPoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            }
             break;
         }
     }
@@ -148,10 +163,8 @@ void Text::swapRenderBuffers()
             gPos.x += spaceLenScaled;
     }
 
-    {
-        std::lock_guard guard(this->renderData->toRenderLock);
-        std::swap(this->renderData->toRender, swapToRender);
-    }
+    std::lock_guard guard(this->renderData->toRenderLock);
+    std::swap(this->renderData->toRender, swapToRender);
 }
 
 void Text::renderOffload(ssz renderIndex)

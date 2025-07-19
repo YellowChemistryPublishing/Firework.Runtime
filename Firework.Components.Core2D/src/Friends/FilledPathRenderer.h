@@ -4,6 +4,7 @@
 
 #include <module/sys>
 
+#include <Friends/Color.h>
 #include <GL/Geometry.h>
 
 namespace
@@ -27,7 +28,9 @@ namespace Firework
 
     class _fw_cc2d_api FilledPathRenderer final
     {
-        static GL::GeometryProgramHandle program;
+        static GL::GeometryProgramHandle stencilProgram;
+        static GL::GeometryProgramHandle drawProgram;
+
         static GL::StaticMeshHandle unitSquare;
 
         [[nodiscard]] static bool renderInitialize();
@@ -63,7 +66,7 @@ namespace Firework
         }
 
         [[nodiscard]] bool submitDrawStencil(ssz renderIndex, GL::RenderTransform shape, bool forceHole = false);
-        [[nodiscard]] static bool submitDraw(ssz renderIndex, GL::RenderTransform clip, u8 whenStencil = ~0_u8);
+        [[nodiscard]] static bool submitDraw(ssz renderIndex, GL::RenderTransform clip, u8 whenStencil = ~0_u8, Color color = Color(255, 165, 0));
 
         friend inline void swap(FilledPathRenderer& a, FilledPathRenderer& b)
         {
