@@ -37,6 +37,7 @@ namespace
             InternalEngineEvent::OnRenderShutdown += []
             {
                 Text::characterPaths.clear();
+                ScalableVectorGraphic::loadedSvgs.clear();
             };
 
             InternalEngineEvent::OnRenderOffloadForComponent += [](std::type_index typeIndex, Entity&, std::shared_ptr<void> component, ssz renderIndex)

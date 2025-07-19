@@ -10,41 +10,15 @@ namespace Firework
 {
     class _fw_cc2d_api VectorTools final
     {
-        constexpr static bool isNumeric(char c)
-        {
-            return ('0' <= c && c <= '9') || c == '.' || c == '-';
-        }
-        constexpr static bool isCommand(char c)
-        {
-            switch (c)
-            {
-            case 'M':
-            case 'm':
-            case 'L':
-            case 'l':
-            case 'H':
-            case 'h':
-            case 'V':
-            case 'v':
-            case 'C':
-            case 'c':
-            case 'S':
-            case 's':
-            case 'Q':
-            case 'q':
-            case 'T':
-            case 't':
-            case 'A':
-            case 'a':
-            case 'Z':
-            case 'z':
-                return true;
-            default:
-                return false;
-            }
-        }
     public:
         VectorTools() = delete;
+
+        struct Viewbox
+        {
+            float x, y, w, h;
+        };
+
+        static sys::result<Viewbox> parseViewbox(std::string_view attrVal);
 
         struct PathCommandMoveTo
         {
@@ -102,6 +76,19 @@ namespace Firework
                 PathCommandClose closePath;
             };
             PathCommandType type;
+
+            PathCommand(PathCommandMoveTo moveTo) : moveTo(std::move(moveTo)), type(PathCommandType::MoveTo)
+            { }
+            PathCommand(PathCommandLineTo lineTo) : lineTo(std::move(lineTo)), type(PathCommandType::LineTo)
+            { }
+            PathCommand(PathCommandQuadraticTo quadraticTo) : quadraticTo(std::move(quadraticTo)), type(PathCommandType::QuadraticTo)
+            { }
+            PathCommand(PathCommandCubicTo cubicTo) : cubicTo(std::move(cubicTo)), type(PathCommandType::CubicTo)
+            { }
+            PathCommand(PathCommandArcTo arcTo) : arcTo(std::move(arcTo)), type(PathCommandType::ArcTo)
+            { }
+            PathCommand(PathCommandClose closePath) : closePath(std::move(closePath)), type(PathCommandType::ClosePath)
+            { }
         };
 
         static bool parsePath(std::string_view attrVal, std::vector<PathCommand>& out);

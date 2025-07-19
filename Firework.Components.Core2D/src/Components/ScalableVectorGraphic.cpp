@@ -5,25 +5,27 @@
 #include <Core/Debug.h>
 #include <EntityComponentSystem/Entity.h>
 #include <Friends/VectorTools.h>
+#include <GL/Renderer.h>
 #include <PackageSystem/ExtensibleMarkupFile.h>
 
 using namespace Firework;
+using namespace Firework::GL;
 using namespace Firework::Internal;
 using namespace Firework::PackageSystem;
 
-robin_hood::unordered_map<PackageSystem::ExtensibleMarkupPackageFile*, std::shared_ptr<std::vector<FilledPathRenderer>>> ScalableVectorGraphic::loadedSvgs;
+robin_hood::unordered_map<PackageSystem::ExtensibleMarkupPackageFile*, std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>>> ScalableVectorGraphic::loadedSvgs;
 
 void ScalableVectorGraphic::onAttach(Entity& entity)
 {
     this->rectTransform = entity.getOrAddComponent<RectTransform>();
 }
 
-std::shared_ptr<std::vector<FilledPathRenderer>> ScalableVectorGraphic::findOrCreateRenderablePath(PackageSystem::ExtensibleMarkupPackageFile& svg)
+std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGraphic::findOrCreateRenderablePath(PackageSystem::ExtensibleMarkupPackageFile& svg)
 {
     const auto svgIt = ScalableVectorGraphic::loadedSvgs.find(&svg);
     _fence_value_return(svgIt->second, svgIt != ScalableVectorGraphic::loadedSvgs.end());
 
-    std::shared_ptr<std::vector<FilledPathRenderer>> ret = std::make_shared<std::vector<FilledPathRenderer>>();
+    std::vector<Renderable> ret;
 
     const auto traverse = [&](const auto& traverse, const pugi::xml_node& node) -> void
     {
@@ -75,13 +77,17 @@ std::shared_ptr<std::vector<FilledPathRenderer>> ScalableVectorGraphic::findOrCr
             }
 
             if (FilledPathRenderer pr = FilledPathRenderer(paths, spans))
-                ret->emplace_back(std::move(pr));
+                ret.emplace_back(std::move(FilledPathRenderable(std::move(pr), Color(127, 127, 127))));
         }
         // Otherwise, do nothing.
     };
     for (const pugi::xml_node& node : *this->_svgFile) traverse(traverse, node);
 
-    return ret;
+    _fence_value_return(nullptr, ret.empty());
+
+    std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ptr = std::make_shared<std::vector<ScalableVectorGraphic::Renderable>>(std::move(ret));
+    ScalableVectorGraphic::loadedSvgs.emplace(&svg, ptr);
+    return ptr;
 }
 void ScalableVectorGraphic::buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile* svg)
 {
@@ -94,14 +100,48 @@ void ScalableVectorGraphic::buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMar
 
 void ScalableVectorGraphic::renderOffload(ssz renderIndex)
 {
+    // Don't forget to lock the render data!
+    auto setViewboxTransform = [&]
+    {
+        const RectTransform& transform = *this->rectTransform;
+        const VectorTools::Viewbox& vb = this->renderData->vb;
+
+        RenderTransform ret;
+
+        ret.translate(sysm::vector3(-vb.x - vb.w * 0.5f, -vb.y - vb.h * 0.5f, 0.0f));
+
+        float scFactor = std::min(transform.rect().width() / vb.w, transform.rect().height() / vb.h);
+        ret.scale(sysm::vector3(scFactor * transform.scale().x, -scFactor * transform.scale().y, 1.0f));
+
+        ret.translate({ (transform.rect().right + transform.rect().left) / 2.0f, (transform.rect().top + transform.rect().bottom) / 2.0f, 0.0f });
+        ret.rotate(Renderer::fromEuler({ 0, 0, -transform.rotation() }));
+        ret.translate({ transform.position().x, transform.position().y, 0.0f });
+
+        this->renderData->tf = ret;
+    };
+
     if (this->dirty)
     {
         if (this->_svgFile != nullptr)
         {
-            std::shared_ptr<std::vector<FilledPathRenderer>> swapToRender = this->findOrCreateRenderablePath(*this->_svgFile);
+            std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> swapToRender = this->findOrCreateRenderablePath(*this->_svgFile);
+            if (swapToRender)
+            {
+                sys::result<VectorTools::Viewbox> vb = VectorTools::parseViewbox(this->_svgFile->document().child(PUGIXML_TEXT("svg")).attribute(PUGIXML_TEXT("viewBox")).value());
 
+                std::lock_guard guard(this->renderData->toRenderLock);
+                this->renderData->toRender = std::move(swapToRender);
+                if (vb)
+                    this->renderData->vb = vb.move();
+                else
+                    this->renderData->vb = VectorTools::Viewbox { 0.0f, 0.0f, 100.0f, 100.0f };
+                setViewboxTransform();
+            }
+        }
+        else
+        {
             std::lock_guard guard(this->renderData->toRenderLock);
-            this->renderData->toRender = std::move(swapToRender);
+            this->renderData->toRender = nullptr;
         }
         if (this->deferOldSvg)
             this->buryLoadedSvgIfOrphaned(this->deferOldSvg);
@@ -109,14 +149,26 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
         this->deferOldSvg = this->_svgFile.get();
         this->dirty = false;
     }
+    else if (this->rectTransform->dirty())
+    {
+        std::lock_guard guard(this->renderData->toRenderLock);
+        setViewboxTransform();
+    }
 
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get())]
     {
         std::lock_guard guard(renderData->toRenderLock);
-        for (auto& paths : *renderData->toRender)
+        _fence_value_return(void(), !renderData->toRender);
+
+        for (const ScalableVectorGraphic::Renderable& renderable : *renderData->toRender)
         {
-            (void)paths.submitDrawStencil(renderIndex, GL::RenderTransform());
-            (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform);
+            switch (renderable.type)
+            {
+            case ScalableVectorGraphic::RenderableType::FilledPath:
+                (void)renderable.filledPath.rend.submitDrawStencil(renderIndex, renderData->tf);
+                (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform, ~0_u8, renderable.filledPath.col);
+                break;
+            }
         }
     }, false);
 }

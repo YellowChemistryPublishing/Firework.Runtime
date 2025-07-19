@@ -14,15 +14,20 @@ namespace Firework::GL
     {
         sysm::matrix4x4 tf;
 
-        void translate(sysm::vector3 vec);
-        void rotate(sysm::quaternion rot);
-        void scale(sysm::vector3 vec);
+        void translate(sysm::vector3 vec)
+        {
+            this->tf = sysm::matrix4x4::translate(vec) * this->tf;
+        }
+        void rotate(sysm::quaternion rot)
+        {
+            this->tf = sysm::matrix4x4::rotate(rot) * this->tf;
+        }
+        void scale(sysm::vector3 vec)
+        {
+            this->tf = sysm::matrix4x4::scale(vec) * this->tf;
+        }
 
         friend class Firework::GL::Renderer;
         friend class Firework::GL::LitObjectHandle;
-    private:
-        float normalMatrix[3][3];
-
-        void regenerateNormalMatrix();
     };
 } // namespace Firework::GL

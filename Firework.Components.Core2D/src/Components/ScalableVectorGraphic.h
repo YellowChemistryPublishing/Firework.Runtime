@@ -6,6 +6,7 @@
 #include <robin_hood.h>
 
 #include <Friends/FilledPathRenderer.h>
+#include <Friends/VectorTools.h>
 #include <GL/Transform.h>
 #include <Library/Property.h>
 
@@ -26,7 +27,64 @@ namespace Firework
 
     class _fw_cc2d_api [[fw::component]] ScalableVectorGraphic final
     {
-        static robin_hood::unordered_map<PackageSystem::ExtensibleMarkupPackageFile*, std::shared_ptr<std::vector<FilledPathRenderer>>> loadedSvgs;
+        enum class RenderableType
+        {
+            FilledPath,
+            NoOp
+        };
+        struct FilledPathRenderable
+        {
+            FilledPathRenderer rend;
+            Color col;
+
+            FilledPathRenderable(FilledPathRenderer rend, Color col) : rend(std::move(rend)), col(col)
+            { }
+            FilledPathRenderable(FilledPathRenderable&& other)
+            {
+                swap(*this, other);
+            }
+
+            friend void swap(FilledPathRenderable& a, FilledPathRenderable& b)
+            {
+                using std::swap;
+
+                swap(a.rend, b.rend);
+                swap(a.col, b.col);
+            }
+        };
+        struct Renderable
+        {
+            union
+            {
+                FilledPathRenderable filledPath;
+            };
+            const RenderableType type = RenderableType::NoOp;
+
+            Renderable() = default;
+            Renderable(FilledPathRenderable filledPath) : filledPath(std::move(filledPath)), type(RenderableType::FilledPath)
+            { }
+            Renderable(Renderable&& other)
+            {
+                swap(*this, other);
+            }
+            ~Renderable()
+            {
+                switch (this->type)
+                {
+                case RenderableType::FilledPath:
+                    this->filledPath.~FilledPathRenderable();
+                    break;
+                }
+            }
+
+            friend void swap(Renderable& a, Renderable& b)
+            {
+                if (&a != &b)
+                    std::swap_ranges(_asr(byte*, &a), _asr(byte*, &a) + sizeof(Renderable), _asr(byte*, &b));
+            }
+        };
+
+        static robin_hood::unordered_map<PackageSystem::ExtensibleMarkupPackageFile*, std::shared_ptr<std::vector<Renderable>>> loadedSvgs;
 
         std::shared_ptr<RectTransform> rectTransform = nullptr;
 
@@ -37,15 +95,18 @@ namespace Firework
 
         struct RenderData
         {
-            std::shared_ptr<std::vector<FilledPathRenderer>> toRender;
+            std::shared_ptr<std::vector<Renderable>> toRender;
+
+            VectorTools::Viewbox vb;
             GL::RenderTransform tf;
+
             std::mutex toRenderLock;
         };
         std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
 
         void onAttach(Entity& entity);
 
-        std::shared_ptr<std::vector<FilledPathRenderer>> findOrCreateRenderablePath(PackageSystem::ExtensibleMarkupPackageFile& svg);
+        std::shared_ptr<std::vector<Renderable>> findOrCreateRenderablePath(PackageSystem::ExtensibleMarkupPackageFile& svg);
         //                           v Never null, but also may be invalid, so passed by ptr, not ref.
         void buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile* svg);
 

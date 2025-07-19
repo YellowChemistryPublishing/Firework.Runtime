@@ -169,7 +169,7 @@ void Text::swapRenderBuffers()
 
 void Text::renderOffload(ssz renderIndex)
 {
-    if (this->rectTransform->dirty() || this->dirty)
+    if (this->dirty || this->rectTransform->dirty())
     {
         if (this->_font && !this->_text.empty()) [[likely]]
             this->swapRenderBuffers();

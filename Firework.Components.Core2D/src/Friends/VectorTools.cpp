@@ -1,10 +1,85 @@
 #include "VectorTools.h"
 
+#include <charconv>
+
 using namespace Firework;
+
+sys::result<VectorTools::Viewbox> VectorTools::parseViewbox(std::string_view attrVal)
+{
+    const char* it = std::to_address(attrVal.begin());
+    const char* end = std::to_address(attrVal.end());
+
+    auto ignoreWhitespace = [&]() -> void
+    {
+        while (it != end && std::isspace(*it)) ++it;
+    };
+    ignoreWhitespace(); // Start ourselves at the first real character.
+
+    VectorTools::Viewbox ret;
+    float val;
+
+    auto readFloat = [&]() -> bool
+    {
+        std::from_chars_result res = std::from_chars(it, end, val);
+        _fence_value_return(false, !res);
+
+        it = res.ptr;
+        return true;
+    };
+
+    _fence_value_return(nullptr, !readFloat());
+    ret.x = val;
+    ignoreWhitespace();
+
+    _fence_value_return(nullptr, !readFloat());
+    ret.y = val;
+    ignoreWhitespace();
+
+    _fence_value_return(nullptr, !readFloat());
+    ret.w = val;
+    ignoreWhitespace();
+
+    _fence_value_return(nullptr, !readFloat());
+    ret.h = val;
+    ignoreWhitespace();
+
+    _fence_value_return(nullptr, it != end);
+    return ret;
+}
 
 bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& out)
 {
     _fence_value_return(false, attrVal.empty());
+
+    constexpr auto isCommand = [](char c) -> bool
+    {
+        switch (c)
+        {
+        case 'M':
+        case 'm':
+        case 'L':
+        case 'l':
+        case 'H':
+        case 'h':
+        case 'V':
+        case 'v':
+        case 'C':
+        case 'c':
+        case 'S':
+        case 's':
+        case 'Q':
+        case 'q':
+        case 'T':
+        case 't':
+        case 'A':
+        case 'a':
+        case 'Z':
+        case 'z':
+            return true;
+        default:
+            return false;
+        }
+    };
 
     const char* it = std::to_address(attrVal.begin());
     const char* end = std::to_address(attrVal.end());
@@ -19,7 +94,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
     {
         _fence_value_return(false, it == end);
 
-        if (VectorTools::isCommand(*it))
+        if (isCommand(*it))
         {
             char ret = *it;
             ++it;
@@ -33,10 +108,11 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
     {
         _fence_value_return(false, it == end);
 
-        char* newIt = nullptr;
-        float ret = std::strtof(it, &newIt);
-        _fence_value_return(false, !newIt || it == newIt || ret == float(HUGE_VAL) || ret == float(HUGE_VALF) || ret == float(HUGE_VALL) || std::isinf(ret) || std::isnan(ret));
-        it = newIt > end ? end : newIt;
+        float ret = std::numeric_limits<float>::quiet_NaN();
+        std::from_chars_result res = std::from_chars(it, end, ret);
+
+        _fence_value_return(false, !res || it == res.ptr || ret == float(HUGE_VAL) || ret == float(HUGE_VALF) || ret == float(HUGE_VALL) || std::isinf(ret) || std::isnan(ret));
+        it = res.ptr;
         out += ret;
 
         ignoreWhitespace();
@@ -69,7 +145,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
     auto readNextSetInjectedCommandIfNeeded = [&](char injectAs) -> void
     {
         if (readDelimiter())
-            injectedNextCommand = command;
+            injectedNextCommand = injectAs;
     };
 
     while (it != end)
@@ -95,7 +171,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
         AnyMoveTo:
             pathBegin = ssz(out.size());
             _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
-            out.emplace_back(PathCommand { .moveTo = PathCommandMoveTo { .to = to }, .type = PathCommandType::MoveTo });
+            out.emplace_back(PathCommand(PathCommandMoveTo { .to = to }));
             readNextSetInjectedCommandIfNeeded(command == 'M' ? 'L' : 'l');
             break;
 
@@ -106,7 +182,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             to = cur;
         AnyLineTo:
             _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
-            out.emplace_back(PathCommand { .lineTo = PathCommandLineTo { .from = cur, .to = to }, .type = PathCommandType::LineTo });
+            out.emplace_back(PathCommand(PathCommandLineTo { .from = cur, .to = to }));
             readNextSetInjectedCommandIfNeeded(command);
             break;
 
@@ -127,7 +203,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             horizReadTo = &to.y;
         AnyHorizTo:
             _fence_value_return(false, !readAddNextFloat(*horizReadTo));
-            out.emplace_back(PathCommand { .lineTo = PathCommandLineTo { .from = cur, .to = to }, .type = PathCommandType::LineTo });
+            out.emplace_back(PathCommand(PathCommandLineTo { .from = cur, .to = to }));
             readNextSetInjectedCommandIfNeeded(command);
             break;
 
@@ -163,7 +239,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
                 _fence_value_return(false, !readDelimiter());
                 _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
 
-                out.emplace_back(PathCommand { .cubicTo = PathCommandCubicTo { .from = cur, .ctrl1 = c1, .ctrl2 = c2, .to = to }, .type = PathCommandType::CubicTo });
+                out.emplace_back(PathCommand(PathCommandCubicTo { .from = cur, .ctrl1 = c1, .ctrl2 = c2, .to = to }));
 
                 readNextSetInjectedCommandIfNeeded(command);
             }
@@ -196,7 +272,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
                 }
 
                 _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
-                out.emplace_back(PathCommand { .quadraticTo = PathCommandQuadraticTo { .from = cur, .ctrl = c1, .to = to }, .type = PathCommandType::QuadraticTo });
+                out.emplace_back(PathCommand(PathCommandQuadraticTo { .from = cur, .ctrl = c1, .to = to }));
                 readNextSetInjectedCommandIfNeeded(command);
             }
             break;
@@ -207,7 +283,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
 
         case 'Z':
         case 'z':
-            out.emplace_back(PathCommand { .closePath = PathCommandClose { .begin = pathBegin, .end = ssz(out.size()) }, .type = PathCommandType::ClosePath });
+            out.emplace_back(PathCommand(PathCommandClose { .begin = pathBegin, .end = ssz(out.size()) }));
             pathBegin = ssz(out.size());
             break;
         }

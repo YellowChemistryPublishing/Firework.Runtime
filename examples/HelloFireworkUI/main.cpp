@@ -44,8 +44,8 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         //           U"beans beans beans beans beans beans beans beans beans";
         // t->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Comic Sans MS.ttf"));
         // t->fontSize = 200;
-        rt->rect = RectFloat(400, 200, -400, -200);
-        rt->localRotation += std::numbers::pi_v<float> / 2.0f;
+        rt->rect = RectFloat(720 / 2, 1280 / 2, -720 / 2, -1280 / 2);
+        // rt->localRotation += std::numbers::pi_v<float> / 2.0f;
         auto s = e->addComponent<ScalableVectorGraphic>();
         s->svgFile = std::dynamic_pointer_cast<ExtensibleMarkupPackageFile>(PackageManager::lookupFileByPath(L"assets/tiger.svg"));
 
@@ -54,7 +54,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         auto e3 = Entity::alloc();
 
         Debug::printHierarchy();
-        Debug::showF3Menu();
+        // Debug::showF3Menu();
     };
 
     return 0;

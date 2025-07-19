@@ -91,7 +91,7 @@ FilledPathRenderer::FilledPathRenderer(const std::span<const FilledPathPoint> po
                                           inds.data(), +u32(inds.size() * sizeof(decltype(inds)::value_type)));
 }
 
-bool FilledPathRenderer::submitDrawStencil(const ssz renderIndex, RenderTransform shape, const bool forceHole)
+bool FilledPathRenderer::submitDrawStencil(const ssz renderIndex, RenderTransform shape, const bool forceHole) const
 {
     _fence_value_return(false, !this->fill || !FilledPathRenderer::stencilProgram || !FilledPathRenderer::drawProgram);
 
