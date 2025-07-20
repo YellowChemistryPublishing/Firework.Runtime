@@ -1,129 +1,134 @@
 name: CMake
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    push:
+        branches: [main]
+    pull_request:
+        branches: [main]
 
 env:
-  BUILD_TYPE: Release
+    BUILD_TYPE: Release
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ windows-latest, ubuntu-latest ]
-        compiler: [ gcc-latest, clang-latest, msvc-22 ]
-        arch: [ i686, x86_64 ]
-        exclude:
-        - os: macos-latest
-          compiler: msvc-22
-        - os: ubuntu-latest
-          compiler: msvc-22
+    build:
+        strategy:
+            matrix:
+                os: [windows-latest, ubuntu-latest]
+                compiler: [gcc-latest, clang-latest, msvc-22]
+                arch: [i686, x86_64]
+                exclude:
+                    - os: macos-latest
+                      compiler: msvc-22
+                    - os: ubuntu-latest
+                      compiler: msvc-22
 
-    runs-on: ${{matrix.os}}
+        runs-on: ${{matrix.os}}
 
-    defaults:
-      run:
-        shell: bash
+        defaults:
+            run:
+                shell: bash
 
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  submodules: recursive
 
-    - name: Setup MSYS2
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MSYS
-      if: matrix.os == 'windows-latest' && matrix.compiler != 'msvc-22'
+            - name: Setup MSYS2
+              uses: msys2/setup-msys2@v2
+              with:
+                  msystem: MSYS
+              if: matrix.os == 'windows-latest' && matrix.compiler != 'msvc-22'
 
-    - name: Environment (i686)
-      run: |
-        echo "archmsvc=Win32" >> $GITHUB_ENV
-        echo "archbits=32" >> $GITHUB_ENV
-        echo "archext=:i386" >> $GITHUB_ENV
-        echo "archflag=-m32" >> $GITHUB_ENV
-      if: matrix.arch == 'i686'
+            - name: Environment (i686)
+              run: |
+                  echo "archmsvc=Win32" >> $GITHUB_ENV
+                  echo "archbits=32" >> $GITHUB_ENV
+                  echo "archext=:i386" >> $GITHUB_ENV
+                  echo "archflag=-m32" >> $GITHUB_ENV
+              if: matrix.arch == 'i686'
 
-    - name: Environment (x86_64)
-      run: |
-        echo "archmsvc=x64" >> $GITHUB_ENV
-        echo "archbits=64" >> $GITHUB_ENV
-        echo "archext=" >> $GITHUB_ENV
-        echo "archflag=" >> $GITHUB_ENV
-      if: matrix.arch == 'x86_64'
+            - name: Environment (x86_64)
+              run: |
+                  echo "archmsvc=x64" >> $GITHUB_ENV
+                  echo "archbits=64" >> $GITHUB_ENV
+                  echo "archext=" >> $GITHUB_ENV
+                  echo "archflag=" >> $GITHUB_ENV
+              if: matrix.arch == 'x86_64'
 
-    - name: Environment (win32)
-      run: |
-        echo "installninja=pacman --noconfirm -S mingw-w64-${{matrix.arch}}-ninja" >> $GITHUB_ENV
-        echo "installgcc=pacman --noconfirm -S mingw-w64-${{matrix.arch}}-gcc" >> $GITHUB_ENV
-        echo "installclang=pacman --noconfirm -S mingw-w64-${{matrix.arch}}-clang" >> $GITHUB_ENV
-        echo "cmdgcc=gcc" >> $GITHUB_ENV
-        echo "cmdgxx=g++" >> $GITHUB_ENV
-        echo "cmdclang=clang" >> $GITHUB_ENV
-        echo "cmdclangxx=clang++" >> $GITHUB_ENV
-        echo "gencc=MinGW Makefiles" >> $GITHUB_ENV
-        echo "genclang=Ninja" >> $GITHUB_ENV
-        echo "${{runner.temp}}/msys64/usr/bin" >> $GITHUB_PATH
-        echo "${{runner.temp}}/msys64/mingw${{env.archbits}}/bin" >> $GITHUB_PATH
-      if: matrix.os == 'windows-latest'
+            - name: Environment (win32)
+              run: |
+                  echo "installninja=pacman --noconfirm -S mingw-w64-${{matrix.arch}}-ninja" >> $GITHUB_ENV
+                  echo "installgcc=pacman --noconfirm -S mingw-w64-${{matrix.arch}}-gcc" >> $GITHUB_ENV
+                  echo "installclang=pacman --noconfirm -S mingw-w64-${{matrix.arch}}-clang" >> $GITHUB_ENV
+                  echo "cmdgcc=gcc" >> $GITHUB_ENV
+                  echo "cmdgxx=g++" >> $GITHUB_ENV
+                  echo "cmdclang=clang" >> $GITHUB_ENV
+                  echo "cmdclangxx=clang++" >> $GITHUB_ENV
+                  echo "gencc=MinGW Makefiles" >> $GITHUB_ENV
+                  echo "genclang=Ninja" >> $GITHUB_ENV
+                  echo "${{runner.temp}}/msys64/usr/bin" >> $GITHUB_PATH
+                  echo "${{runner.temp}}/msys64/mingw${{env.archbits}}/bin" >> $GITHUB_PATH
+              if: matrix.os == 'windows-latest'
 
-    - name: Environment (linux)
-      run: |
-        sudo dpkg --add-architecture i386
-        sudo apt-get update
-        echo "installninja=sudo apt-get install -y ninja-build" >> $GITHUB_ENV
-        echo "installgcc=sudo apt-get install -y gcc-12${{env.archext}}; sudo apt-get install -y g++-12${{env.archext}}" >> $GITHUB_ENV
-        echo "installclang=sudo apt-get install -y gcc-12${{env.archext}}; sudo apt-get install -y g++-12${{env.archext}}; wget https://apt.llvm.org/llvm.sh && chmod u+x llvm.sh && sudo bash ./llvm.sh 17" >> $GITHUB_ENV
-        echo "cmdgcc=gcc-12" >> $GITHUB_ENV
-        echo "cmdgxx=g++-12" >> $GITHUB_ENV  
-        echo "cmdclang=clang-17" >> $GITHUB_ENV
-        echo "cmdclangxx=clang++-17" >> $GITHUB_ENV
-        echo "gencc=Unix Makefiles" >> $GITHUB_ENV
-        echo "genclang=Ninja" >> $GITHUB_ENV
-      if: matrix.os == 'ubuntu-latest'
+            - name: Environment (linux)
+              run: |
+                  sudo dpkg --add-architecture i386
+                  sudo apt-get update
+                  echo "installninja=sudo apt-get install -y ninja-build" >> $GITHUB_ENV
+                  echo "installgcc=sudo apt-get install -y gcc-12${{env.archext}}; sudo apt-get install -y g++-12${{env.archext}}" >> $GITHUB_ENV
+                  echo "installclang=sudo apt-get install -y gcc-12${{env.archext}}; sudo apt-get install -y g++-12${{env.archext}}; wget https://apt.llvm.org/llvm.sh && chmod u+x llvm.sh && sudo bash ./llvm.sh 17" >> $GITHUB_ENV
+                  echo "cmdgcc=gcc-12" >> $GITHUB_ENV
+                  echo "cmdgxx=g++-12" >> $GITHUB_ENV  
+                  echo "cmdclang=clang-17" >> $GITHUB_ENV
+                  echo "cmdclangxx=clang++-17" >> $GITHUB_ENV
+                  echo "gencc=Unix Makefiles" >> $GITHUB_ENV
+                  echo "genclang=Ninja" >> $GITHUB_ENV
+              if: matrix.os == 'ubuntu-latest'
 
-    - name: Install gcc
-      run: |
-        ${{env.installninja}}
-        ${{env.installgcc}}
-        echo "${{runner.temp}}/msys64/mingw${{env.archbits}}/bin" >> $GITHUB_PATH
-        echo "CC=${{env.cmdgcc}}" >> $GITHUB_ENV
-        echo "CXX=${{env.cmdgxx}}" >> $GITHUB_ENV
-        echo "CMAKE_GENERATOR=${{env.gencc}}" >> $GITHUB_ENV
-      if: matrix.compiler == 'gcc-latest'
+            - name: Install gcc
+              run: |
+                  ${{env.installninja}}
+                  ${{env.installgcc}}
+                  echo "${{runner.temp}}/msys64/mingw${{env.archbits}}/bin" >> $GITHUB_PATH
+                  echo "CC=${{env.cmdgcc}}" >> $GITHUB_ENV
+                  echo "CXX=${{env.cmdgxx}}" >> $GITHUB_ENV
+                  echo "CMAKE_GENERATOR=${{env.gencc}}" >> $GITHUB_ENV
+              if: matrix.compiler == 'gcc-latest'
 
-    - name: Install Clang
-      run: |
-        ${{env.installninja}}
-        ${{env.installclang}}
-        echo "${{runner.temp}}/msys64/mingw${{env.archbits}}/bin" >> $GITHUB_PATH
-        echo "CC=${{env.cmdclang}}" >> $GITHUB_ENV
-        echo "CXX=${{env.cmdclangxx}}" >> $GITHUB_ENV
-        echo "CFLAGS=${{env.archflag}}" >> $GITHUB_ENV
-        echo "CXXFLAGS=${{env.archflag}}" >> $GITHUB_ENV
-        echo "LDFLAGS=${{env.archflag}}" >> $GITHUB_ENV
-        echo "CMAKE_GENERATOR=${{env.genclang}}" >> $GITHUB_ENV
-      if: matrix.compiler == 'clang-latest'
+            - name: Install Clang
+              run: |
+                  ${{env.installninja}}
+                  ${{env.installclang}}
+                  echo "${{runner.temp}}/msys64/mingw${{env.archbits}}/bin" >> $GITHUB_PATH
+                  echo "CC=${{env.cmdclang}}" >> $GITHUB_ENV
+                  echo "CXX=${{env.cmdclangxx}}" >> $GITHUB_ENV
+                  echo "CFLAGS=${{env.archflag}}" >> $GITHUB_ENV
+                  echo "CXXFLAGS=${{env.archflag}}" >> $GITHUB_ENV
+                  echo "LDFLAGS=${{env.archflag}}" >> $GITHUB_ENV
+                  echo "CMAKE_GENERATOR=${{env.genclang}}" >> $GITHUB_ENV
+              if: matrix.compiler == 'clang-latest'
 
-    - name: Setup MSVC
-      run: |
-        echo "CMAKE_GENERATOR=Visual Studio 17 2022" >> $GITHUB_ENV
-        echo "CMAKE_GENERATOR_PLATFORM=${{env.archmsvc}}" >> $GITHUB_ENV
-      if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc-22'
+            - name: Setup MSVC
+              run: |
+                  echo "CMAKE_GENERATOR=Visual Studio 17 2022" >> $GITHUB_ENV
+                  echo "CMAKE_GENERATOR_PLATFORM=${{env.archmsvc}}" >> $GITHUB_ENV
+              if: matrix.os == 'windows-latest' && matrix.compiler == 'msvc-22'
 
-    - name: Install Linux Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libx11-dev${{env.archext}}
-        sudo apt-get install -y libgl1-mesa-dev${{env.archext}}
-      if: matrix.os == 'ubuntu-latest'
+            - name: Install Linux Dependencies
+              run: |
+                  sudo apt-get update \
+                  sudo apt-get install build-essential git make \
+                  pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
+                  libaudio-dev libjack-dev libsndio-dev libx11-dev${{env.archext}} libxext-dev \
+                  libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
+                  libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+                  libegl1-mesa-dev${{env.archext}} libdbus-1-dev libibus-1.0-dev libudev-dev \
+                  libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+              if: matrix.os == 'ubuntu-latest'
 
-    - name: Configure CMake
-      run: cmake -B '${{github.workspace}}/build' -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+            - name: Configure CMake
+              run: cmake -B '${{github.workspace}}/build' -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
-    - name: Build
-      run: cmake --build '${{github.workspace}}/build' --config ${{env.BUILD_TYPE}}
+            - name: Build
+              run: cmake --build '${{github.workspace}}/build' --config ${{env.BUILD_TYPE}}
