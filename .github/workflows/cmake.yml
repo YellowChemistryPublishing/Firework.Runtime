@@ -76,10 +76,10 @@ jobs:
                   sudo dpkg --add-architecture i386
                   sudo apt-get update
                   echo "installninja=sudo apt-get install -y ninja-build" >> $GITHUB_ENV
-                  echo "installgcc=sudo apt-get install -y gcc-12${{env.archext}}; sudo apt-get install -y g++-12${{env.archext}}" >> $GITHUB_ENV
-                  echo "installclang=sudo apt-get install -y gcc-12${{env.archext}}; sudo apt-get install -y g++-12${{env.archext}}; wget https://apt.llvm.org/llvm.sh && chmod u+x llvm.sh && sudo bash ./llvm.sh 17" >> $GITHUB_ENV
-                  echo "cmdgcc=gcc-12" >> $GITHUB_ENV
-                  echo "cmdgxx=g++-12" >> $GITHUB_ENV  
+                  echo "installgcc=sudo apt-get install -y gcc-14${{env.archext}}; sudo apt-get install -y g++-14${{env.archext}}" >> $GITHUB_ENV
+                  echo "installclang=sudo apt-get install -y gcc-14${{env.archext}}; sudo apt-get install -y g++-14${{env.archext}}; wget https://apt.llvm.org/llvm.sh && chmod u+x llvm.sh && sudo bash ./llvm.sh 17" >> $GITHUB_ENV
+                  echo "cmdgcc=gcc-14" >> $GITHUB_ENV
+                  echo "cmdgxx=g++-14" >> $GITHUB_ENV  
                   echo "cmdclang=clang-17" >> $GITHUB_ENV
                   echo "cmdclangxx=clang++-17" >> $GITHUB_ENV
                   echo "gencc=Unix Makefiles" >> $GITHUB_ENV
