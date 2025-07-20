@@ -2,14 +2,20 @@
 
 #include "Firework.Components.Core2D.Exports.h"
 
+#include <glm/mat3x3.hpp>
+#include <glm/vec3.hpp>
 #include <module/sys.Mathematics>
 #include <module/sys>
 #include <vector>
+
+#include <Friends/Color.h>
 
 namespace Firework
 {
     class _fw_cc2d_api VectorTools final
     {
+        static void ignoreWhitespace(const char*& it, const char* end);
+        static bool readFloat(const char*& it, const char* end, float& out);
     public:
         VectorTools() = delete;
 
@@ -19,6 +25,10 @@ namespace Firework
         };
 
         static sys::result<Viewbox> parseViewbox(std::string_view attrVal);
+
+        static sys::result<Color> parseColor(std::string_view attrVal);
+
+        static sys::result<glm::mat3x3> parseTransform(std::string_view attrVal);
 
         struct PathCommandMoveTo
         {

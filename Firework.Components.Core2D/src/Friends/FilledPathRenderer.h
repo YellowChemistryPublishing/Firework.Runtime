@@ -66,7 +66,7 @@ namespace Firework
         }
 
         [[nodiscard]] bool submitDrawStencil(ssz renderIndex, GL::RenderTransform shape, bool forceHole = false) const;
-        [[nodiscard]] static bool submitDraw(ssz renderIndex, GL::RenderTransform clip, u8 whenStencil = ~0_u8, Color color = Color(255, 165, 0));
+        [[nodiscard]] static bool submitDraw(ssz renderIndex, GL::RenderTransform clip, u8 whenStencil = ~0_u8, Color color = Color::unknown);
 
         friend inline void swap(FilledPathRenderer& a, FilledPathRenderer& b)
         {

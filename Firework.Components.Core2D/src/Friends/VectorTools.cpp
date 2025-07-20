@@ -4,46 +4,131 @@
 
 using namespace Firework;
 
+void VectorTools::ignoreWhitespace(const char*& it, const char* end)
+{
+    while (it != end && std::isspace(*it)) ++it;
+}
+bool VectorTools::readFloat(const char*& it, const char* end, float& out)
+{
+    std::from_chars_result res = std::from_chars(it, end, out);
+    _fence_value_return(false, !res);
+
+    it = res.ptr;
+    VectorTools::ignoreWhitespace(it, end);
+    return true;
+}
+
 sys::result<VectorTools::Viewbox> VectorTools::parseViewbox(std::string_view attrVal)
 {
     const char* it = std::to_address(attrVal.begin());
-    const char* end = std::to_address(attrVal.end());
+    const char* const end = std::to_address(attrVal.end());
 
-    auto ignoreWhitespace = [&]() -> void
-    {
-        while (it != end && std::isspace(*it)) ++it;
-    };
-    ignoreWhitespace(); // Start ourselves at the first real character.
+    VectorTools::ignoreWhitespace(it, end); // Start ourselves at the first real character.
 
     VectorTools::Viewbox ret;
     float val;
 
-    auto readFloat = [&]() -> bool
-    {
-        std::from_chars_result res = std::from_chars(it, end, val);
-        _fence_value_return(false, !res);
-
-        it = res.ptr;
-        return true;
-    };
-
-    _fence_value_return(nullptr, !readFloat());
+    _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
     ret.x = val;
-    ignoreWhitespace();
 
-    _fence_value_return(nullptr, !readFloat());
+    _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
     ret.y = val;
-    ignoreWhitespace();
 
-    _fence_value_return(nullptr, !readFloat());
+    _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
     ret.w = val;
-    ignoreWhitespace();
 
-    _fence_value_return(nullptr, !readFloat());
+    _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
     ret.h = val;
-    ignoreWhitespace();
 
     _fence_value_return(nullptr, it != end);
+    return ret;
+}
+
+sys::result<Color> VectorTools::parseColor(std::string_view attrVal)
+{
+    _fence_value_return(nullptr, attrVal.empty());
+    _fence_value_return(nullptr, attrVal.front() != '#');
+
+    Color ret;
+    ret.a = 255;
+
+    if (attrVal.size() == 4)
+    {
+        byte val;
+        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 1), std::to_address(attrVal.begin() + 2), val, 16));
+        ret.r = val + val * 0xF;
+        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 2), std::to_address(attrVal.begin() + 3), val, 16));
+        ret.g = val + val * 0xF;
+        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 3), std::to_address(attrVal.begin() + 4), val, 16));
+        ret.b = val + val * 0xF;
+        return ret;
+    }
+    else if (attrVal.size() == 7)
+    {
+        byte val;
+        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 1), std::to_address(attrVal.begin() + 3), val, 16));
+        ret.r = val;
+        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 3), std::to_address(attrVal.begin() + 5), val, 16));
+        ret.g = val;
+        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 5), std::to_address(attrVal.begin() + 7), val, 16));
+        ret.b = val;
+        return ret;
+    }
+    else
+        return nullptr;
+}
+
+sys::result<glm::mat3x3> VectorTools::parseTransform(std::string_view attrVal)
+{
+    const char* it = std::to_address(attrVal.begin());
+    const char* const end = std::to_address(attrVal.end());
+
+    VectorTools::ignoreWhitespace(it, end); // Start ourselves at the first real character.
+
+    glm::mat3x3 ret(1.0f);
+    while (it != end)
+    {
+        if (std::string_view(it, end).starts_with("matrix("))
+        {
+            it += 7;
+            VectorTools::ignoreWhitespace(it, end);
+
+            glm::mat3x3 by(1.0f);
+            float val;
+
+            _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
+            by[0][0] = val;
+            _fence_value_return(nullptr, *(it++) != ',');
+            VectorTools::ignoreWhitespace(it, end);
+
+            _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
+            by[0][1] = val;
+            _fence_value_return(nullptr, *(it++) != ',');
+            VectorTools::ignoreWhitespace(it, end);
+
+            _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
+            by[1][0] = val;
+            _fence_value_return(nullptr, *(it++) != ',');
+            VectorTools::ignoreWhitespace(it, end);
+
+            _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
+            by[1][1] = val;
+            _fence_value_return(nullptr, *(it++) != ',');
+            VectorTools::ignoreWhitespace(it, end);
+
+            _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
+            by[2][0] = val;
+            _fence_value_return(nullptr, *(it++) != ',');
+            VectorTools::ignoreWhitespace(it, end);
+
+            _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
+            by[2][1] = val;
+            _fence_value_return(nullptr, *(it++) != ')');
+            VectorTools::ignoreWhitespace(it, end);
+
+            ret = by * ret;
+        }
+    }
     return ret;
 }
 
@@ -82,13 +167,9 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
     };
 
     const char* it = std::to_address(attrVal.begin());
-    const char* end = std::to_address(attrVal.end());
+    const char* const end = std::to_address(attrVal.end());
 
-    auto ignoreWhitespace = [&]() -> void
-    {
-        while (it != end && std::isspace(*it)) ++it;
-    };
-    ignoreWhitespace(); // Start ourselves at the first real character.
+    VectorTools::ignoreWhitespace(it, end); // Start ourselves at the first real character.
 
     auto readNextCommand = [&]() -> char
     {
@@ -98,7 +179,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
         {
             char ret = *it;
             ++it;
-            ignoreWhitespace();
+            VectorTools::ignoreWhitespace(it, end);
             return ret;
         }
         else
@@ -115,7 +196,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
         it = res.ptr;
         out += ret;
 
-        ignoreWhitespace();
+        VectorTools::ignoreWhitespace(it, end);
 
         return true;
     };
@@ -126,7 +207,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
 
         if (*it == ',')
             ++it;
-        ignoreWhitespace();
+        VectorTools::ignoreWhitespace(it, end);
         return true;
     };
     auto readAddNextFloatPair = [&](float& a, float& b) -> bool

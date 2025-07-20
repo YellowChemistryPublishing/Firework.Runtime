@@ -121,7 +121,7 @@ namespace Firework::PackageSystem
             PackageManager::textFileHandlers.erase(extension);
         }
 
-        static bool loadPackageIntoMemory(const std::filesystem::path& packagePath);
+        [[nodiscard]] static bool loadPackageIntoMemory(const std::filesystem::path& packagePath);
         static void freePackageInMemory(const std::filesystem::path& packagePath);
 
         /// @brief Retrieve a file from the list of loaded package files.

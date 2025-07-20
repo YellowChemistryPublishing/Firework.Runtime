@@ -9,6 +9,8 @@ namespace Firework
 {
     struct _packed Color
     {
+        static const Color unknown;
+
         union
         {
             struct
@@ -34,4 +36,6 @@ namespace Firework
             return this->r == rhs.r && this->g == rhs.g && this->b == rhs.b && this->a == rhs.a;
         }
     };
+
+    constexpr Color Color::unknown(255, 165, 0);
 } // namespace Firework

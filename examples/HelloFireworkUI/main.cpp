@@ -27,7 +27,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
     std::error_code ec;
     fs::path curPath = fs::current_path(ec);
     if (!ec)
-        PackageManager::loadPackageIntoMemory(curPath / "Runtime" / "CorePackage.fwpkg");
+        (void)PackageManager::loadPackageIntoMemory(curPath / "Runtime" / "CorePackage.fwpkg");
 
     EngineEvent::OnInitialize += []
     {
@@ -35,17 +35,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char* argv[])
         e->addComponent<EntityAttributes>()->name = "beans";
         auto rt = e->getOrAddComponent<RectTransform>();
         rt->rect = RectFloat(400, 400, -400, -400);
-        // auto t = e->addComponent<Text>();
-        // t->font = nullptr;
-        // t->fontSize = 100;
-        // t->text = U"1000000what";
-        // t->fontSize = 4;
-        // t->text = U"beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans beans "
-        //           U"beans beans beans beans beans beans beans beans beans";
-        // t->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Comic Sans MS.ttf"));
-        // t->fontSize = 200;
         rt->rect = RectFloat(720 / 2, 1280 / 2, -720 / 2, -1280 / 2);
-        // rt->localRotation += std::numbers::pi_v<float> / 2.0f;
         auto s = e->addComponent<ScalableVectorGraphic>();
         s->svgFile = std::dynamic_pointer_cast<ExtensibleMarkupPackageFile>(PackageManager::lookupFileByPath(L"assets/tiger.svg"));
 

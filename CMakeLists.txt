@@ -170,6 +170,12 @@ set(SDL_RENDER_METAL OFF CACHE INTERNAL "" FORCE)
 set(HAVE_SHELLSCALINGAPI_H OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/SDL")
 
+# glm
+set(GLM_ENABLE_CXX_20 ON CACHE INTERNAL "" FORCE)
+set(GLM_ENABLE_LANG_EXTENSIONS ON CACHE INTERNAL "" FORCE)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/glm")
+target_compile_definitions(glm PUBLIC GLM_FORCE_LEFT_HANDED)
+
 # assimp
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
@@ -467,6 +473,7 @@ target_include_directories(Firework.Components.Core2D
 )
 target_link_libraries(Firework.Components.Core2D
     PUBLIC
+    glm
     pugixml-static
     sys
     sys.Mathematics
@@ -493,7 +500,9 @@ file(GLOB FIREWORK_EXAMPLES LIST_DIRECTORIES TRUE RELATIVE "${CMAKE_CURRENT_SOUR
 
 if (FIREWORK_BUILD_EXAMPLES)
     foreach (EXAMPLE_NAME ${FIREWORK_EXAMPLES})
-        target_package_archive(package_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/assets" "$<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>/Runtime/CorePackage.fwpkg")
+        if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/assets")
+            target_package_archive(package_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/assets" "$<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>/Runtime/CorePackage.fwpkg")
+        endif()
 
         add_executable(example_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/main.cpp")
         add_dependencies(example_${EXAMPLE_NAME} package_${EXAMPLE_NAME})
