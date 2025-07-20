@@ -77,11 +77,11 @@ jobs:
                   sudo apt-get update
                   echo "installninja=sudo apt-get install -y ninja-build" >> $GITHUB_ENV
                   echo "installgcc=sudo apt-get install -y gcc-14${{env.archext}}; sudo apt-get install -y g++-14${{env.archext}}" >> $GITHUB_ENV
-                  echo "installclang=sudo apt-get install -y gcc-14${{env.archext}}; sudo apt-get install -y g++-14${{env.archext}}; wget https://apt.llvm.org/llvm.sh && chmod u+x llvm.sh && sudo bash ./llvm.sh 17" >> $GITHUB_ENV
+                  echo "installclang=sudo apt-get install -y gcc-14${{env.archext}}; sudo apt-get install -y g++-14${{env.archext}}; wget https://apt.llvm.org/llvm.sh && chmod u+x llvm.sh && sudo bash ./llvm.sh 20" >> $GITHUB_ENV
                   echo "cmdgcc=gcc-14" >> $GITHUB_ENV
                   echo "cmdgxx=g++-14" >> $GITHUB_ENV  
-                  echo "cmdclang=clang-17" >> $GITHUB_ENV
-                  echo "cmdclangxx=clang++-17" >> $GITHUB_ENV
+                  echo "cmdclang=clang-20" >> $GITHUB_ENV
+                  echo "cmdclangxx=clang++-20" >> $GITHUB_ENV
                   echo "gencc=Unix Makefiles" >> $GITHUB_ENV
                   echo "genclang=Ninja" >> $GITHUB_ENV
               if: matrix.os == 'ubuntu-latest'
@@ -119,12 +119,12 @@ jobs:
               run: |
                   sudo apt-get update
                   sudo apt-get install build-essential git make \
-                  pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
-                  libaudio-dev libjack-dev libsndio-dev libx11-dev${{env.archext}} libxext-dev \
-                  libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev libxtst-dev \
-                  libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
-                  libegl1-mesa-dev${{env.archext}} libdbus-1-dev libibus-1.0-dev libudev-dev \
-                  libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
+                  pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev${{env.archext}} libpulse-dev${{env.archext}} \
+                  libaudio-dev${{env.archext}} libjack-dev${{env.archext}} libsndio-dev${{env.archext}} libx11-dev${{env.archext}} libxext-dev${{env.archext}} \
+                  libxrandr-dev${{env.archext}} libxcursor-dev${{env.archext}} libxfixes-dev${{env.archext}} libxi-dev${{env.archext}} libxss-dev${{env.archext}} libxtst-dev${{env.archext}} \
+                  libxkbcommon-dev${{env.archext}} libdrm-dev${{env.archext}} libgbm-dev${{env.archext}} libgl1-mesa-dev${{env.archext}} libgles2-mesa-dev${{env.archext}} \
+                  libegl1-mesa-dev${{env.archext}} libdbus-1-dev${{env.archext}} libibus-1.0-dev${{env.archext}} libudev-dev${{env.archext}} \
+                  libpipewire-0.3-dev${{env.archext}} libwayland-dev${{env.archext}} libdecor-0-dev${{env.archext}} liburing-dev${{env.archext}}
               if: matrix.os == 'ubuntu-latest'
 
             - name: Configure CMake
