@@ -1,0 +1,13 @@
+#pragma once
+
+#include <Components/ScalableVectorGraphic.h>
+#include <Components/Text.h>
+
+#include <Friends/Color.h>
+#include <Friends/FilledPathRenderer.h>
+#include <Friends/ParagraphIterator.h>
+#include <Friends/VectorTools.h>
+
+#include <PackageSystem/ExtensibleMarkupFile.h>
+#include <PackageSystem/PortableNetworkGraphicFile.h>
+#include <PackageSystem/TrueTypeFontFile.h>

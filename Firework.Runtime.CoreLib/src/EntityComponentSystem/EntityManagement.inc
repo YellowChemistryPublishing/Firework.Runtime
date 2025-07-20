@@ -37,7 +37,7 @@ namespace Firework
         requires requires(Entity& entity) { func(entity); };
         template <typename... Ts>
         inline static void forEach(auto&& func)
-        requires requires(Entity& entity) { func(entity, std::declval<Ts>()...); };
+        requires requires(Entity& entity, Ts&... components) { func(entity, components...); };
 
         friend class Firework::Internal::CoreEngine;
         friend class Firework::Entity;

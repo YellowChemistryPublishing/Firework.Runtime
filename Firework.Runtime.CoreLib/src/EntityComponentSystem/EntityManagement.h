@@ -36,30 +36,33 @@ namespace Firework
     }
     template <typename... Ts>
     inline void Entities::forEach(auto&& func)
-    requires requires(Entity& entity) { func(entity, std::declval<Ts>()...); }
+    requires requires(Entity& entity, Ts&... components) { func(entity, components...); }
     {
-        if constexpr (sizeof...(Ts) == 0u)
-            Entities::forEachEntity(func);
-        else
+        const auto invokeForEach = [&]<size_t... Is>(std::index_sequence<Is...>)
         {
-            const decltype(Entities::table)::iterator componentTable[] { Entities::table.find(std::type_index(typeid(Ts)))... };
-            for (auto& query : componentTable)
-                if (query == Entities::table.end()) [[unlikely]]
-                    return;
-
-            Entities::forEachEntity([&](Entity& entity)
+            if constexpr (sizeof...(Ts) == 0u)
+                Entities::forEachEntity(func);
+            else
             {
-                decltype((**componentTable).second.find(nullptr)) components[sizeof...(Ts)];
-                for (size_t i = 0; i < sizeof...(Ts); i++)
-                {
-                    components[i] = componentTable[i]->second.find(&entity);
-                    if (components[i] == componentTable[i]->second.end())
+                const decltype(Entities::table)::iterator componentTable[] { Entities::table.find(std::type_index(typeid(Ts)))... };
+                for (auto& query : componentTable)
+                    if (query == Entities::table.end()) [[unlikely]]
                         return;
-                }
 
-                size_t i = 0;
-                func(entity, *std::static_pointer_cast<Ts>(components[i++]->second)...);
-            });
-        }
+                Entities::forEachEntity([&](Entity& entity)
+                {
+                    decltype((**componentTable).second.find(nullptr)) components[sizeof...(Ts)];
+                    for (size_t i = 0; i < sizeof...(Ts); i++)
+                    {
+                        components[i] = componentTable[i]->second.find(&entity);
+                        if (components[i] == componentTable[i]->second.end())
+                            return;
+                    }
+
+                    func(entity, *std::static_pointer_cast<Ts>(components[Is]->second)...);
+                });
+            }
+        };
+        invokeForEach(std::index_sequence_for<Ts...>());
     }
 } // namespace Firework

@@ -98,32 +98,32 @@ sys::result<glm::mat3x3> VectorTools::parseTransform(std::string_view attrVal)
 
             _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
             by[0][0] = val;
-            _fence_value_return(nullptr, *(it++) != ',');
+            _fence_value_return(nullptr, it == end || *(it++) != ',');
             VectorTools::ignoreWhitespace(it, end);
 
             _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
             by[0][1] = val;
-            _fence_value_return(nullptr, *(it++) != ',');
+            _fence_value_return(nullptr, it == end || *(it++) != ',');
             VectorTools::ignoreWhitespace(it, end);
 
             _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
             by[1][0] = val;
-            _fence_value_return(nullptr, *(it++) != ',');
+            _fence_value_return(nullptr, it == end || *(it++) != ',');
             VectorTools::ignoreWhitespace(it, end);
 
             _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
             by[1][1] = val;
-            _fence_value_return(nullptr, *(it++) != ',');
+            _fence_value_return(nullptr, it == end || *(it++) != ',');
             VectorTools::ignoreWhitespace(it, end);
 
             _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
             by[2][0] = val;
-            _fence_value_return(nullptr, *(it++) != ',');
+            _fence_value_return(nullptr, it == end || *(it++) != ',');
             VectorTools::ignoreWhitespace(it, end);
 
             _fence_value_return(nullptr, !VectorTools::readFloat(it, end, val));
             by[2][1] = val;
-            _fence_value_return(nullptr, *(it++) != ')');
+            _fence_value_return(nullptr, it == end || *(it++) != ')');
             VectorTools::ignoreWhitespace(it, end);
 
             ret = by * ret;
