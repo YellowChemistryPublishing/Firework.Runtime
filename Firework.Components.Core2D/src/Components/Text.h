@@ -2,10 +2,12 @@
 
 #include "Firework.Components.Core2D.Exports.h"
 
+#include <glm/vec4.hpp>
 #include <module/sys.Mathematics>
 
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/Entity.h>
+#include <Friends/Color.h>
 #include <Friends/FilledPathRenderer.h>
 #include <GL/Transform.h>
 #include <Library/Property.h>
@@ -51,6 +53,7 @@ namespace Firework
         std::shared_ptr<PackageSystem::TrueTypeFontPackageFile> _font = nullptr;
         float _fontSize = 11.0f;
         std::u32string _text = U"";
+        Color _color = Color::unknown;
 
         bool dirty = false;
         PackageSystem::TrueTypeFontPackageFile* deferOldFont = nullptr;
@@ -93,6 +96,11 @@ namespace Firework
         {
             this->dirty = true;
             this->_text = std::move(value);
+        } };
+        const Property<Color, const Color&> color { [this]() -> Color { return this->_color; }, [this](const Color& value)
+        {
+            this->dirty = true;
+            this->_color = value;
         } };
 
         friend struct ::ComponentStaticInit;

@@ -31,6 +31,8 @@ namespace
             PackageManager::addBinaryFileHandler<PortableGraphicPackageFile>({ 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a });
             PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x00, 0x01, 0x00, 0x00, 0x00 });
             PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x74, 0x72, 0x75, 0x65, 0x00 });
+            PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x00, 0x01, 0x00, 0x00 });
+            PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x4F, 0x54, 0x54, 0x4F });
 
             PackageManager::addTextFileHandler<ExtensibleMarkupPackageFile>(L".svg");
 

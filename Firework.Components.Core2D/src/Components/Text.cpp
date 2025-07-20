@@ -187,10 +187,10 @@ void Text::renderOffload(ssz renderIndex)
         this->dirty = false;
     }
 
-    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get())]
+    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get()), color = this->_color]
     {
         std::lock_guard guard(renderData->toRenderLock);
         for (auto& [paths, transform] : renderData->toRender) (void)paths->submitDrawStencil(renderIndex, transform);
-        (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform);
+        (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform, ~0_u8, color);
     }, false);
 }

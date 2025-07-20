@@ -500,6 +500,10 @@ file(GLOB FIREWORK_EXAMPLES LIST_DIRECTORIES TRUE RELATIVE "${CMAKE_CURRENT_SOUR
 
 if (FIREWORK_BUILD_EXAMPLES)
     foreach (EXAMPLE_NAME ${FIREWORK_EXAMPLES})
+        if (NOT EXISTS "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/")
+            continue()
+        endif()
+
         if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/assets")
             target_package_archive(package_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/assets" "$<TARGET_FILE_DIR:example_${EXAMPLE_NAME}>/Runtime/CorePackage.fwpkg")
         endif()
