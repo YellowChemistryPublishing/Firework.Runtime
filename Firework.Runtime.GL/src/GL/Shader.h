@@ -17,6 +17,7 @@
         (void*)__recat(__recat(__recat(__concat(shader, shaderName), Fragment), backend), Data),                   \
         (uint32_t)__recat(__recat(__recat(__recat(__concat(shader, shaderName), Fragment), backend), Data), _Size)
 
+#if _WIN32
 #define createShaderFromPrecompiled(prog, shaderName, ...)                                                                                    \
     switch (Renderer::rendererBackend())                                                                                                      \
     {                                                                                                                                         \
@@ -33,6 +34,18 @@
         prog = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(shaderName, vulkan) __VA_OPT__(, ) __VA_ARGS__); \
         break;                                                                                                                                \
     }
+#else
+#define createShaderFromPrecompiled(prog, shaderName, ...)                                                                                    \
+    switch (Renderer::rendererBackend())                                                                                                      \
+    {                                                                                                                                         \
+    case RendererBackend::OpenGL:                                                                                                             \
+        prog = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(shaderName, opengl) __VA_OPT__(, ) __VA_ARGS__); \
+        break;                                                                                                                                \
+    case RendererBackend::Vulkan:                                                                                                             \
+        prog = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(shaderName, vulkan) __VA_OPT__(, ) __VA_ARGS__); \
+        break;                                                                                                                                \
+    }
+#endif
 
 namespace Firework
 {

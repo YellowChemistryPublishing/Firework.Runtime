@@ -107,10 +107,12 @@ foreach (SHADER ${SHADER_SOURCE_FILES})
                 "${SHADER_FILES_DIR}/include/${SHADER_NAME}.vfAll.h"
 "#pragma once\n\
 \n\
+#ifdef _WIN32\n\
 #include <${SHADER_NAME}.vert.d3d11.h>\n\
 #include <${SHADER_NAME}.frag.d3d11.h>\n\
 #include <${SHADER_NAME}.vert.d3d12.h>\n\
 #include <${SHADER_NAME}.frag.d3d12.h>\n\
+#endif\n\
 #include <${SHADER_NAME}.vert.opengl.h>\n\
 #include <${SHADER_NAME}.frag.opengl.h>\n\
 #include <${SHADER_NAME}.vert.vulkan.h>\n\
