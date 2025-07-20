@@ -11,7 +11,7 @@ void VectorTools::ignoreWhitespace(const char*& it, const char* end)
 bool VectorTools::readFloat(const char*& it, const char* end, float& out)
 {
     std::from_chars_result res = std::from_chars(it, end, out);
-    _fence_value_return(false, !res);
+    _fence_value_return(false, res.ec != std::errc());
 
     it = res.ptr;
     VectorTools::ignoreWhitespace(it, end);
@@ -55,22 +55,22 @@ sys::result<Color> VectorTools::parseColor(std::string_view attrVal)
     if (attrVal.size() == 4)
     {
         byte val;
-        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 1), std::to_address(attrVal.begin() + 2), val, 16));
+        _fence_value_return(nullptr, std::from_chars(std::to_address(attrVal.begin() + 1), std::to_address(attrVal.begin() + 2), val, 16).ec != std::errc());
         ret.r = val + val * 0xF;
-        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 2), std::to_address(attrVal.begin() + 3), val, 16));
+        _fence_value_return(nullptr, std::from_chars(std::to_address(attrVal.begin() + 2), std::to_address(attrVal.begin() + 3), val, 16).ec != std::errc());
         ret.g = val + val * 0xF;
-        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 3), std::to_address(attrVal.begin() + 4), val, 16));
+        _fence_value_return(nullptr, std::from_chars(std::to_address(attrVal.begin() + 3), std::to_address(attrVal.begin() + 4), val, 16).ec != std::errc());
         ret.b = val + val * 0xF;
         return ret;
     }
     else if (attrVal.size() == 7)
     {
         byte val;
-        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 1), std::to_address(attrVal.begin() + 3), val, 16));
+        _fence_value_return(nullptr, std::from_chars(std::to_address(attrVal.begin() + 1), std::to_address(attrVal.begin() + 3), val, 16).ec != std::errc());
         ret.r = val;
-        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 3), std::to_address(attrVal.begin() + 5), val, 16));
+        _fence_value_return(nullptr, std::from_chars(std::to_address(attrVal.begin() + 3), std::to_address(attrVal.begin() + 5), val, 16).ec != std::errc());
         ret.g = val;
-        _fence_value_return(nullptr, !std::from_chars(std::to_address(attrVal.begin() + 5), std::to_address(attrVal.begin() + 7), val, 16));
+        _fence_value_return(nullptr, std::from_chars(std::to_address(attrVal.begin() + 5), std::to_address(attrVal.begin() + 7), val, 16).ec != std::errc());
         ret.b = val;
         return ret;
     }
@@ -192,7 +192,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
         float ret = std::numeric_limits<float>::quiet_NaN();
         std::from_chars_result res = std::from_chars(it, end, ret);
 
-        _fence_value_return(false, !res || it == res.ptr || ret == float(HUGE_VAL) || ret == float(HUGE_VALF) || ret == float(HUGE_VALL) || std::isinf(ret) || std::isnan(ret));
+        _fence_value_return(false, res.ec != std::errc() || it == res.ptr || ret == float(HUGE_VAL) || ret == float(HUGE_VALF) || ret == float(HUGE_VALL) || std::isinf(ret) || std::isnan(ret));
         it = res.ptr;
         out += ret;
 

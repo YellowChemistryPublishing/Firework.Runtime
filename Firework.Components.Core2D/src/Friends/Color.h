@@ -37,5 +37,5 @@ namespace Firework
         }
     };
 
-    constexpr Color Color::unknown(255, 165, 0);
+    constexpr inline const Color Color::unknown(255, 165, 0);
 } // namespace Firework

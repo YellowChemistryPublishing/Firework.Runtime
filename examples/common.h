@@ -1,5 +1,7 @@
 #pragma once
 
+#include <numbers>
+
 #include <Firework.Runtime.CoreLib>
 
 static bool f2Active = false;
