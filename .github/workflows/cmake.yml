@@ -69,7 +69,6 @@ jobs:
                   echo "genclang=Ninja" >> $GITHUB_ENV
                   echo "${{runner.temp}}/msys64/usr/bin" >> $GITHUB_PATH
                   echo "${{runner.temp}}/msys64/mingw${{env.archbits}}/bin" >> $GITHUB_PATH
-                  pacman --noconfirm -S p7zip
               if: matrix.os == 'windows-2025'
 
             - name: Environment (linux)
@@ -85,7 +84,6 @@ jobs:
                   echo "cmdclangxx=clang++-20" >> $GITHUB_ENV
                   echo "gencc=Unix Makefiles" >> $GITHUB_ENV
                   echo "genclang=Ninja" >> $GITHUB_ENV
-                  sudo apt-get install p7zip-full
               if: matrix.os == 'ubuntu-latest'
 
             - name: Install gcc
@@ -136,7 +134,7 @@ jobs:
               run: cmake --build '${{github.workspace}}/build' --config ${{env.BUILD_TYPE}}
 
             - name: Archive
-              run: 7za a ${{matrix.arch}}-${{matrix.compiler}}-${{env.BUILD_TYPE}}-${{matrix.os}} bin/ lib/
+              run: 7z a ${{matrix.arch}}-${{matrix.compiler}}-${{env.BUILD_TYPE}}-${{matrix.os}} bin/ lib/
 
             - name: Package
               uses: actions/upload-artifact@v4
