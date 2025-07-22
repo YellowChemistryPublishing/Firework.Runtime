@@ -192,7 +192,8 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
         float ret = std::numeric_limits<float>::quiet_NaN();
         std::from_chars_result res = std::from_chars(it, end, ret);
 
-        _fence_value_return(false, res.ec != std::errc() || it == res.ptr || ret == float(HUGE_VAL) || ret == float(HUGE_VALF) || ret == float(HUGE_VALL) || std::isinf(ret) || std::isnan(ret));
+        _fence_value_return(
+            false, res.ec != std::errc() || it == res.ptr || ret == float(HUGE_VAL) || ret == float(HUGE_VALF) || ret == float(HUGE_VALL) || std::isinf(ret) || std::isnan(ret));
         it = res.ptr;
         out += ret;
 
@@ -219,7 +220,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
     };
 
     ssz pathBegin = ssz(out.size());
-    sysm::vector2 cur = sysm::vector2::zero;
+    glm::vec2 cur(0.0f);
 
     char command; // Always reinitialized in loop.
     char injectedNextCommand = 0;
@@ -231,7 +232,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
 
     while (it != end)
     {
-        sysm::vector2 to, c1, c2;
+        glm::vec2 to, c1, c2;
         float* horizReadTo;
 
         if (injectedNextCommand)
@@ -245,7 +246,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
         switch (command)
         {
         case 'M':
-            to = sysm::vector2::zero;
+            to = glm::vec2(0.0f);
             goto AnyMoveTo;
         case 'm':
             to = cur;
@@ -257,7 +258,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             break;
 
         case 'L':
-            to = sysm::vector2::zero;
+            to = glm::vec2(0.0f);
             goto AnyLineTo;
         case 'l':
             to = cur;
@@ -268,7 +269,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             break;
 
         case 'H':
-            to = sysm::vector2(0.0f, cur.y);
+            to = glm::vec2(0.0f, cur.y);
             horizReadTo = &to.x;
             goto AnyHorizTo;
         case 'h':
@@ -276,7 +277,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             horizReadTo = &to.x;
             goto AnyHorizTo;
         case 'V':
-            to = sysm::vector2(cur.x, 0.0f);
+            to = glm::vec2(cur.x, 0.0f);
             horizReadTo = &to.y;
             goto AnyHorizTo;
         case 'v':
@@ -289,11 +290,11 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             break;
 
         case 'C':
-            c1 = sysm::vector2::zero;
+            c1 = glm::vec2(0.0f);
             [[fallthrough]];
         case 'S':
-            c2 = sysm::vector2::zero;
-            to = sysm::vector2::zero;
+            c2 = glm::vec2(0.0f);
+            to = glm::vec2(0.0f);
             goto AnyCubicTo;
         case 'c':
             c1 = cur;
@@ -327,10 +328,10 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             break;
 
         case 'Q':
-            c1 = sysm::vector2::zero;
+            c1 = glm::vec2(0.0f);
             [[fallthrough]];
         case 'T':
-            to = sysm::vector2::zero;
+            to = glm::vec2(0.0f);
             goto AnyQuadraticTo;
         case 'q':
             c1 = cur;
@@ -376,7 +377,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
 }
 
 // https://www.cemyuksel.com/research/papers/quadratic_approximation_of_cubic_curves.pdf
-VectorTools::QuadApproxCubic VectorTools::cubicBeizerToQuadratic(sysm::vector2 p1, sysm::vector2 c1, sysm::vector2 c2, sysm::vector2 p2)
+VectorTools::QuadApproxCubic VectorTools::cubicBeizerToQuadratic(glm::vec2 p1, glm::vec2 c1, glm::vec2 c2, glm::vec2 p2)
 {
     constexpr float gamma = 0.5f;
 

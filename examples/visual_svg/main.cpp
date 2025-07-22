@@ -39,7 +39,7 @@ int main(int, char*[])
             inputTransformEntity(entity, key);
         });
     };
-    EngineEvent::OnMouseMove += [](sysm::vector2 from)
+    EngineEvent::OnMouseMove += [](glm::vec2 from)
     {
         Entities::forEach<EntityAttributes, ScalableVectorGraphic>([&](Entity& entity, EntityAttributes& attributes, ScalableVectorGraphic&) -> void
         {

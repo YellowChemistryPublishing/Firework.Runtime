@@ -29,7 +29,7 @@ int main(int, char*[])
         paragraph->color = Color(0, 255, 255);
 
         auto rectTransform = entity->getOrAddComponent<RectTransform>();
-        rectTransform->position = sysm::vector2(0.0f, float(Window::pixelHeight()) / 2.0f);
+        rectTransform->position = glm::vec2(0.0f, float(Window::pixelHeight()) / 2.0f);
         rectTransform->rect = RectFloat(0.0f, float(Window::pixelWidth()) / 2.0f, -180.0f, -float(Window::pixelWidth()) / 2.0f);
 
         Debug::printHierarchy();
@@ -42,7 +42,7 @@ int main(int, char*[])
             inputTransformEntity(entity, key);
         });
     };
-    EngineEvent::OnMouseMove += [](sysm::vector2 from)
+    EngineEvent::OnMouseMove += [](glm::vec2 from)
     {
         Entities::forEach<EntityAttributes, Text>([&](Entity& entity, EntityAttributes& attributes, Text&) -> void
         {

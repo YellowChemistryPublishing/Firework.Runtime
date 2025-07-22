@@ -9,7 +9,6 @@
 #include <EntityComponentSystem/Entity.h>
 #include <Friends/Color.h>
 #include <Friends/FilledPathRenderer.h>
-#include <GL/Transform.h>
 #include <Library/Property.h>
 
 namespace
@@ -61,7 +60,7 @@ namespace Firework
 
         struct RenderData
         {
-            std::vector<std::pair<std::shared_ptr<FilledPathRenderer>, GL::RenderTransform>> toRender;
+            std::vector<std::pair<std::shared_ptr<FilledPathRenderer>, glm::mat4>> toRender;
             std::mutex toRenderLock;
         };
         std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();

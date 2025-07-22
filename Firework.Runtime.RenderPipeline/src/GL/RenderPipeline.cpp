@@ -24,7 +24,7 @@ void RenderPipeline::defaultResetViewArea(uint16_t w, uint16_t h)
 {
     Renderer::setViewArea(0, 0, 0, w, h);
     Renderer::setViewArea(1, 0, 0, w, h);
-    Renderer::setViewOrthographic(1, w, h, sysm::vector3(0, 0, 0), Renderer::fromEuler(sysm::vector3(0, 0, 0)), 0.0f, 16777216.0f);
+    Renderer::setViewOrthographic(1, w, h, glm::vec3(0.0f), glm::quat(1.0f, glm::vec3(0.0f)), 0.0f, 16777216.0f);
     Renderer::setViewDrawOrder(1, bgfx::ViewMode::Sequential);
 }
 void RenderPipeline::defaultResetBackbuffer(uint32_t w, uint32_t h)

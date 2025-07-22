@@ -1,7 +1,7 @@
 #include "EngineEvent.h"
 
-#include <GL/Renderer.h>
 #include <EntityComponentSystem/Entity.h>
+#include <GL/Renderer.h>
 
 using namespace Firework;
 using namespace Firework::Internal;
@@ -15,8 +15,8 @@ FuncPtrEvent<> EngineEvent::OnPhysicsTick;
 FuncPtrEvent<MouseButton> EngineEvent::OnMouseDown;
 FuncPtrEvent<MouseButton> EngineEvent::OnMouseHeld;
 FuncPtrEvent<MouseButton> EngineEvent::OnMouseUp;
-FuncPtrEvent<sysm::vector2> EngineEvent::OnMouseMove;
-FuncPtrEvent<sysm::vector2> EngineEvent::OnMouseScroll;
+FuncPtrEvent<glm::vec2> EngineEvent::OnMouseMove;
+FuncPtrEvent<glm::vec2> EngineEvent::OnMouseScroll;
 
 FuncPtrEvent<Key> EngineEvent::OnKeyDown;
 FuncPtrEvent<Key> EngineEvent::OnKeyHeld;
@@ -25,7 +25,7 @@ FuncPtrEvent<Key> EngineEvent::OnKeyUp;
 
 FuncPtrEvent<const std::u32string&> EngineEvent::OnTextInput;
 
-FuncPtrEvent<sysm::vector2i32> EngineEvent::OnWindowResize;
+FuncPtrEvent<glm::i32vec2> EngineEvent::OnWindowResize;
 
 FuncPtrEvent<> EngineEvent::OnAcquireFocus;
 FuncPtrEvent<> EngineEvent::OnLoseFocus;

@@ -1,5 +1,7 @@
 #include "Text.h"
 
+#include <glm/gtc/quaternion.hpp>
+
 #include <Components/RectTransform.h>
 #include <Font/Font.h>
 #include <Friends/ParagraphIterator.h>
@@ -51,8 +53,8 @@ std::shared_ptr<FilledPathRenderer> Text::findOrCreateGlyphPath(char32_t c)
                     break;
 
                 VectorTools::QuadApproxCubic converted =
-                    VectorTools::cubicBeizerToQuadratic(sysm::vector2(paths.back().x, paths.back().y), sysm::vector2(float(go.verts[+i].cx), float(go.verts[+i].cy)),
-                                                        sysm::vector2(go.verts[+i].cx1, go.verts[+i].cy1), sysm::vector2(float(go.verts[+i].x), float(go.verts[+i].y)));
+                    VectorTools::cubicBeizerToQuadratic(glm::vec2(paths.back().x, paths.back().y), glm::vec2(float(go.verts[+i].cx), float(go.verts[+i].cy)),
+                                                        glm::vec2(go.verts[+i].cx1, go.verts[+i].cy1), glm::vec2(float(go.verts[+i].x), float(go.verts[+i].y)));
 
                 paths.emplace_back(FilledPathPoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
                 paths.emplace_back(FilledPathPoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
@@ -82,15 +84,15 @@ void Text::tryBuryOrphanedGlyphPathSixFeetUnder(const FontCharacterQuery q)
 void Text::swapRenderBuffers()
 {
     const RectFloat& r = this->rectTransform->rect();
-    const sysm::vector2& pos = this->rectTransform->position();
-    const sysm::vector2& sc = this->rectTransform->scale();
+    const glm::vec2& pos = this->rectTransform->position();
+    const glm::vec2& sc = this->rectTransform->scale();
     const Font& font = this->_font->fontHandle();
     const float glSc = this->_fontSize / float(font.height());
     const float scaledLineHeight = this->_fontSize + float(font.lineGap) * glSc;
 
-    sysm::vector2 gPos = sysm::vector2::zero;
+    glm::vec2 gPos(0.0f);
 
-    auto calcGlyphRenderTransformAndAdvance = [&](char32_t c) -> RenderTransform
+    auto calcGlyphRenderTransformAndAdvance = [&](char32_t c) -> glm::mat4
     {
         _fence_contract_enforce(this->_font != nullptr);
         _fence_contract_enforce(this->rectTransform != nullptr);
@@ -103,11 +105,10 @@ void Text::swapRenderBuffers()
             gPos.y -= scaledLineHeight;
         }
 
-        RenderTransform ret;
-        ret.scale(sysm::vector3(sc.x * glSc, sc.y * glSc, 0));
-        ret.translate(sysm::vector3(gPos.x + float(gm.leftSideBearing) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0));
-        ret.rotate(sysm::quaternion::fromEuler(sysm::vector3(0, 0, -this->rectTransform->rotation())));
-        ret.translate(sysm::vector3(pos.x, pos.y, 0));
+        glm::mat4 ret = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
+        ret = glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -this->rectTransform->rotation()))) * ret;
+        ret = glm::translate(ret, glm::vec3(gPos.x + float(gm.leftSideBearing) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0.0f));
+        ret = glm::scale(ret, glm::vec3(sc.x * glSc, sc.y * glSc, 0.0f));
 
         gPos.x += float(gm.advanceWidth) * glSc;
 
@@ -119,7 +120,7 @@ void Text::swapRenderBuffers()
         gPos.y -= scaledLineHeight * howMany;
     };
 
-    std::vector<std::pair<std::shared_ptr<FilledPathRenderer>, RenderTransform>> swapToRender;
+    std::vector<std::pair<std::shared_ptr<FilledPathRenderer>, glm::mat4>> swapToRender;
     for (auto wordIt = ParagraphIterator<char32_t>::begin(this->_text); wordIt != ParagraphIterator<char32_t>::end(this->_text); ++wordIt)
     {
         float wordLenScaled = std::accumulate(wordIt.textBegin(), wordIt.textEnd(), 0.0f, [&](float a, char32_t b)

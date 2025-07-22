@@ -3,6 +3,7 @@
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 #include <bx/math.h>
+#include <glm/gtc/type_ptr.hpp>
 #include <module/sys.Mathematics>
 
 #include <DebugCube.vfAll.h>
@@ -48,11 +49,19 @@ bool Renderer::initialize(void* ndt, void* nwh, uint32_t width, uint32_t height,
     switch (bgfx::getRendererType())
     {
 #if _WIN32
-    case bgfx::RendererType::Direct3D11: cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d11)); break;
-    case bgfx::RendererType::Direct3D12: cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d12)); break;
+    case bgfx::RendererType::Direct3D11:
+        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d11));
+        break;
+    case bgfx::RendererType::Direct3D12:
+        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d12));
+        break;
 #endif
-    case bgfx::RendererType::OpenGL: cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, opengl)); break;
-    case bgfx::RendererType::Vulkan: cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, vulkan)); break;
+    case bgfx::RendererType::OpenGL:
+        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, opengl));
+        break;
+    case bgfx::RendererType::Vulkan:
+        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, vulkan));
+        break;
     default:
         // TODO: Implement.
         throw "unimplemented";
@@ -112,7 +121,7 @@ std::vector<RendererBackend> Renderer::platformBackends()
     return std::vector<RendererBackend>(backends, backends + end);
 }
 
-void Renderer::setViewOrthographic(bgfx::ViewId id, float width, float height, sysm::vector3 position, sysm::quaternion rotation, float near, float far)
+void Renderer::setViewOrthographic(bgfx::ViewId id, float width, float height, glm::vec3 position, glm::quat rotation, float near, float far)
 {
     // fixme
     float viewMtx[16];
@@ -122,11 +131,13 @@ void Renderer::setViewOrthographic(bgfx::ViewId id, float width, float height, s
     bx::mtxOrtho(proj, -width / 2.0f, width / 2.0f, -height / 2.0f, height / 2.0f, near, far, 0, bgfx::getCaps()->homogeneousDepth);
     bgfx::setViewTransform(id, viewMtx, proj);
 }
-void Renderer::setViewPerspective(bgfx::ViewId id, float width, float height, float yFieldOfView, sysm::vector3 position, sysm::quaternion rotation, float near, float far)
+void Renderer::setViewPerspective(bgfx::ViewId id, float width, float height, float yFieldOfView, glm::vec3 position, glm::quat rotation, float near, float far)
 {
     float proj[16] { 0 };
     bx::mtxProj(proj, yFieldOfView, width / height, near, far, bgfx::getCaps()->homogeneousDepth);
-    bgfx::setViewTransform(id, (sysm::matrix4x4::rotate(rotation) * sysm::matrix4x4::translate(position)).data, proj);
+
+    glm::mat4 viewTransform = glm::translate(glm::mat4_cast(rotation), position);
+    bgfx::setViewTransform(id, glm::value_ptr(viewTransform), proj);
 }
 void Renderer::setViewClear(bgfx::ViewId id, uint32_t rgbaColor, uint16_t flags, float depth, uint8_t stencil)
 {
@@ -145,9 +156,9 @@ void Renderer::resetBackbuffer(uint32_t width, uint32_t height, uint32_t flags, 
     bgfx::reset(width, height, flags, format);
 }
 
-void Renderer::setDrawTransform(const RenderTransform& transform)
+void Renderer::setDrawTransform(const glm::mat4& transform)
 {
-    bgfx::setTransform(transform.tf.data);
+    bgfx::setTransform(glm::value_ptr(transform));
 }
 void Renderer::setDrawUniform(UniformHandle uniform, const void* data)
 {
@@ -198,11 +209,10 @@ void Renderer::submitDraw(bgfx::ViewId id, DynamicMeshHandle mesh, GeometryProgr
 }
 
 #if _DEBUG
-void Renderer::debugDrawCube(sysm::vector3 position, float sideLength)
+void Renderer::debugDrawCube(glm::vec3 position, float sideLength)
 {
-    RenderTransform transform;
-    transform.scale(sysm::vector3(sideLength));
-    transform.translate(position);
+    glm::mat4 transform = glm::translate(glm::mat4(1.0f), position);
+    transform = glm::scale(transform, glm::vec3(sideLength));
     Renderer::setDrawTransform(transform);
     Renderer::submitDraw(0, cubeMesh, cubeProgram);
 }
@@ -212,10 +222,4 @@ void Renderer::drawFrame()
 {
     bgfx::touch(0);
     bgfx::frame();
-}
-
-sysm::quaternion Renderer::fromEuler(sysm::vector3 vec)
-{
-    bx::Quaternion ret = bx::fromEuler({ vec.x, vec.y, vec.z });
-    return { ret.x, ret.y, ret.z, ret.w };
 }

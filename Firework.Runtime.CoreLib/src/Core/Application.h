@@ -4,6 +4,7 @@
 
 #include <concurrentqueue.h>
 #include <function.h>
+#include <glm/vec2.hpp>
 #include <module/sys.Mathematics>
 
 #include <Library/Property.h>
@@ -27,7 +28,7 @@ namespace Firework
     {
         std::string windowName = "Program";
         bool windowResizeable = true;
-        sysm::vector2i32 resolution = sysm::vector2i32(1280, 720);
+        glm::i32vec2 resolution = glm::i32vec2(1280, 720);
     };
 
     /// @brief Static class containing functionality relevant to the currently running program.

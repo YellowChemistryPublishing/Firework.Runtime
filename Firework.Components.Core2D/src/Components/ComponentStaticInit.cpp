@@ -34,6 +34,7 @@ namespace
             PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x00, 0x01, 0x00, 0x00 });
             PackageManager::addBinaryFileHandler<TrueTypeFontPackageFile>({ 0x4F, 0x54, 0x54, 0x4F });
 
+            PackageManager::addTextFileHandler<ExtensibleMarkupPackageFile>(L".xml");
             PackageManager::addTextFileHandler<ExtensibleMarkupPackageFile>(L".svg");
 
             InternalEngineEvent::OnRenderShutdown += []

@@ -3,13 +3,13 @@
 #include "Firework.Runtime.GL.Exports.h"
 
 #include <bgfx/bgfx.h>
+#include <glm/gtc/quaternion.hpp>
 #include <module/sys.Mathematics>
 
 #include <GL/Geometry.h>
 #include <GL/Shader.h>
 #include <GL/Texture.h>
 #include <GL/TextureVector.h>
-#include <GL/Transform.h>
 
 namespace Firework
 {
@@ -47,17 +47,17 @@ namespace Firework
             static RendererBackend rendererBackend();
             static std::vector<RendererBackend> platformBackends();
 
-            static void setViewOrthographic(bgfx::ViewId id, float width, float height, sysm::vector3 position = { 0.0f, 0.0f, 0.0f },
-                                            sysm::quaternion rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, float near = -1.0f, float far = 2048.0f);
-            static void setViewPerspective(bgfx::ViewId id, float width, float height, float yFieldOfView = 60.0f, sysm::vector3 position = { 0.0f, 0.0f, 0.0f },
-                                           sysm::quaternion rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, float near = 0.0f, float far = 2048.0f);
+            static void setViewOrthographic(bgfx::ViewId id, float width, float height, glm::vec3 position = { 0.0f, 0.0f, 0.0f },
+                                            glm::quat rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, float near = -1.0f, float far = 2048.0f);
+            static void setViewPerspective(bgfx::ViewId id, float width, float height, float yFieldOfView = 60.0f, glm::vec3 position = { 0.0f, 0.0f, 0.0f },
+                                           glm::quat rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, float near = 0.0f, float far = 2048.0f);
             static void setViewClear(bgfx::ViewId id, uint32_t rgbaColor = 0x000000ff, uint16_t flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL,
                                      float depth = 1.0f, uint8_t stencil = 0);
             static void setViewArea(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
             static void setViewDrawOrder(bgfx::ViewId id, bgfx::ViewMode::Enum order);
             static void resetBackbuffer(uint32_t width, uint32_t height, uint32_t flags = BGFX_RESET_NONE, bgfx::TextureFormat::Enum format = bgfx::TextureFormat::Count);
 
-            static void setDrawTransform(const RenderTransform& transform);
+            static void setDrawTransform(const glm::mat4& transform);
             static void setDrawUniform(UniformHandle uniform, const void* data);
             static void setDrawArrayUniform(UniformHandle uniform, const void* data, uint16_t count);
             static void setDrawTexture(uint8_t stage, Texture2DHandle texture, TextureSamplerHandle sampler, uint64_t flags = BGFX_TEXTURE_NONE);
@@ -79,15 +79,13 @@ namespace Firework
                                    uint32_t blendFactor = 0);
 
 #if _DEBUG
-            static void debugDrawCube(sysm::vector3 position, float sideLength = 1.0f);
+            static void debugDrawCube(glm::vec3 position, float sideLength = 1.0f);
 #else
-            inline static void debugDrawCube(sysm::vector3, float)
+            inline static void debugDrawCube(glm::vec3, float)
             { }
 #endif
 
             static void drawFrame();
-
-            static sysm::quaternion fromEuler(sysm::vector3 vec);
         };
     } // namespace GL
 } // namespace Firework

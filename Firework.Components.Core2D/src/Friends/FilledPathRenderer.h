@@ -3,6 +3,7 @@
 #include "Firework.Components.Core2D.Exports.h"
 
 #include <array>
+#include <glm/mat4x4.hpp>
 #include <module/sys>
 
 #include <Friends/Color.h>
@@ -15,7 +16,6 @@ namespace
 
 namespace Firework::GL
 {
-    struct RenderTransform;
     class GeometryProgramHandle;
 } // namespace Firework::GL
 
@@ -66,8 +66,8 @@ namespace Firework
             return *this;
         }
 
-        [[nodiscard]] bool submitDrawStencil(ssz renderIndex, GL::RenderTransform shape, bool forceHole = false) const;
-        [[nodiscard]] static bool submitDraw(ssz renderIndex, GL::RenderTransform clip, u8 whenStencil = ~0_u8, Color color = Color::unknown);
+        [[nodiscard]] bool submitDrawStencil(ssz renderIndex, glm::mat4 shape, bool forceHole = false) const;
+        [[nodiscard]] static bool submitDraw(ssz renderIndex, glm::mat4 clip, u8 whenStencil = ~0_u8, Color color = Color::unknown);
 
         friend inline void swap(FilledPathRenderer& a, FilledPathRenderer& b)
         {

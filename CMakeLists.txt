@@ -294,6 +294,7 @@ target_include_directories(Firework.Runtime.GL
 target_link_libraries(Firework.Runtime.GL
     PUBLIC
     assimp
+    glm
     sys.Mathematics
     PRIVATE
     bimg
@@ -407,8 +408,9 @@ target_link_libraries(Firework.Runtime.CoreLib
     concurrentqueue
     Firework.Runtime.RenderPipeline
     Firework.Runtime.GL
+    glm
     robin_hood
-    sys.Mathematics
+    sys
     PRIVATE
     SDL3-static
 )

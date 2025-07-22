@@ -70,7 +70,7 @@ static void inputTransformEntity(Firework::Entity& entity, Firework::Key key)
     }
 }
 
-static void inputMoveEntity(Firework::Entity& entity, sysm::vector2 from)
+static void inputMoveEntity(Firework::Entity& entity, glm::vec2 from)
 {
     using namespace Firework;
 

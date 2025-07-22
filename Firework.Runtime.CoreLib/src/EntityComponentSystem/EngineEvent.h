@@ -2,6 +2,7 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+#include <glm/vec2.hpp>
 #include <memory>
 #include <string_view>
 #include <typeindex>
@@ -44,13 +45,13 @@ namespace Firework
         /// @note Main thread only.
         static FuncPtrEvent<MouseButton> OnMouseUp;
         /// @brief Event raised when the cursor is moved.
-        /// @param from ```sysm::vector2```. The previous position of the cursor. Retrieve the current position of the cursor with ```Firework::Input::mousePosition()```.
+        /// @param from ```glm::vec2```. The previous position of the cursor. Retrieve the current position of the cursor with ```Firework::Input::mousePosition()```.
         /// @note Main thread only.
-        static FuncPtrEvent<sysm::vector2> OnMouseMove;
+        static FuncPtrEvent<glm::vec2> OnMouseMove;
         /// @brief Event raised when the mouse scrolls.
-        /// @param scroll ```sysm::vector2```. The scroll amount in the x and y directions.
+        /// @param scroll ```glm::vec2```. The scroll amount in the x and y directions.
         /// @note Main thread only.
-        static FuncPtrEvent<sysm::vector2> OnMouseScroll;
+        static FuncPtrEvent<glm::vec2> OnMouseScroll;
 
         /// @brief Event raised when a key is pressed down.
         /// @param key ```Firework::Key```
@@ -77,10 +78,10 @@ namespace Firework
         static FuncPtrEvent<const std::u32string&> OnTextInput;
 
         /// @brief Event raised when the window is resized.
-        /// @param from ```sysm::vector2i32```. The previous size of the window. Retrieve the current window size with ```Firework::Window::pixelWidth()``` and
+        /// @param from ```glm::i32vec2```. The previous size of the window. Retrieve the current window size with ```Firework::Window::pixelWidth()``` and
         /// ```Firework::Window::pixelHeight()```.
         /// @note Main thread only.
-        static FuncPtrEvent<sysm::vector2i32> OnWindowResize;
+        static FuncPtrEvent<glm::i32vec2> OnWindowResize;
 
         /// @brief Event raised when the window is brought into focus.
         /// @note Main thread only.

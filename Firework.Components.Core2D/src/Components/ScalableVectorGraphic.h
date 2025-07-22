@@ -7,7 +7,6 @@
 
 #include <Friends/FilledPathRenderer.h>
 #include <Friends/VectorTools.h>
-#include <GL/Transform.h>
 #include <Library/Property.h>
 
 namespace
@@ -98,7 +97,7 @@ namespace Firework
             std::shared_ptr<std::vector<Renderable>> toRender;
 
             VectorTools::Viewbox vb;
-            GL::RenderTransform tf;
+            glm::mat4 tf;
 
             std::mutex toRenderLock;
         };

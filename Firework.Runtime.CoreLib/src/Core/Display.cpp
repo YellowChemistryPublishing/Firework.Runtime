@@ -14,7 +14,7 @@ i32 Screen::width;
 i32 Screen::height;
 i32 Screen::screenRefreshRate;
 
-void Window::setResolution(sysm::vector2i32 resolution)
+void Window::setResolution(glm::i32vec2 resolution)
 {
     Application::queueJobForWindowThread([resolution]() -> void
     {

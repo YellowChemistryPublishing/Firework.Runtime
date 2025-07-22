@@ -239,7 +239,7 @@ void CoreEngine::internalLoop()
     float deltaTime = -1.0f;
     float prevw = float(+Window::width), prevh = float(+Window::height);
 
-    userFunctionInvoker([&] { EngineEvent::OnWindowResize(sysm::vector2i32 { Window::width, Window::height }); });
+    userFunctionInvoker([&] { EngineEvent::OnWindowResize(glm::i32vec2 { Window::width, Window::height }); });
 
     while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::ExitRequested)
     {
@@ -330,7 +330,7 @@ void CoreEngine::internalLoop()
 #pragma endregion
 
 #pragma region Post-Tick
-            Input::internalMouseMotion = sysm::vector2::zero;
+            Input::internalMouseMotion = glm::vec2(0.0f);
 
             while (CoreEngine::pendingPostTickQueue.try_dequeue(job)) job();
 #pragma endregion
@@ -452,7 +452,7 @@ void CoreEngine::internalWindowLoop()
                         (float)(-w + prevw) / 2.0f,
                     };
 
-                    userFunctionInvoker([&] { EngineEvent::OnWindowResize(sysm::vector2i32 { prevw, prevh }); });
+                    userFunctionInvoker([&] { EngineEvent::OnWindowResize(glm::i32vec2 { prevw, prevh }); });
                 });
 
                 renderResizeLock.lock();
@@ -493,7 +493,7 @@ void CoreEngine::internalWindowLoop()
                 case SDL_EVENT_MOUSE_MOTION:
                     Application::mainThreadQueue.enqueue([posX = ev.motion.x, posY = ev.motion.y, motX = ev.motion.xrel, motY = ev.motion.yrel]
                     {
-                        sysm::vector2 from = Input::internalMousePosition;
+                        glm::vec2 from = Input::internalMousePosition;
                         Input::internalMousePosition.x = posX - Window::width / 2_u32;
                         Input::internalMousePosition.y = -posY + Window::height / 2_u32;
                         Input::internalMouseMotion.x += motX;
@@ -503,7 +503,7 @@ void CoreEngine::internalWindowLoop()
                     break;
                 case SDL_EVENT_MOUSE_WHEEL:
                     Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y]
-                    { userFunctionInvoker([&] { EngineEvent::OnMouseScroll(sysm::vector2(scrX, scrY)); }); });
+                    { userFunctionInvoker([&] { EngineEvent::OnMouseScroll(glm::vec2(scrX, scrY)); }); });
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                     Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]

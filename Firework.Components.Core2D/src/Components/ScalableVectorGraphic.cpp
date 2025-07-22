@@ -6,6 +6,7 @@
 #include <EntityComponentSystem/Entity.h>
 #include <Friends/VectorTools.h>
 #include <GL/Renderer.h>
+#include <Library/Math.h>
 #include <PackageSystem/ExtensibleMarkupFile.h>
 
 using namespace Firework;
@@ -53,10 +54,10 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
             std::vector<ssz> spans { 0_z };
             float alternatePtCtrl = 1.0f;
 
-            constexpr auto transformByMatrix = [](sysm::vector2 point, glm::mat3x3 transform) -> sysm::vector2
+            constexpr auto transformByMatrix = [](glm::vec2 point, glm::mat3x3 transform) -> glm::vec2
             {
                 glm::vec3 ret = transform * glm::vec3(point.x, point.y, 1.0f);
-                return sysm::vector2(ret.x, ret.y);
+                return glm::vec2(ret.x, ret.y);
             };
 
             for (VectorTools::PathCommand& pc : pathCommands)
@@ -127,16 +128,13 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
         const RectTransform& transform = *this->rectTransform;
         const VectorTools::Viewbox& vb = this->renderData->vb;
 
-        RenderTransform ret;
-
-        ret.translate(sysm::vector3(-vb.x - vb.w * 0.5f, -vb.y - vb.h * 0.5f, 0.0f));
+        glm::mat4 ret = glm::translate(glm::mat4(1.0f), glm::vec3(transform.position().x, transform.position().y, 0.0f));
+        ret = glm::rotate(ret, -transform.rotation(), LinAlgConstants::forward);
+        ret = glm::translate(ret, glm::vec3((transform.rect().right + transform.rect().left) / 2.0f, (transform.rect().top + transform.rect().bottom) / 2.0f, 0.0f));
 
         float scFactor = std::min(transform.rect().width() / vb.w, transform.rect().height() / vb.h);
-        ret.scale(sysm::vector3(scFactor * transform.scale().x, -scFactor * transform.scale().y, 1.0f));
-
-        ret.translate({ (transform.rect().right + transform.rect().left) / 2.0f, (transform.rect().top + transform.rect().bottom) / 2.0f, 0.0f });
-        ret.rotate(Renderer::fromEuler({ 0, 0, -transform.rotation() }));
-        ret.translate({ transform.position().x, transform.position().y, 0.0f });
+        ret = glm::scale(ret, glm::vec3(scFactor * transform.scale().x, -scFactor * transform.scale().y, 1.0f));
+        ret = glm::translate(ret, glm::vec3(-vb.x - vb.w * 0.5f, -vb.y - vb.h * 0.5f, 0.0f));
 
         this->renderData->tf = ret;
     };

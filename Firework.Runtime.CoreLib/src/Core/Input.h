@@ -4,6 +4,7 @@
 
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_mouse.h>
+#include <glm/vec2.hpp>
 #include <module/sys.Mathematics>
 #include <queue>
 #include <robin_hood.h>
@@ -311,8 +312,8 @@ namespace Firework
     /// @brief Static class containing functionality relevant to input processing.
     class _fw_core_api Input final
     {
-        static sysm::vector2 internalMousePosition;
-        static sysm::vector2 internalMouseMotion;
+        static glm::vec2 internalMousePosition;
+        static glm::vec2 internalMouseMotion;
 
         static bool heldMouseInputs[(size_t)MouseButton::Count];
         static bool heldKeyInputs[(size_t)Key::Count];
@@ -334,14 +335,14 @@ namespace Firework
         /// @brief Retrieve the mouse position in pixel units, with the centre of the Window as (0, 0).
         /// @return Mouse position.
         /// @note Main thread only.
-        inline static sysm::vector2 mousePosition()
+        inline static glm::vec2 mousePosition()
         {
             return Input::internalMousePosition;
         }
         /// @brief Retrieve the mouse motion this frame in pixel units.
         /// @return Amount mouse has moved this frame.
         /// @note Main thread only.
-        inline static sysm::vector2 mouseMotion()
+        inline static glm::vec2 mouseMotion()
         {
             return Input::internalMouseMotion;
         }

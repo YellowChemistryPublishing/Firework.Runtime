@@ -32,33 +32,33 @@ namespace Firework
 
         struct PathCommandMoveTo
         {
-            sysm::vector2 to;
+            glm::vec2 to;
         };
         struct PathCommandLineTo
         {
-            sysm::vector2 from;
-            sysm::vector2 to;
+            glm::vec2 from;
+            glm::vec2 to;
         };
         struct PathCommandQuadraticTo
         {
-            sysm::vector2 from;
-            sysm::vector2 ctrl;
-            sysm::vector2 to;
+            glm::vec2 from;
+            glm::vec2 ctrl;
+            glm::vec2 to;
         };
         struct PathCommandCubicTo
         {
-            sysm::vector2 from;
-            sysm::vector2 ctrl1;
-            sysm::vector2 ctrl2;
-            sysm::vector2 to;
+            glm::vec2 from;
+            glm::vec2 ctrl1;
+            glm::vec2 ctrl2;
+            glm::vec2 to;
         };
         struct PathCommandArcTo
         {
-            sysm::vector2 from;
-            sysm::vector2 radius;
+            glm::vec2 from;
+            glm::vec2 radius;
             float angleDeg;
             bool largeArcFlag, sweepFlag;
-            sysm::vector2 to;
+            glm::vec2 to;
         };
         struct PathCommandClose
         {
@@ -105,9 +105,9 @@ namespace Firework
 
         struct QuadApproxCubic
         {
-            sysm::vector2 p1, c1, p2, c2, p3;
+            glm::vec2 p1, c1, p2, c2, p3;
         };
 
-        static QuadApproxCubic cubicBeizerToQuadratic(sysm::vector2 p1, sysm::vector2 c1, sysm::vector2 c2, sysm::vector2 p2);
+        static QuadApproxCubic cubicBeizerToQuadratic(glm::vec2 p1, glm::vec2 c1, glm::vec2 c2, glm::vec2 p2);
     };
 } // namespace Firework

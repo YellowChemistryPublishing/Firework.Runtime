@@ -2,10 +2,10 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+#include <glm/mat4x4.hpp>
 #include <module/sys.Mathematics>
 
 #include <EntityComponentSystem/Entity.h>
-#include <GL/Transform.h>
 #include <Library/Property.h>
 
 namespace Firework
@@ -22,7 +22,7 @@ namespace Firework
         /// @param transform RectTransform to convert.
         /// @return RenderTransform representing the same transform to supply to renderer.
         /// @note Thread-safe.
-        _fw_core_api extern GL::RenderTransform renderTransformFromRectTransform(const RectTransform* const transform);
+        _fw_core_api extern glm::mat4 renderTransformFromRectTransform(const RectTransform* const transform);
     } // namespace Internal
 
     /// @brief Describes the bounds of a rectangle, with int32_t.
@@ -95,9 +95,9 @@ namespace Firework
         RectFloat _anchor { 0, 0, 0, 0 };
         RectFloat _positionAnchor { 0, 0, 0, 0 };
 
-        sysm::vector2 _position { 0, 0 };
+        glm::vec2 _position { 0, 0 };
         float _rotation = 0;
-        sysm::vector2 _scale { 1, 1 };
+        glm::vec2 _scale { 1, 1 };
 
         bool _dirty = true;
 
@@ -114,7 +114,7 @@ namespace Firework
         /// @brief Internal API. Set the position of this transform.
         /// @param value Position to set.
         /// @note Main thread only.
-        void setPosition(sysm::vector2 value);
+        void setPosition(glm::vec2 value);
         /// @internal
         /// @brief Internal API. Set the rotation of this transform.
         /// @param value Rotation to set.
@@ -124,18 +124,18 @@ namespace Firework
         /// @brief Internal API. Set the scale of this transform.
         /// @param value Scale to set.
         /// @note Main thread only.
-        void setScale(sysm::vector2 value);
+        void setScale(glm::vec2 value);
 
         /// @internal
         /// @brief Internal API. Retrieve the local position of this transform.
         /// @return Local position of this transform.
         /// @note Main thread only.
-        sysm::vector2 getLocalPosition() const;
+        glm::vec2 getLocalPosition() const;
         /// @internal
         /// @brief Internal API. Set the local position of this transform.
         /// @param value Local position to set.
         /// @note Main thread only.
-        void setLocalPosition(sysm::vector2 value);
+        void setLocalPosition(glm::vec2 value);
         /// @internal
         /// @brief Internal API. Retrieve the local rotation of this transform.
         /// @return Local rotation of this transform.
@@ -150,12 +150,12 @@ namespace Firework
         /// @brief Internal API. Retrieves the local scale of this transform.
         /// @return Local scale of this transform.
         /// @note Main thread only.
-        sysm::vector2 getLocalScale() const;
+        glm::vec2 getLocalScale() const;
         /// @internal
         /// @brief Internal API. Set the local scale of this transform.
         /// @param scale Local scale to set.
         /// @note Main thread only.
-        void setLocalScale(sysm::vector2 scale);
+        void setLocalScale(glm::vec2 scale);
     public:
         inline RectTransform() = default;
 
@@ -184,10 +184,10 @@ namespace Firework
 
         /// @property
         /// @brief [Property] The position of this transform.
-        /// @param value ```sysm::vector2```
-        /// @return ```sysm::vector2```
+        /// @param value ```glm::vec2```
+        /// @return ```glm::vec2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> position { [this]() -> sysm::vector2 { return this->_position; }, [this](sysm::vector2 value) -> void
+        const Property<glm::vec2, glm::vec2> position { [this]() -> glm::vec2 { return this->_position; }, [this](glm::vec2 value) -> void
         {
             this->setPosition(value);
         } };
@@ -202,20 +202,20 @@ namespace Firework
         } };
         /// @property
         /// @brief [Property] The scale of this transform.
-        /// @param value ```sysm::vector2```
-        /// @return ```sysm::vector2```
+        /// @param value ```glm::vec2```
+        /// @return ```glm::vec2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> scale { [this]() -> sysm::vector2 { return this->_scale; }, [this](sysm::vector2 value) -> void
+        const Property<glm::vec2, glm::vec2> scale { [this]() -> glm::vec2 { return this->_scale; }, [this](glm::vec2 value) -> void
         {
             this->setScale(value);
         } };
 
         /// @property
         /// @brief [Property] The local position of this transform.
-        /// @param value ```sysm::vector2```
-        /// @return ```sysm::vector2```
+        /// @param value ```glm::vec2```
+        /// @return ```glm::vec2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> localPosition { [this]() -> sysm::vector2 { return this->getLocalPosition(); }, [this](sysm::vector2 value) -> void
+        const Property<glm::vec2, glm::vec2> localPosition { [this]() -> glm::vec2 { return this->getLocalPosition(); }, [this](glm::vec2 value) -> void
         {
             this->setLocalPosition(value);
         } };
@@ -230,10 +230,10 @@ namespace Firework
         } };
         /// @property
         /// @brief [Property] The local scale of this transform.
-        /// @param value ```sysm::vector2```
-        /// @return ```sysm::vector2```
+        /// @param value ```glm::vec2```
+        /// @return ```glm::vec2```
         /// @note Main thread only.
-        const Property<sysm::vector2, sysm::vector2> localScale { [this]() -> sysm::vector2 { return this->getLocalScale(); }, [this](sysm::vector2 value) -> void
+        const Property<glm::vec2, glm::vec2> localScale { [this]() -> glm::vec2 { return this->getLocalScale(); }, [this](glm::vec2 value) -> void
         {
             this->setLocalScale(value);
         } };
@@ -258,7 +258,7 @@ namespace Firework
         /// @param point Point to query.
         /// @return Whether point is within the rectangle of this transform.
         /// @note Main thread only.
-        bool queryPointIn(const sysm::vector2& point);
+        bool queryPointIn(const glm::vec2& point);
 
         friend class Firework::Internal::CoreEngine;
         friend class Firework::Entity;

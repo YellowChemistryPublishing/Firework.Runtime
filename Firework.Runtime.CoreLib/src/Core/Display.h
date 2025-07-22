@@ -2,7 +2,8 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
-#include <module/sys.Mathematics>
+#include <glm/vec2.hpp>
+#include <module/sys>
 
 #include <Library/Property.h>
 
@@ -45,7 +46,7 @@ namespace Firework
         /// @brief Set the resolution of the window.
         /// @param size Dimensions of the window in pixels.
         /// @note Main thread only.
-        static void setResolution(sysm::vector2i32 resolution);
+        static void setResolution(glm::i32vec2 resolution);
 
         friend class Firework::Internal::CoreEngine;
         friend class Firework::Cursor;

@@ -217,8 +217,8 @@ Key Input::convertFromSDLKey(SDL_Keycode code)
     }
 }
 
-sysm::vector2 Input::internalMousePosition;
-sysm::vector2 Input::internalMouseMotion;
+glm::vec2 Input::internalMousePosition;
+glm::vec2 Input::internalMouseMotion;
 
 bool Input::heldMouseInputs[(size_t)MouseButton::Count] { false };
 bool Input::heldKeyInputs[(size_t)Key::Count] { false };

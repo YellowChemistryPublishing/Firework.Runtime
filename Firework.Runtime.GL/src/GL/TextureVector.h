@@ -12,7 +12,7 @@ namespace Firework::GL
     template <uint16_t Vec4Count>
     struct TextureVectorElement
     {
-        sysm::vector4 elementData[Vec4Count];
+        glm::vec4 elementData[Vec4Count];
     };
 
     template <uint16_t Vec4Count>
@@ -57,12 +57,8 @@ namespace Firework::GL
 
         inline TextureVector() : size(0), capacity(GL_TEXTURE_VECTOR_MIN_CAPACITY)
         {
-            this->gpuData = Texture2DHandle::createDynamic
-            (
-                Vec4Count, GL_TEXTURE_VECTOR_MIN_CAPACITY, false, 1, bgfx::TextureFormat::RGBA32F,
-                BGFX_TEXTURE_BLIT_DST | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT |
-                BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP
-            );
+            this->gpuData = Texture2DHandle::createDynamic(Vec4Count, GL_TEXTURE_VECTOR_MIN_CAPACITY, false, 1, bgfx::TextureFormat::RGBA32F,
+                                                           BGFX_TEXTURE_BLIT_DST | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
 
             this->cpuData.reserve(GL_TEXTURE_VECTOR_MIN_CAPACITY);
         }
@@ -126,18 +122,15 @@ namespace Firework::GL
         {
             if (this->size == this->capacity)
             {
-                Texture2DHandle newData = Texture2DHandle::createDynamic
-                (
-                    Vec4Count, this->capacity * 2, false, 1, bgfx::TextureFormat::RGBA32F,
-                    BGFX_TEXTURE_BLIT_DST | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT |
-                    BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP
-                );
+                Texture2DHandle newData =
+                    Texture2DHandle::createDynamic(Vec4Count, this->capacity * 2, false, 1, bgfx::TextureFormat::RGBA32F,
+                                                   BGFX_TEXTURE_BLIT_DST | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
                 // This doesn't work when an ```Texture2DHandle::updateDynamic``` call comes before.
                 // this->gpuData.copyTo(GL_TEXTURE_VECTOR_RESERVED_VIEW, newData, 0, 0, 0, 0, Vec4Count, this->capacity);
                 newData.updateDynamic(this->cpuData.data(), this->cpuData.size() * sizeof(ValueType), 0, 0, 0, 0, Vec4Count, this->cpuData.size());
                 this->gpuData.destroy();
                 this->gpuData = newData;
-                
+
                 this->cpuData.reserve(this->capacity * 2);
 
                 this->capacity *= 2;
@@ -152,18 +145,15 @@ namespace Firework::GL
             if (this->size == this->capacity / 2)
             {
                 uint16_t newCapacity = std::max<uint16_t>(this->capacity / 2, GL_TEXTURE_VECTOR_MIN_CAPACITY);
-                Texture2DHandle newData = Texture2DHandle::createDynamic
-                (
-                    Vec4Count, newCapacity, false, 1, bgfx::TextureFormat::RGBA32F,
-                    BGFX_TEXTURE_BLIT_DST | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT |
-                    BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP
-                );
+                Texture2DHandle newData =
+                    Texture2DHandle::createDynamic(Vec4Count, newCapacity, false, 1, bgfx::TextureFormat::RGBA32F,
+                                                   BGFX_TEXTURE_BLIT_DST | BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
                 // This doesn't work when an ```Texture2DHandle::updateDynamic``` call comes before.
                 // this->gpuData.copyTo(GL_TEXTURE_VECTOR_RESERVED_VIEW, newData, 0, 0, 0, 0, Vec4Count, newCapacity);
                 newData.updateDynamic(this->cpuData.data(), this->cpuData.size() * sizeof(ValueType), 0, 0, 0, 0, Vec4Count, this->cpuData.size());
                 this->gpuData.destroy();
                 this->gpuData = newData;
-                
+
                 this->capacity = newCapacity;
             }
 
@@ -173,4 +163,4 @@ namespace Firework::GL
 
         friend class Firework::GL::Renderer;
     };
-}
+} // namespace Firework::GL
