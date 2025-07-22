@@ -4,7 +4,7 @@
 
 #include <bgfx/bgfx.h>
 #include <cstring>
-#include <map>
+#include <robin_hood.h>
 #include <vector>
 
 #include <GL/Uniform.h>
@@ -47,56 +47,45 @@
     }
 #endif
 
-namespace Firework
+namespace Firework::GL
 {
-    namespace GL
+    class Renderer;
+
+    struct ShaderUniform
     {
-        class Renderer;
+        std::string_view name;
+        UniformType type;
+        uint16_t count = 1;
+    };
 
-        struct ShaderUniform
+    class _fw_gl_api GeometryProgramHandle final
+    {
+        bgfx::ProgramHandle internalHandle { .idx = bgfx::kInvalidHandle };
+        robin_hood::unordered_flat_map<std::string_view, Uniform*> internalUniformHandles;
+
+        static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,
+                                            const ShaderUniform* uniforms, size_t uniformsLength);
+    public:
+        template <size_t N>
+        inline static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,
+                                                   const ShaderUniform (&uniforms)[N])
         {
-            const char* name;
-            UniformType type;
-            uint16_t count = 1;
-        };
-
-        class __firework_gl_api GeometryProgramHandle final
+            return GeometryProgramHandle::create(vertexShaderData, vertexShaderDataSize, fragmentShaderData, fragmentShaderDataSize, uniforms, N);
+        }
+        inline static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize)
         {
-            struct Comp
-            {
-                bool operator()(const char* lhs, const char* rhs) const
-                {
-                    return strcmp(lhs, rhs) < 0;
-                }
-            };
+            return GeometryProgramHandle::create(vertexShaderData, vertexShaderDataSize, fragmentShaderData, fragmentShaderDataSize, nullptr, 0);
+        }
+        void destroy();
 
-            bgfx::ProgramHandle internalHandle { .idx = bgfx::kInvalidHandle };
-            std::map<const char*, UniformHandle, Comp> internalUniformHandles;
+        inline operator bool()
+        {
+            return bgfx::isValid(this->internalHandle);
+        }
 
-            static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,
-                                                const ShaderUniform* uniforms, size_t uniformsLength);
-        public:
-            template <size_t N>
-            inline static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,
-                                                       const ShaderUniform (&uniforms)[N])
-            {
-                return GeometryProgramHandle::create(vertexShaderData, vertexShaderDataSize, fragmentShaderData, fragmentShaderDataSize, uniforms, N);
-            }
-            inline static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize)
-            {
-                return GeometryProgramHandle::create(vertexShaderData, vertexShaderDataSize, fragmentShaderData, fragmentShaderDataSize, nullptr, 0);
-            }
-            void destroy();
+        [[nodiscard]] bool setUniform(std::string_view name, const void* value);
+        [[nodiscard]] bool setArrayUniform(std::string_view name, const void* value, u16 count);
 
-            inline operator bool()
-            {
-                return bgfx::isValid(this->internalHandle);
-            }
-
-            void setUniform(const char* name, const void* value);
-            void setArrayUniform(const char* name, const void* value, uint16_t count);
-
-            friend class Firework::GL::Renderer;
-        };
-    } // namespace GL
-} // namespace Firework
+        friend class Firework::GL::Renderer;
+    };
+} // namespace Firework::GL

@@ -5,7 +5,6 @@
 #include <concurrentqueue.h>
 #include <function.h>
 #include <glm/vec2.hpp>
-#include <module/sys.Mathematics>
 
 #include <Library/Property.h>
 

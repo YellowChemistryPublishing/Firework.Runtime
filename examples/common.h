@@ -16,18 +16,12 @@ static void hookExampleControls()
         switch (key)
         {
         case Key::Function2:
-            if (!f2Active)
-                Debug::showWireframes();
-            else
-                Debug::hideWireframes();
             f2Active = !f2Active;
+            Debug::showWireframes(f2Active);
             break;
         case Key::Function3:
-            if (!f3Active)
-                Debug::showF3Menu();
-            else
-                Debug::hideF3Menu();
             f3Active = !f3Active;
+            Debug::showF3Menu(f3Active);
             break;
         }
     };

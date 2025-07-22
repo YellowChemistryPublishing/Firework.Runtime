@@ -1,29 +1,21 @@
 #include "Debug.h"
 
-#include <SDL3/SDL.h>
 #include <Core/CoreEngine.h>
-#include <GL/Renderer.h>
 #include <EntityComponentSystem/Entity.h>
+#include <GL/Renderer.h>
+#include <SDL3/SDL.h>
 
 using namespace Firework;
 using namespace Firework::Internal;
 using namespace Firework::GL;
 
-void Debug::showF3Menu()
+void Debug::showF3Menu(bool visible)
 {
-    Renderer::showDebugInformation();
+    Renderer::showDebugInformation(visible);
 }
-void Debug::hideF3Menu()
+void Debug::showWireframes(bool visible)
 {
-    Renderer::hideDebugInformation();
-}
-void Debug::showWireframes()
-{
-    Renderer::showDebugWireframes();
-}
-void Debug::hideWireframes()
-{
-    Renderer::hideDebugWireframes();
+    Renderer::showDebugWireframes(visible);
 }
 
 void Debug::messageBox(LogLevel severity, std::string_view title, std::string_view message)
@@ -42,6 +34,7 @@ void Debug::messageBox(LogLevel severity, std::string_view title, std::string_vi
             return SDL_MESSAGEBOX_WARNING;
             break;
         case LogLevel::Error:
+        default:
             return SDL_MESSAGEBOX_ERROR;
             break;
         }

@@ -2,24 +2,13 @@
 
 using namespace Firework::GL;
 
-UniformHandle UniformHandle::create(const char* name, UniformType type)
+Uniform::Uniform(const std::string_view name, const UniformType type, const u16 count)
 {
-    UniformHandle ret;
-    ret.internalHandle = bgfx::createUniform(name, (bgfx::UniformType::Enum)type, 1);
-    return ret;
+    const std::string cName(name.begin(), name.end());
+    this->internalHandle = bgfx::createUniform(cName.c_str(), _as(bgfx::UniformType::Enum, type), +count);
 }
-UniformHandle UniformHandle::createArray(const char* name, UniformType type, uint16_t count)
+Uniform::~Uniform()
 {
-    UniformHandle ret;
-    ret.internalHandle = bgfx::createUniform(name, (bgfx::UniformType::Enum)type, count);
-    return ret;
-}
-void UniformHandle::destroy()
-{
-    bgfx::destroy(this->internalHandle);
-}
-
-UniformHandle::operator bool () const
-{
-    return bgfx::isValid(this->internalHandle);
+    if (bgfx::isValid(this->internalHandle))
+        bgfx::destroy(this->internalHandle);
 }

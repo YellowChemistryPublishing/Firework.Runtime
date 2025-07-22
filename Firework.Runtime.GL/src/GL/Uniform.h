@@ -4,6 +4,8 @@
 
 #include <bgfx/bgfx.h>
 #include <cstddef>
+#include <module/sys>
+#include <utility>
 
 namespace Firework::GL
 {
@@ -16,20 +18,31 @@ namespace Firework::GL
         Mat4 = bgfx::UniformType::Mat4
     };
 
-    struct __firework_gl_api UniformHandle final
+    struct _fw_gl_api Uniform final
     {
-        static UniformHandle create(const char* name, UniformType type);
-        static UniformHandle createArray(const char* name, UniformType type, uint16_t count);
-        void destroy();
-
-        operator bool () const;
-        inline bool operator==(std::nullptr_t)
+        Uniform(std::nullptr_t) { };
+        Uniform(std::string_view name, UniformType type, u16 count = 1_u16);
+        Uniform(const Uniform&) = delete;
+        Uniform(Uniform&& other)
         {
-            return !(*this);
+            swap(*this, other);
+        }
+        ~Uniform();
+
+        operator bool() const noexcept
+        {
+            return bgfx::isValid(this->internalHandle);
+        }
+
+        friend void swap(Uniform& a, Uniform& b) noexcept
+        {
+            using std::swap;
+
+            swap(a.internalHandle, b.internalHandle);
         }
 
         friend class Firework::GL::Renderer;
     private:
         bgfx::UniformHandle internalHandle { bgfx::kInvalidHandle };
     };
-}
+} // namespace Firework::GL

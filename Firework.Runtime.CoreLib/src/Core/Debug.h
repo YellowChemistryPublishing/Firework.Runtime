@@ -309,10 +309,8 @@ namespace Firework
             std::cout << logStr;
         }
 
-        static void showF3Menu();
-        static void hideF3Menu();
-        static void showWireframes();
-        static void hideWireframes();
+        static void showF3Menu(bool visible = true);
+        static void showWireframes(bool visible = true);
 
         /// @brief Triggers a breakpoint trap.
         /// @note Thread-safe.

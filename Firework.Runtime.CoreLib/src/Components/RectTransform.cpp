@@ -1,7 +1,6 @@
 #include "RectTransform.h"
 
 #include <cmath>
-#include <module/sys.Mathematics>
 
 #include <EntityComponentSystem/Entity.h>
 #include <GL/Renderer.h>

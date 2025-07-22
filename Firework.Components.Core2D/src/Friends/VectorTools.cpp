@@ -230,9 +230,10 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             injectedNextCommand = injectAs;
     };
 
+    glm::vec2 to;
     while (it != end)
     {
-        glm::vec2 to, c1, c2;
+        glm::vec2 c1, c2;
         float* horizReadTo;
 
         if (injectedNextCommand)

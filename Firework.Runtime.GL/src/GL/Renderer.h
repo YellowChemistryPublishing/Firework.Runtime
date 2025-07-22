@@ -4,12 +4,11 @@
 
 #include <bgfx/bgfx.h>
 #include <glm/gtc/quaternion.hpp>
-#include <module/sys.Mathematics>
+#include <module/sys>
 
 #include <GL/Geometry.h>
 #include <GL/Shader.h>
 #include <GL/Texture.h>
-#include <GL/TextureVector.h>
 
 namespace Firework
 {
@@ -30,53 +29,50 @@ namespace Firework
             Default = bgfx::RendererType::Count
         };
 
-        class __firework_gl_api Renderer final
+        class _fw_gl_api Renderer final
         {
             static std::vector<std::pair<void (*)(bgfx::ViewId, void*), void*>> drawPassIntercepts;
         public:
             Renderer() = delete;
 
-            static bool initialize(void* ndt, void* nwh, uint32_t width, uint32_t height, RendererBackend backend = RendererBackend::Default, uint32_t initFlags = BGFX_RESET_NONE);
+            static bool initialize(void* ndt, void* nwh, u32 width, u32 height, RendererBackend backend = RendererBackend::Default, u32 initFlags = BGFX_RESET_NONE);
             static void shutdown();
 
-            static void showDebugInformation();
-            static void hideDebugInformation();
-            static void showDebugWireframes();
-            static void hideDebugWireframes();
+            static void showDebugInformation(bool visible = true);
+            static void showDebugWireframes(bool visible = true);
 
             static RendererBackend rendererBackend();
             static std::vector<RendererBackend> platformBackends();
 
-            static void setViewOrthographic(bgfx::ViewId id, float width, float height, glm::vec3 position = { 0.0f, 0.0f, 0.0f },
-                                            glm::quat rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, float near = -1.0f, float far = 2048.0f);
+            static void setViewOrthographic(bgfx::ViewId id, float width, float height, glm::vec3 position = { 0.0f, 0.0f, 0.0f }, glm::quat rotation = { 1.0f, 0.0f, 0.0f, 0.0f },
+                                            float near = -1.0f, float far = 2048.0f);
             static void setViewPerspective(bgfx::ViewId id, float width, float height, float yFieldOfView = 60.0f, glm::vec3 position = { 0.0f, 0.0f, 0.0f },
                                            glm::quat rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, float near = 0.0f, float far = 2048.0f);
-            static void setViewClear(bgfx::ViewId id, uint32_t rgbaColor = 0x000000ff, uint16_t flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL,
-                                     float depth = 1.0f, uint8_t stencil = 0);
-            static void setViewArea(bgfx::ViewId id, uint16_t x, uint16_t y, uint16_t width, uint16_t height);
+
+            static void setViewClear(bgfx::ViewId id, u32 rgbaColor = 0x000000ff, u16 flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL, float depth = 1.0f,
+                                     byte stencil = 0);
+            static void setViewArea(bgfx::ViewId id, u16 x, u16 y, u16 width, u16 height);
             static void setViewDrawOrder(bgfx::ViewId id, bgfx::ViewMode::Enum order);
-            static void resetBackbuffer(uint32_t width, uint32_t height, uint32_t flags = BGFX_RESET_NONE, bgfx::TextureFormat::Enum format = bgfx::TextureFormat::Count);
+
+            static void resetBackbuffer(u32 width, u32 height, u32 flags = BGFX_RESET_NONE, bgfx::TextureFormat::Enum format = bgfx::TextureFormat::Count);
 
             static void setDrawTransform(const glm::mat4& transform);
-            static void setDrawUniform(UniformHandle uniform, const void* data);
-            static void setDrawArrayUniform(UniformHandle uniform, const void* data, uint16_t count);
-            static void setDrawTexture(uint8_t stage, Texture2DHandle texture, TextureSamplerHandle sampler, uint64_t flags = BGFX_TEXTURE_NONE);
-            template <uint16_t Vec4Count>
-            inline static void setDrawTexture(uint8_t stage, const TextureVector<Vec4Count>& texture, TextureSamplerHandle sampler)
-            {
-                Renderer::setDrawTexture(stage, texture.gpuData, sampler, BGFX_SAMPLER_MIN_POINT | BGFX_SAMPLER_MAG_POINT | BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-            }
-            static void setDrawStencil(uint32_t func, uint32_t back = BGFX_STENCIL_NONE);
+            static void setDrawUniform(const Uniform& uniform, const void* data);
+            static void setDrawArrayUniform(const Uniform& uniform, const void* data, u16 count);
+            static void setDrawTexture(u8 stage, Texture2DHandle texture, TextureSamplerHandle sampler, u64 flags = BGFX_TEXTURE_NONE);
+            static void setDrawStencil(u32 func, u32 back = BGFX_STENCIL_NONE);
+
             static void addDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*), void* data = nullptr);
             static void removeDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*));
+
             static void submitDraw(bgfx::ViewId id, StaticMeshHandle mesh, GeometryProgramHandle program,
-                                   uint64_t state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_WRITE_Z |
+                                   u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_WRITE_Z |
                                        BGFX_STATE_DEPTH_TEST_LESS,
-                                   uint32_t blendFactor = 0);
+                                   u32 blendFactor = 0);
             static void submitDraw(bgfx::ViewId id, DynamicMeshHandle mesh, GeometryProgramHandle program,
-                                   uint64_t state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_WRITE_Z |
+                                   u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_WRITE_Z |
                                        BGFX_STATE_DEPTH_TEST_LESS,
-                                   uint32_t blendFactor = 0);
+                                   u32 blendFactor = 0);
 
 #if _DEBUG
             static void debugDrawCube(glm::vec3 position, float sideLength = 1.0f);

@@ -11,7 +11,7 @@ namespace Firework
     {
         class Renderer;
 
-        struct __firework_gl_api TextureSamplerHandle final
+        struct _fw_gl_api TextureSamplerHandle final
         {
             static TextureSamplerHandle create(const char* name);
             void destroy();
@@ -33,19 +33,12 @@ namespace Firework
                 return this->internalHandle.idx == other.internalHandle.idx;
             }
 
-            inline static TextureSamplerHandle null()
-            {
-                TextureSamplerHandle ret;
-                ret.internalHandle.idx = bgfx::kInvalidHandle;
-                return ret;
-            }
-
             friend class Firework::GL::Renderer;
         private:
             bgfx::UniformHandle internalHandle { bgfx::kInvalidHandle };
         };
 
-        struct __firework_gl_api Texture2DHandle final
+        struct _fw_gl_api Texture2DHandle final
         {
             static Texture2DHandle create
             (

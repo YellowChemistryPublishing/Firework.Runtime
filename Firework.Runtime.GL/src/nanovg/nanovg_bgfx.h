@@ -28,19 +28,19 @@ enum NVGimageFlagsGL {
 };
 
 ///
-__firework_gl_api NVGcontext* nvgCreate(int32_t _edgeaa, bgfx::ViewId _viewId, bx::AllocatorI* _allocator);
+_fw_gl_api NVGcontext* nvgCreate(int32_t _edgeaa, bgfx::ViewId _viewId, bx::AllocatorI* _allocator);
 
 ///
-__firework_gl_api NVGcontext* nvgCreate(int32_t _edgeaa, bgfx::ViewId _viewId);
+_fw_gl_api NVGcontext* nvgCreate(int32_t _edgeaa, bgfx::ViewId _viewId);
 
 ///
-__firework_gl_api void nvgDelete(NVGcontext* _ctx);
+_fw_gl_api void nvgDelete(NVGcontext* _ctx);
 
 ///
-__firework_gl_api void nvgSetViewId(NVGcontext* _ctx, bgfx::ViewId _viewId);
+_fw_gl_api void nvgSetViewId(NVGcontext* _ctx, bgfx::ViewId _viewId);
 
 ///
-__firework_gl_api uint16_t nvgGetViewId(struct NVGcontext* _ctx);
+_fw_gl_api uint16_t nvgGetViewId(struct NVGcontext* _ctx);
 
 // Helper functions to create bgfx framebuffer to render to.
 // Example:
@@ -63,27 +63,27 @@ __firework_gl_api uint16_t nvgGetViewId(struct NVGcontext* _ctx);
 //		nvgEndFrame(ctx);
 
 ///
-__firework_gl_api NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* _ctx, int32_t _width, int32_t _height, int32_t _imageFlags, bgfx::ViewId _viewId);
+_fw_gl_api NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* _ctx, int32_t _width, int32_t _height, int32_t _imageFlags, bgfx::ViewId _viewId);
 
 ///
-__firework_gl_api NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* _ctx, int32_t _width, int32_t _height, int32_t _imageFlags);
+_fw_gl_api NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* _ctx, int32_t _width, int32_t _height, int32_t _imageFlags);
 
 ///
-__firework_gl_api NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* _ctx, int32_t _imageFlags, bgfx::ViewId _viewId);
+_fw_gl_api NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* _ctx, int32_t _imageFlags, bgfx::ViewId _viewId);
 
 ///
-__firework_gl_api NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* _ctx, int32_t _imageFlags);
+_fw_gl_api NVGLUframebuffer* nvgluCreateFramebuffer(NVGcontext* _ctx, int32_t _imageFlags);
 
 ///
-__firework_gl_api void nvgluBindFramebuffer(NVGLUframebuffer* _framebuffer);
+_fw_gl_api void nvgluBindFramebuffer(NVGLUframebuffer* _framebuffer);
 
 ///
-__firework_gl_api void nvgluDeleteFramebuffer(NVGLUframebuffer* _framebuffer);
+_fw_gl_api void nvgluDeleteFramebuffer(NVGLUframebuffer* _framebuffer);
 
 ///
-__firework_gl_api void nvgluSetViewFramebuffer(bgfx::ViewId _viewId, NVGLUframebuffer* _framebuffer);
+_fw_gl_api void nvgluSetViewFramebuffer(bgfx::ViewId _viewId, NVGLUframebuffer* _framebuffer);
 
 ///
-__firework_gl_api int nvgCreateBgfxTexture(struct NVGcontext *_ctx, bgfx::TextureHandle _id, int _width, int _height, int _flags);
+_fw_gl_api int nvgCreateBgfxTexture(struct NVGcontext *_ctx, bgfx::TextureHandle _id, int _width, int _height, int _flags);
 
 #endif // NANOVG_BGFX_H_HEADER_GUARD

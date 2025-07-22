@@ -19,7 +19,7 @@ namespace Firework::GL
         uint8_t count;
         bool normalize = false;
     };
-    class __firework_gl_api VertexLayout final
+    class _fw_gl_api VertexLayout final
     {
         bgfx::VertexLayout internalLayout;
     public:
@@ -35,7 +35,7 @@ namespace Firework::GL
         friend class Firework::GL::DynamicMeshHandle;
     };
 
-    class __firework_gl_api StaticMeshHandle final
+    class _fw_gl_api StaticMeshHandle final
     {
         bgfx::VertexBufferHandle internalVertexBuffer { .idx = bgfx::kInvalidHandle };
         bgfx::IndexBufferHandle internalIndexBuffer { .idx = bgfx::kInvalidHandle };
@@ -53,7 +53,7 @@ namespace Firework::GL
 
         friend class Firework::GL::Renderer;
     };
-    class __firework_gl_api DynamicMeshHandle final
+    class _fw_gl_api DynamicMeshHandle final
     {
         bgfx::DynamicVertexBufferHandle internalVertexBuffer;
         bgfx::DynamicIndexBufferHandle internalIndexBuffer;

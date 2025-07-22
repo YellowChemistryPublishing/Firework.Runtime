@@ -8,48 +8,34 @@
 
 using namespace Firework::GL;
 
-GeometryProgramHandle GeometryProgramHandle::create
-(
-    void* vertexShaderData, uint32_t vertexShaderDataSize,
-    void* fragmentShaderData, uint32_t fragmentShaderDataSize,
-    const ShaderUniform* uniforms, size_t uniformsLength
-)
+GeometryProgramHandle GeometryProgramHandle::create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,
+                                                    const ShaderUniform* uniforms, size_t uniformsLength)
 {
     GeometryProgramHandle ret;
-    char* vertData = new char[vertexShaderDataSize];
-    memcpy(vertData, vertexShaderData, vertexShaderDataSize);
-    char* fragData = new char[fragmentShaderDataSize];
-    memcpy(fragData, fragmentShaderData, fragmentShaderDataSize);
-    ret.internalHandle = bgfx::createProgram
-    (
-        bgfx::createShader(bgfx::makeRef(vertData, vertexShaderDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); })),
-        bgfx::createShader(bgfx::makeRef(fragData, fragmentShaderDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); })),
-        true
-    );
+    ret.internalHandle = bgfx::createProgram(bgfx::createShader(bgfx::copy(vertexShaderData, vertexShaderDataSize)),
+                                             bgfx::createShader(bgfx::copy(fragmentShaderData, fragmentShaderDataSize)), true);
     for (size_t i = 0; i < uniformsLength; i++)
     {
         if (!ret.internalUniformHandles.count(uniforms[i].name))
-            ret.internalUniformHandles.emplace(uniforms[i].name, UniformHandle::createArray(uniforms[i].name, uniforms[i].type, uniforms[i].count));
+            ret.internalUniformHandles.emplace(std::move(uniforms[i].name), new Uniform(uniforms[i].name, uniforms[i].type, uniforms[i].count));
     }
     return ret;
 }
 void GeometryProgramHandle::destroy()
 {
-    for (auto&[_, internalUniformHandle] : this->internalUniformHandles)
-        internalUniformHandle.destroy();
-    this->internalUniformHandles.clear();
+    for (auto& [_, uniform] : this->internalUniformHandles) delete uniform;
     bgfx::destroy(this->internalHandle);
 }
 
-void GeometryProgramHandle::setUniform(const char* name, const void* value)
+bool GeometryProgramHandle::setUniform(std::string_view name, const void* value)
 {
-    auto it = this->internalUniformHandles.find(name);
-    if (it != this->internalUniformHandles.end())
-        Renderer::setDrawUniform(it->second, value);
+    return this->setArrayUniform(name, value, 1_u16);
 }
-void GeometryProgramHandle::setArrayUniform(const char* name, const void* value, uint16_t count)
+bool GeometryProgramHandle::setArrayUniform(std::string_view name, const void* value, u16 count)
 {
     auto it = this->internalUniformHandles.find(name);
-    if (it != this->internalUniformHandles.end())
-        Renderer::setDrawArrayUniform(it->second, value, count);
+    _fence_value_return(false, it == this->internalUniformHandles.end());
+
+    Renderer::setDrawArrayUniform(*it->second, value, count);
+    return true;
 }

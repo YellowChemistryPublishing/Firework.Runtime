@@ -273,7 +273,7 @@ add_dependencies(Firework.Runtime.GL shaders_Firework.Runtime.GL)
 
 generate_export_header(Firework.Runtime.GL
     BASE_NAME FIREWORK_GL
-    EXPORT_MACRO_NAME __firework_gl_api
+    EXPORT_MACRO_NAME _fw_gl_api
     EXPORT_FILE_NAME Firework.Runtime.GL.Exports.h
 )
 
@@ -295,7 +295,8 @@ target_link_libraries(Firework.Runtime.GL
     PUBLIC
     assimp
     glm
-    sys.Mathematics
+    robin_hood
+    sys
     PRIVATE
     bimg
     bx
@@ -355,6 +356,7 @@ target_include_directories(Firework.Runtime.RenderPipeline
 target_link_libraries(Firework.Runtime.RenderPipeline
     PUBLIC
     Firework.Runtime.GL
+    sys
 )
 
 target_compile_definitions(Firework.Runtime.RenderPipeline PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
@@ -479,7 +481,6 @@ target_link_libraries(Firework.Components.Core2D
     glm
     pugixml-static
     sys
-    sys.Mathematics
     Firework.Runtime.CoreLib
     Firework.Runtime.GL
     Firework.Typography

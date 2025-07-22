@@ -4,7 +4,6 @@
 
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
-#include <module/sys.Mathematics>
 #include <module/sys>
 #include <vector>
 

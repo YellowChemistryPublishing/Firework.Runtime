@@ -4,7 +4,6 @@
 
 #include <cstddef>
 #include <memory>
-#include <module/sys.Mathematics>
 #include <module/sys>
 #include <robin_hood.h>
 #include <type_traits>

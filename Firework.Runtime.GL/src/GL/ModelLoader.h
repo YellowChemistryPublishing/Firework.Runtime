@@ -38,7 +38,7 @@ namespace Firework
 
             constexpr bool operator==(const MeshVertex&) const noexcept = default;
         };
-        class __firework_gl_api SceneMesh final
+        class _fw_gl_api SceneMesh final
         {
             std::string _name;
             std::vector<MeshVertex> _vertices;
@@ -69,7 +69,7 @@ namespace Firework
             friend class Firework::GL::SceneAsset;
             friend class Firework::GL::ModelLoader;
         };
-        class __firework_gl_api SceneNode final
+        class _fw_gl_api SceneNode final
         {
             std::vector<SceneMesh> _meshes;
             std::vector<SceneNode> _children;
@@ -86,7 +86,7 @@ namespace Firework
             friend class Firework::GL::SceneAsset;
             friend class Firework::GL::ModelLoader;
         };
-        class __firework_gl_api SceneAsset final
+        class _fw_gl_api SceneAsset final
         {
             SceneNode _root;
         public:
@@ -109,7 +109,7 @@ namespace Firework
             friend class Firework::GL::ModelLoader;
         };
 
-        class __firework_gl_api ModelLoader final
+        class _fw_gl_api ModelLoader final
         {
             static Assimp::Importer importer;
         public:

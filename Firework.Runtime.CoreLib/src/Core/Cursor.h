@@ -3,7 +3,6 @@
 #include "Firework.Runtime.CoreLib.Exports.h"
 
 #include <SDL3/SDL.h>
-#include <module/sys.Mathematics>
 
 #include <Library/Property.h>
 

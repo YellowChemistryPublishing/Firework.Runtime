@@ -3,7 +3,6 @@
 #include "Firework.Components.Core2D.Exports.h"
 
 #include <glm/vec4.hpp>
-#include <module/sys.Mathematics>
 
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/Entity.h>

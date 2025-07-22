@@ -3,7 +3,6 @@
 #include "Firework.Runtime.CoreLib.Exports.h"
 
 #include <glm/mat4x4.hpp>
-#include <module/sys.Mathematics>
 
 #include <EntityComponentSystem/Entity.h>
 #include <Library/Property.h>
