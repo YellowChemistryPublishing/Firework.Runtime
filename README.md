@@ -44,39 +44,12 @@ As well as the following tools and examples:
     defined by quadratic beziers.
 
 -   _The authors, contributors, and engineers who have written the following..._
-
-    -   `bgfx`
-
-        Is what we use for all 2D and 3D graphics.
-
-    -   `glm`
-
-        For all our numerical math, including 2D and 3D matrix transformations required in rendering.
-
-    -   `libcxxext`
-
-        Small C++ additions that are lightly sprinkled throughout our code, to make a faster, safer, better library.
-
-    -   `moodycamel::ConcurrentQueue`
-
-        A general-purpose, multi-producer, multi-consumer, thread-safe queue, used mainly to communicate sequences of events between threads.
-
-    -   `pugixml`
-
-        Loads `.svg` files for us, and other XML files if you'd like!
-
-    -   `robin-hood-hashing`
-
-        An (although no longer in development), very fast set of hashmaps, that we prefer using.
-
-    -   `SDL3`
-
-        For window management, input handling, and much more!
-
-    -   `stb`
-
-        We use `stb_truetype` for the loading of OpenType fonts, and `stb_image` to load `.png` files.
-
-    -   `std_function`
-
-        An alternate implementation of a general-purpose function wrapper which is measurably faster than the common standard implementations. We like that.
+    -   `bgfx`—Is what we use for all 2D and 3D graphics.
+    -   `glm`—For all our numerical math, including 2D and 3D matrix transformations required in rendering.
+    -   `libcxxext`—Small C++ additions that are lightly sprinkled throughout our code, to make a faster, safer, better library.
+    -   `moodycamel::ConcurrentQueue`—A general-purpose, multi-producer, multi-consumer, thread-safe queue, used mainly to communicate sequences of events between threads.
+    -   `pugixml` Loads `.svg`—files for us, and other XML files if you'd like!
+    -   `robin-hood-hashing`—An (although no longer in development), very fast set of hashmaps, that we prefer using.
+    -   `SDL3`—For window management, input handling, and much more!
+    -   `stb`—We use `stb_truetype` for the loading of OpenType fonts, and `stb_image` to load `.png` files.
+    -   `std_function`—An alternate implementation of a general-purpose function wrapper which is measurably faster than the common standard implementations. We like that.
