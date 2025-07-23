@@ -4,7 +4,8 @@
 
 #include <bgfx/bgfx.h>
 #include <cstring>
-#include <robin_hood.h>
+#include <map>
+#include <module/sys>
 #include <vector>
 
 #include <GL/Uniform.h>
@@ -61,7 +62,7 @@ namespace Firework::GL
     class _fw_gl_api GeometryProgramHandle final
     {
         bgfx::ProgramHandle internalHandle { .idx = bgfx::kInvalidHandle };
-        robin_hood::unordered_flat_map<std::string_view, Uniform*> internalUniformHandles;
+        std::map<std::string_view, sys::aligned_storage<Uniform>> internalUniformHandles;
 
         static GeometryProgramHandle create(void* vertexShaderData, uint32_t vertexShaderDataSize, void* fragmentShaderData, uint32_t fragmentShaderDataSize,
                                             const ShaderUniform* uniforms, size_t uniformsLength);

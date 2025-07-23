@@ -17,13 +17,16 @@ GeometryProgramHandle GeometryProgramHandle::create(void* vertexShaderData, uint
     for (size_t i = 0; i < uniformsLength; i++)
     {
         if (!ret.internalUniformHandles.count(uniforms[i].name))
-            ret.internalUniformHandles.emplace(std::move(uniforms[i].name), new Uniform(uniforms[i].name, uniforms[i].type, uniforms[i].count));
+        {
+            std::construct_at(ret.internalUniformHandles.emplace(std::move(uniforms[i].name), sys::aligned_storage<Uniform>()).first->second.data(), uniforms[i].name,
+                              uniforms[i].type, uniforms[i].count);
+        }
     }
     return ret;
 }
 void GeometryProgramHandle::destroy()
 {
-    for (auto& [_, uniform] : this->internalUniformHandles) delete uniform;
+    for (auto& [_, uniform] : this->internalUniformHandles) std::destroy_at(_asr(Uniform*, uniform.data()));
     bgfx::destroy(this->internalHandle);
 }
 
@@ -36,6 +39,6 @@ bool GeometryProgramHandle::setArrayUniform(std::string_view name, const void* v
     auto it = this->internalUniformHandles.find(name);
     _fence_value_return(false, it == this->internalUniformHandles.end());
 
-    Renderer::setDrawArrayUniform(*it->second, value, count);
+    Renderer::setDrawArrayUniform(*_asr(Uniform*, it->second.data()), value, count);
     return true;
 }
