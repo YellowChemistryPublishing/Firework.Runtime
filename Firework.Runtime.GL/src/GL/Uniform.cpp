@@ -7,8 +7,4 @@ Uniform::Uniform(const std::string_view name, const UniformType type, const u16 
     const std::string cName(name.begin(), name.end());
     this->internalHandle = bgfx::createUniform(cName.c_str(), _as(bgfx::UniformType::Enum, type), +count);
 }
-Uniform::~Uniform()
-{
-    if (bgfx::isValid(this->internalHandle))
-        bgfx::destroy(this->internalHandle);
-}
+_fw_gl_common_handle_dtor(Uniform);

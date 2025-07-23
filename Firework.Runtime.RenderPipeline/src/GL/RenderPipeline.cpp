@@ -8,8 +8,6 @@
 using namespace Firework;
 using namespace Firework::GL;
 
-static GeometryProgramHandle genericProgram;
-
 void (*RenderPipeline::clearViewArea)() = RenderPipeline::defaultClearViewArea;
 void (*RenderPipeline::resetViewArea)(u16, u16) = RenderPipeline::defaultResetViewArea;
 void (*RenderPipeline::resetBackbuffer)(u32, u32) = RenderPipeline::defaultResetBackbuffer;

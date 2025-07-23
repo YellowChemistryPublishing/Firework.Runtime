@@ -33,8 +33,8 @@ namespace Firework
         };
         struct FilledPathRenderable
         {
-            FilledPathRenderer rend;
-            Color col;
+            FilledPathRenderer rend = nullptr;
+            Color col = Color::unknown;
 
             FilledPathRenderable(FilledPathRenderer rend, Color col) : rend(std::move(rend)), col(col)
             { }

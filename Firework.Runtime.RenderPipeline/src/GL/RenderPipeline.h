@@ -4,7 +4,6 @@
 
 #include <module/sys>
 
-#include <GL/ModelLoader.h>
 #include <GL/Shader.h>
 
 namespace Firework::GL

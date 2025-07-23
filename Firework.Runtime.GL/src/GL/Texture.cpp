@@ -5,78 +5,30 @@
 
 using namespace Firework::GL;
 
-TextureSamplerHandle TextureSamplerHandle::create(const char* name)
+TextureSampler::TextureSampler(std::string_view name)
 {
-    TextureSamplerHandle ret;
-    ret.internalHandle = bgfx::createUniform(name, bgfx::UniformType::Sampler);
-    return ret;
+    std::string cName(name.begin(), name.end());
+    this->internalHandle = bgfx::createUniform(cName.c_str(), bgfx::UniformType::Sampler);
 }
-void TextureSamplerHandle::destroy()
-{
-    bgfx::destroy(this->internalHandle);
-}
+_fw_gl_common_handle_dtor(TextureSampler);
 
-Texture2DHandle Texture2DHandle::create
-(
-    const void* textureData, uint32_t textureDataSize,
-    uint16_t width, uint16_t height,
-    bool hasMipMaps, uint16_t layerCount,
-    bgfx::TextureFormat::Enum format, uint64_t flags
-)
+Texture2D::Texture2D(const std::span<const byte> textureData, const u16 width, const u16 height, bool hasMipMaps, const u16 layerCount, bgfx::TextureFormat::Enum format,
+                     const u64 flags) :
+    internalHandle(bgfx::createTexture2D(+width, +height, hasMipMaps, +layerCount, format, +flags, bgfx::copy(textureData.data(), textureData.size_bytes())))
+{ }
+Texture2D::Texture2D(const u16 width, const u16 height, bool hasMipMaps, const u16 layerCount, bgfx::TextureFormat::Enum format, const u64 flags) :
+    internalHandle(bgfx::createTexture2D(+width, +height, hasMipMaps, +layerCount, format, +flags))
+{ }
+
+void Texture2D::updateDynamic(const std::span<const byte> textureData, const u16 layer, const u8 mip, const u16 x, const u16 y, const u16 width, const u16 height)
 {
-    Texture2DHandle ret;
-    char* texData = new char[textureDataSize];
-    memcpy(texData, textureData, textureDataSize);
-    ret.internalHandle = bgfx::createTexture2D
-    (
-        width, height, hasMipMaps, layerCount, format, flags,
-        bgfx::makeRef(texData, textureDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); })
-    );
-    return ret;
+    bgfx::updateTexture2D(this->internalHandle, +layer, +mip, +x, +y, +width, +height, bgfx::copy(textureData.data(), textureData.size_bytes()));
 }
-Texture2DHandle Texture2DHandle::create(const unsigned char (&color)[4])
+void Texture2D::copyTo(const Texture2D& dest, const u16 dstX, const u16 dstY, const u16 srcX, const u16 srcY, const u16 width, const u16 height)
 {
-    Texture2DHandle ret;
-    char* texData = new char[4];
-    memcpy(texData, color, 4);
-    ret.internalHandle = bgfx::createTexture2D
-    (
-        1, 1, false, 1, bgfx::TextureFormat::RGBA8,
-        BGFX_TEXTURE_NONE | BGFX_SAMPLER_COMPARE_LESS | BGFX_SAMPLER_MIN_ANISOTROPIC | BGFX_SAMPLER_MAG_ANISOTROPIC,
-        bgfx::makeRef(texData, 4, [](void* data, void*) { delete[] static_cast<char*>(data); })
-    );
-    return ret;
+    this->copyTo(0, dest, dstX, dstY, srcX, srcY, width, height);
 }
-Texture2DHandle Texture2DHandle::createDynamic
-(
-    uint16_t width, uint16_t height,
-    bool hasMipMaps, uint16_t layerCount,
-    bgfx::TextureFormat::Enum format, uint64_t flags
-)
+void Texture2D::copyTo(const u16 view, const Texture2D& dest, const u16 dstX, const u16 dstY, const u16 srcX, const u16 srcY, const u16 width, const u16 height)
 {
-    Texture2DHandle ret;
-    ret.internalHandle = bgfx::createTexture2D(width, height, hasMipMaps, layerCount, format, flags);
-    return ret;
-}
-void Texture2DHandle::updateDynamic(const void* textureData, uint32_t textureDataSize, uint16_t layer, uint8_t mip, uint16_t x, uint16_t y, uint16_t width, uint16_t height)
-{
-    char* texData = new char[textureDataSize];
-    memcpy(texData, textureData, textureDataSize);
-    bgfx::updateTexture2D
-    (
-        this->internalHandle, layer, mip, x, y, width, height,
-        bgfx::makeRef(texData, textureDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); })
-    );
-}
-void Texture2DHandle::copyTo(Texture2DHandle dest, uint16_t dstX, uint16_t dstY, uint16_t srcX, uint16_t srcY, uint16_t width, uint16_t height)
-{
-    bgfx::blit(0, dest.internalHandle, dstX, dstY, this->internalHandle, srcX, srcY, width, height);
-}
-void Texture2DHandle::copyTo(uint16_t view, Texture2DHandle dest, uint16_t dstX, uint16_t dstY, uint16_t srcX, uint16_t srcY, uint16_t width, uint16_t height)
-{
-    bgfx::blit(view, dest.internalHandle, dstX, dstY, this->internalHandle, srcX, srcY, width, height);
-}
-void Texture2DHandle::destroy()
-{
-    bgfx::destroy(this->internalHandle);
+    bgfx::blit(+view, dest.internalHandle, +dstX, +dstY, this->internalHandle, +srcX, +srcY, +width, +height);
 }

@@ -16,7 +16,7 @@ namespace
 
 namespace Firework::GL
 {
-    class GeometryProgramHandle;
+    class GeometryProgram;
 } // namespace Firework::GL
 
 namespace Firework
@@ -29,16 +29,16 @@ namespace Firework
 
     class _fw_cc2d_api FilledPathRenderer final
     {
-        static GL::GeometryProgramHandle stencilProgram;
-        static GL::GeometryProgramHandle drawProgram;
+        static GL::GeometryProgram stencilProgram;
+        static GL::GeometryProgram drawProgram;
 
-        static GL::StaticMeshHandle unitSquare;
+        static GL::StaticMesh unitSquare;
 
         [[nodiscard]] static bool renderInitialize();
 
-        GL::StaticMeshHandle fill = nullptr;
+        GL::StaticMesh fill = nullptr;
     public:
-        inline FilledPathRenderer(std::nullptr_t = nullptr)
+        inline FilledPathRenderer(std::nullptr_t)
         { }
         FilledPathRenderer(std::span<const FilledPathPoint> points, std::span<const ssz> closedPathRanges);
         FilledPathRenderer(std::span<const FilledPathPoint> points) : FilledPathRenderer(points, std::array<ssz, 2> { 0_z, ssz(points.size()) })
@@ -47,11 +47,6 @@ namespace Firework
         inline FilledPathRenderer(FilledPathRenderer&& other)
         {
             swap(*this, other);
-        }
-        inline ~FilledPathRenderer()
-        {
-            if (this->fill) [[likely]]
-                this->fill.destroy();
         }
 
         inline operator bool()

@@ -4,6 +4,11 @@
 #include <bgfx/platform.h>
 #include <bx/math.h>
 #include <glm/gtc/type_ptr.hpp>
+#include <module/sys>
+
+#include <GL/Geometry.h>
+#include <GL/Shader.h>
+#include <GL/Texture.h>
 
 #include <DebugCube.vfAll.h>
 
@@ -19,9 +24,9 @@ static struct Vertex
             { -0.5f, 0.5f, 0.5f }, { -0.5f, 0.5f, -0.5f }, { -0.5f, -0.5f, 0.5f }, { -0.5f, -0.5f, -0.5f } };
 static uint16_t inds[] { 7, 1, 5, 7, 3, 1, 3, 0, 1, 3, 2, 0, 6, 7, 5, 6, 5, 4, 2, 4, 0, 2, 6, 4, 5, 0, 4, 5, 1, 0, 6, 2, 3, 6, 3, 7 };
 
-static VertexLayout layout = VertexLayout::create({ { bgfx::Attrib::Position, bgfx::AttribType::Float, 3 } });
-static StaticMeshHandle cubeMesh;
-static GeometryProgramHandle cubeProgram;
+static VertexLayout layout = VertexLayout(std::array { VertexDescriptor { VertexAttributeName::Position, VertexAttributeType::Float, 3 } });
+static StaticMesh cubeMesh = nullptr;
+static GeometryProgram cubeProgram = nullptr;
 #endif
 
 bool Renderer::initialize(void* ndt, void* nwh, u32 width, u32 height, RendererBackend backend, u32 initFlags)
@@ -45,24 +50,8 @@ bool Renderer::initialize(void* ndt, void* nwh, u32 width, u32 height, RendererB
         return false;
 
 #if _DEBUG
-    cubeMesh = StaticMeshHandle::create(verts, sizeof(verts), layout, inds, sizeof(inds));
-    switch (bgfx::getRendererType())
-    {
-#if _WIN32
-    case bgfx::RendererType::Direct3D11:
-        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d11));
-        break;
-    case bgfx::RendererType::Direct3D12:
-        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, d3d12));
-        break;
-#endif
-    case bgfx::RendererType::OpenGL:
-        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, opengl));
-        break;
-    case bgfx::RendererType::Vulkan:
-        cubeProgram = GeometryProgramHandle::create(getGeometryProgramArgsFromPrecompiledShaderName(DebugCube, vulkan));
-        break;
-    }
+    cubeMesh = StaticMesh(std::span(_asr(byte*, &verts), sizeof(verts)), layout, std::span(inds));
+    createShaderFromPrecompiled(cubeProgram, DebugCube);
 #endif
 
     bx::Vec3 eye { 0.0f, 0.0f, -1.0f }, at { 0.0f, 0.0f, 0.0f };
@@ -78,8 +67,8 @@ bool Renderer::initialize(void* ndt, void* nwh, u32 width, u32 height, RendererB
 void Renderer::shutdown()
 {
 #if _DEBUG
-    cubeMesh.destroy();
-    cubeProgram.destroy();
+    cubeMesh = nullptr;
+    cubeProgram = nullptr;
 #endif
 
     bgfx::shutdown();
@@ -163,17 +152,26 @@ void Renderer::setDrawTransform(const glm::mat4& transform)
 {
     bgfx::setTransform(glm::value_ptr(transform));
 }
-void Renderer::setDrawUniform(const Uniform& uniform, const void* data)
+bool Renderer::setDrawUniform(const Uniform& uniform, const void* data)
 {
+    _fence_value_return(false, !uniform);
+
     bgfx::setUniform(uniform.internalHandle, data);
+    return true;
 }
-void Renderer::setDrawArrayUniform(const Uniform& uniform, const void* data, u16 count)
+bool Renderer::setDrawArrayUniform(const Uniform& uniform, const void* data, u16 count)
 {
+    _fence_value_return(false, !uniform);
+
     bgfx::setUniform(uniform.internalHandle, data, +count);
+    return true;
 }
-void Renderer::setDrawTexture(u8 stage, Texture2DHandle texture, TextureSamplerHandle sampler, u64 flags)
+bool Renderer::setDrawTexture(u8 stage, const Texture2D& texture, const TextureSampler& sampler, u32 flags)
 {
+    _fence_value_return(false, !texture || !sampler);
+
     bgfx::setTexture(+stage, sampler.internalHandle, texture.internalHandle, +flags);
+    return true;
 }
 void Renderer::setDrawStencil(u32 func, u32 back)
 {
@@ -196,21 +194,27 @@ void Renderer::removeDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*))
     }
 }
 
-void Renderer::submitDraw(bgfx::ViewId id, StaticMeshHandle mesh, GeometryProgramHandle program, u64 state, u32 blendFactor)
+bool Renderer::submitDraw(bgfx::ViewId id, const StaticMesh& mesh, const GeometryProgram& program, u64 state, u32 blendFactor)
 {
+    _fence_value_return(false, !mesh || !program);
+
     bgfx::setVertexBuffer(0, mesh.internalVertexBuffer);
     bgfx::setIndexBuffer(mesh.internalIndexBuffer);
     bgfx::setState(+state, +blendFactor);
     for (auto& [intercept, data] : Renderer::drawPassIntercepts) intercept(id, data);
     bgfx::submit(id, program.internalHandle);
+    return true;
 }
-void Renderer::submitDraw(bgfx::ViewId id, DynamicMeshHandle mesh, GeometryProgramHandle program, u64 state, u32 blendFactor)
+bool Renderer::submitDraw(bgfx::ViewId id, const DynamicMesh& mesh, const GeometryProgram& program, u64 state, u32 blendFactor)
 {
+    _fence_value_return(false, !mesh || !program);
+
     bgfx::setVertexBuffer(0, mesh.internalVertexBuffer);
     bgfx::setIndexBuffer(mesh.internalIndexBuffer);
     bgfx::setState(+state, +blendFactor);
     for (auto& [intercept, data] : Renderer::drawPassIntercepts) intercept(id, data);
     bgfx::submit(id, program.internalHandle);
+    return true;
 }
 
 #if _DEBUG

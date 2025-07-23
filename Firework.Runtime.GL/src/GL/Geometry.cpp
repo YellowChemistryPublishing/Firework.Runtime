@@ -4,55 +4,36 @@
 
 using namespace Firework::GL;
 
-VertexLayout VertexLayout::create(const VertexDescriptor* descriptors, size_t descriptorsLength)
+VertexLayout::VertexLayout(const std::span<const VertexDescriptor> descriptors)
 {
-    VertexLayout ret;
-    ret.internalLayout.begin();
-    for (size_t i = 0; i < descriptorsLength; i++)
-        ret.internalLayout.add(descriptors[i].attribute, descriptors[i].count, descriptors[i].type, descriptors[i].normalize);
-    ret.internalLayout.end();
-    return ret;
+    this->internalLayout.begin();
+    for (const VertexDescriptor& desc : descriptors)
+        this->internalLayout.add(_as(bgfx::Attrib::Enum, desc.attribute), +desc.count, _as(bgfx::AttribType::Enum, desc.type), desc.normalize);
+    this->internalLayout.end();
 }
 
-StaticMeshHandle StaticMeshHandle::create(const void* vertexData, uint32_t vertexDataSize, VertexLayout vl, const uint16_t* indexData, uint32_t indexDataSize)
+#define _fw_gl_common_mh_ctor_dtor(T, createVertFn, createIndFn)                                                       \
+    T::T(std::span<const byte> vertexData, const VertexLayout& vl, std::span<const uint16_t> indexData) :              \
+        internalVertexBuffer(createVertFn(bgfx::copy(vertexData.data(), vertexData.size_bytes()), vl.internalLayout)), \
+        internalIndexBuffer(createIndFn(bgfx::copy(indexData.data(), indexData.size_bytes())))                         \
+    { }                                                                                                                \
+    T::~T()                                                                                                            \
+    {                                                                                                                  \
+        if (bgfx::isValid(this->internalVertexBuffer))                                                                 \
+            bgfx::destroy(this->internalVertexBuffer);                                                                 \
+        if (bgfx::isValid(this->internalIndexBuffer))                                                                  \
+            bgfx::destroy(this->internalIndexBuffer);                                                                  \
+    }
+
+_fw_gl_common_mh_ctor_dtor(StaticMesh, bgfx::createVertexBuffer, bgfx::createIndexBuffer);
+
+bool DynamicMesh::update(const std::span<const byte> vertexData, const std::span<const uint16_t> indexData, const u32 fromVertex, const u32 fromIndex)
 {
-    StaticMeshHandle ret;
-    char* vertData = new char[vertexDataSize];
-    memcpy(vertData, vertexData, vertexDataSize);
-    char* indData = new char[indexDataSize];
-    memcpy(indData, indexData, indexDataSize);
-    ret.internalVertexBuffer = bgfx::createVertexBuffer(bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }), vl.internalLayout);
-    ret.internalIndexBuffer = bgfx::createIndexBuffer(bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }));
-    return ret;
-}
-void StaticMeshHandle::destroy()
-{
-    bgfx::destroy(this->internalVertexBuffer);
-    bgfx::destroy(this->internalIndexBuffer);
+    _fence_value_return(false, !bgfx::isValid(this->internalVertexBuffer) || !bgfx::isValid(this->internalIndexBuffer));
+
+    bgfx::update(this->internalVertexBuffer, +fromVertex, bgfx::copy(vertexData.data(), vertexData.size_bytes()));
+    bgfx::update(this->internalIndexBuffer, +fromIndex, bgfx::copy(indexData.data(), indexData.size_bytes()));
+    return true;
 }
 
-DynamicMeshHandle DynamicMeshHandle::create(const void* vertexData, uint32_t vertexDataSize, VertexLayout vl, const uint16_t* indexData, uint32_t indexDataSize)
-{
-    DynamicMeshHandle ret;
-    char* vertData = new char[vertexDataSize];
-    memcpy(vertData, vertexData, vertexDataSize);
-    char* indData = new char[indexDataSize];
-    memcpy(indData, indexData, indexDataSize);
-    ret.internalVertexBuffer = bgfx::createDynamicVertexBuffer(bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }), vl.internalLayout, BGFX_BUFFER_ALLOW_RESIZE);
-    ret.internalIndexBuffer = bgfx::createDynamicIndexBuffer(bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }), BGFX_BUFFER_ALLOW_RESIZE);
-    return ret;
-}
-void DynamicMeshHandle::update(const void* vertexData, uint32_t vertexDataSize, const uint16_t* indexData, uint32_t indexDataSize, uint32_t fromVertex, uint32_t fromIndex)
-{
-    char* vertData = new char[vertexDataSize];
-    memcpy(vertData, vertexData, vertexDataSize);
-    char* indData = new char[indexDataSize];
-    memcpy(indData, indexData, indexDataSize);
-    bgfx::update(this->internalVertexBuffer, fromVertex, bgfx::makeRef(vertData, vertexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }));
-    bgfx::update(this->internalIndexBuffer, fromIndex, bgfx::makeRef(indData, indexDataSize, [](void* data, void*) { delete[] static_cast<char*>(data); }));
-}
-void DynamicMeshHandle::destroy()
-{
-    bgfx::destroy(this->internalVertexBuffer);
-    bgfx::destroy(this->internalIndexBuffer);
-}
+_fw_gl_common_mh_ctor_dtor(DynamicMesh, bgfx::createDynamicVertexBuffer, bgfx::createDynamicIndexBuffer);

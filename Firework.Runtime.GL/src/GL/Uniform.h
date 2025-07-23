@@ -7,6 +7,8 @@
 #include <module/sys>
 #include <utility>
 
+#include <GL/Common.h>
+
 namespace Firework::GL
 {
     class Renderer;
@@ -20,28 +22,10 @@ namespace Firework::GL
 
     struct _fw_gl_api Uniform final
     {
-        Uniform(std::nullptr_t) { };
         Uniform(std::string_view name, UniformType type, u16 count = 1_u16);
-        Uniform(const Uniform&) = delete;
-        Uniform(Uniform&& other)
-        {
-            swap(*this, other);
-        }
-        ~Uniform();
 
-        operator bool() const noexcept
-        {
-            return bgfx::isValid(this->internalHandle);
-        }
-
-        friend void swap(Uniform& a, Uniform& b) noexcept
-        {
-            using std::swap;
-
-            swap(a.internalHandle, b.internalHandle);
-        }
-
-        friend class Firework::GL::Renderer;
+        _fw_gl_common_handle_interface(Uniform);
+        _fw_gl_common_handle_swap(Uniform);
     private:
         bgfx::UniformHandle internalHandle { bgfx::kInvalidHandle };
     };

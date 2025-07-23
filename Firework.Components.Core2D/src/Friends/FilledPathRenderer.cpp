@@ -2,6 +2,7 @@
 
 #include <EntityComponentSystem/EngineEvent.h>
 #include <GL/Renderer.h>
+#include <GL/Shader.h>
 #include <Library/Math.h>
 
 #include <Colored.vfAll.h>
@@ -11,25 +12,25 @@ using namespace Firework;
 using namespace Firework::Internal;
 using namespace Firework::GL;
 
-GeometryProgramHandle FilledPathRenderer::stencilProgram;
-GeometryProgramHandle FilledPathRenderer::drawProgram;
+GeometryProgram FilledPathRenderer::stencilProgram = nullptr;
+GeometryProgram FilledPathRenderer::drawProgram = nullptr;
 
-StaticMeshHandle FilledPathRenderer::unitSquare;
+StaticMesh FilledPathRenderer::unitSquare = nullptr;
 
 bool FilledPathRenderer::renderInitialize()
 {
     InternalEngineEvent::OnRenderShutdown += []
     {
         if (FilledPathRenderer::stencilProgram) [[likely]]
-            FilledPathRenderer::stencilProgram.destroy();
+            FilledPathRenderer::stencilProgram = nullptr;
         if (FilledPathRenderer::drawProgram) [[likely]]
-            FilledPathRenderer::drawProgram.destroy();
+            FilledPathRenderer::drawProgram = nullptr;
         if (FilledPathRenderer::unitSquare) [[likely]]
-            FilledPathRenderer::unitSquare.destroy();
+            FilledPathRenderer::unitSquare = nullptr;
     };
 
     createShaderFromPrecompiled(FilledPathRenderer::stencilProgram, StencilPath);
-    createShaderFromPrecompiled(FilledPathRenderer::drawProgram, Colored, { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
+    createShaderFromPrecompiled(FilledPathRenderer::drawProgram, Colored, std::array { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
 
     float unitSquareVerts[] {
         -1.0f, -1.0f, 1.0f, // [0]
@@ -38,9 +39,9 @@ bool FilledPathRenderer::renderInitialize()
         1.0f,  -1.0f, 1.0f  // [3]
     };
     uint16_t unitSquareInds[] { 2, 1, 0, 3, 2, 0 };
-    FilledPathRenderer::unitSquare = StaticMeshHandle::create(
-        unitSquareVerts, sizeof(unitSquareVerts), VertexLayout::create({ VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 } }),
-        unitSquareInds, sizeof(unitSquareInds));
+    FilledPathRenderer::unitSquare = StaticMesh(
+        std::span(_asr(byte*, &unitSquareVerts), sizeof(unitSquareVerts)),
+        VertexLayout(std::array { VertexDescriptor { .attribute = VertexAttributeName::Position, .type = VertexAttributeType::Float, .count = 3 } }), std::span(unitSquareInds));
 
     return FilledPathRenderer::stencilProgram && FilledPathRenderer::drawProgram && FilledPathRenderer::unitSquare;
 }
@@ -86,10 +87,10 @@ FilledPathRenderer::FilledPathRenderer(const std::span<const FilledPathPoint> po
         }
     }
 
-    this->fill = StaticMeshHandle::create(std::data(verts), +u32(verts.size() * sizeof(decltype(verts)::value_type)),
-                                          VertexLayout::create({ VertexDescriptor { .attribute = bgfx::Attrib::Position, .type = bgfx::AttribType::Float, .count = 3 },
-                                                                 VertexDescriptor { .attribute = bgfx::Attrib::TexCoord0, .type = bgfx::AttribType::Float, .count = 2 } }),
-                                          inds.data(), +u32(inds.size() * sizeof(decltype(inds)::value_type)));
+    this->fill = StaticMesh(std::span(_asr(byte*, verts.data()), verts.size() * sizeof(decltype(verts)::value_type)),
+                            VertexLayout(std::array { VertexDescriptor { .attribute = VertexAttributeName::Position, .type = VertexAttributeType::Float, .count = 3 },
+                                                      VertexDescriptor { .attribute = VertexAttributeName::TexCoord0, .type = VertexAttributeType::Float, .count = 2 } }),
+                            inds);
 }
 
 bool FilledPathRenderer::submitDrawStencil(const ssz renderIndex, glm::mat4 shape, const bool forceHole) const
