@@ -97,26 +97,26 @@ namespace Firework
         /// @note Main thread only.
         static FuncPtrEvent<> OnQuit;
     };
-
-    namespace Internal
-    {
-        class Component2D;
-        class Component;
-
-        /// @brief Static class containing functionality relevant to internal/low-level runtime handled events. You may add as many callbacks as you wish.
-        /// @warning You are **not** allowed to invoke any of this events yourself!
-        class _fw_core_api InternalEngineEvent final
-        {
-        public:
-            InternalEngineEvent() = delete;
-
-            /// @internal
-            /// @note Main thread only.
-            static FuncPtrEvent<std::type_index, Entity&, std::shared_ptr<void>, ssz> OnRenderOffloadForComponent;
-            /// @internal
-            /// @brief Low-level API. Event raised immediately before the render thread exits.
-            /// @note Render thread only.
-            static FuncPtrEvent<> OnRenderShutdown;
-        };
-    } // namespace Internal
 } // namespace Firework
+
+namespace Firework::Internal
+{
+    class Component2D;
+    class Component;
+
+    /// @brief Static class containing functionality relevant to internal/low-level runtime handled events. You may add as many callbacks as you wish.
+    /// @warning You are **not** allowed to invoke any of this events yourself!
+    class _fw_core_api InternalEngineEvent final
+    {
+    public:
+        InternalEngineEvent() = delete;
+
+        /// @internal
+        /// @note Main thread only.
+        static FuncPtrEvent<std::type_index, Entity&, std::shared_ptr<void>, ssz> OnRenderOffloadForComponent;
+        /// @internal
+        /// @brief Low-level API. Event raised immediately before the render thread exits.
+        /// @note Render thread only.
+        static FuncPtrEvent<> OnRenderShutdown;
+    };
+} // namespace Firework::Internal

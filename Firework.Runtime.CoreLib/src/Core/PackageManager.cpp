@@ -124,8 +124,12 @@ void PackageManager::normalizePath(std::wstring& path)
     {
         switch (*it)
         {
-        case L'\\': *it = L'/'; break;
-        case L'.': extensionEnded = true; break;
+        case L'\\':
+            *it = L'/';
+            break;
+        case L'.':
+            extensionEnded = true;
+            break;
         }
         if (!extensionEnded)
             *it = wchar_t(std::tolower(*it));

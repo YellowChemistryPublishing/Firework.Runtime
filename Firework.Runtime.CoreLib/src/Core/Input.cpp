@@ -7,6 +7,12 @@
 using namespace Firework;
 using namespace Firework::Internal;
 
+glm::vec2 Input::internalMousePosition;
+glm::vec2 Input::internalMouseMotion;
+
+bool Input::heldMouseInputs[size_t(MouseButton::Count)] {};
+bool Input::heldKeyInputs[size_t(Key::Count)] {};
+
 MouseButton Input::convertFromSDLMouse(uint_fast8_t code)
 {
     return (MouseButton)(code - 1);
@@ -216,12 +222,6 @@ Key Input::convertFromSDLKey(SDL_Keycode code)
         return Key::Unknown;
     }
 }
-
-glm::vec2 Input::internalMousePosition;
-glm::vec2 Input::internalMouseMotion;
-
-bool Input::heldMouseInputs[(size_t)MouseButton::Count] { false };
-bool Input::heldKeyInputs[(size_t)Key::Count] { false };
 
 void Input::beginQueryTextInput()
 {

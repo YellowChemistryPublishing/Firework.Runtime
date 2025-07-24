@@ -5,14 +5,11 @@
 
 namespace Firework
 {
-    template
-    <
-        typename GetterReturnType,
-        typename SetterInputType
-    >
+    template <typename GetterReturnType, typename SetterInputType>
     struct Property
     {
-        inline explicit Property(auto&& getter, auto&& setter) : getter(std::forward<typename std::remove_cvref<decltype(getter)>::type>(getter)), setter(std::forward<typename std::remove_cvref<decltype(setter)>::type>(setter))
+        inline explicit Property(auto&& getter, auto&& setter) :
+            getter(std::forward<typename std::remove_cvref<decltype(getter)>::type>(getter)), setter(std::forward<typename std::remove_cvref<decltype(setter)>::type>(setter))
         { }
         inline explicit Property(const Property<GetterReturnType, SetterInputType>& other) = delete;
         inline explicit Property(Property<GetterReturnType, SetterInputType>&& other) = delete;
@@ -25,9 +22,9 @@ namespace Firework
         inline GetterReturnType operator=(const Property<GetterReturnType, SetterInputType>& rhs) = delete;
         inline GetterReturnType operator=(Property<GetterReturnType, SetterInputType>&&) = delete;
 
-        #pragma region Arithmetic
+#pragma region Arithmetic
         inline auto operator+(auto rhs) const -> decltype(std::declval<GetterReturnType>() + rhs)
-        requires requires (GetterReturnType _lhs, decltype(rhs) _rhs) { _lhs + _rhs; }
+        requires requires(GetterReturnType _lhs, decltype(rhs) _rhs) { _lhs + _rhs; }
         {
             return (this->getter() + rhs);
         }
@@ -47,7 +44,7 @@ namespace Firework
         {
             return (this->getter() % rhs);
         }
-        
+
         inline GetterReturnType operator++() const
         {
             GetterReturnType type = this->getter();
@@ -62,9 +59,9 @@ namespace Firework
             this->setter(type);
             return type;
         }
-        #pragma endregion
+#pragma endregion
 
-        #pragma region Assignment
+#pragma region Assignment
         inline GetterReturnType operator+=(SetterInputType rhs) const
         {
             GetterReturnType type = this->getter();
@@ -100,9 +97,9 @@ namespace Firework
             this->setter((SetterInputType)type);
             return this->getter();
         }
-        #pragma endregion
+#pragma endregion
 
-        #pragma region Comparison
+#pragma region Comparison
         inline GetterReturnType operator==(SetterInputType rhs) const
         {
             return this->getter() == rhs;
@@ -127,13 +124,13 @@ namespace Firework
         {
             return this->getter() < rhs;
         }
-        #pragma endregion
+#pragma endregion
 
         inline GetterReturnType operator()() const
         {
             return this->getter();
         }
-        inline operator GetterReturnType () const
+        inline operator GetterReturnType() const
         {
             return this->getter();
         }
@@ -154,4 +151,4 @@ namespace Firework
     private:
         [[no_unique_address]] const func::function<void(SetterInputType)> setter;
     };
-}
+} // namespace Firework

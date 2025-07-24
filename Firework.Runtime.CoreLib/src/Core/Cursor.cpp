@@ -7,42 +7,18 @@
 using namespace Firework;
 using namespace Firework::Internal;
 
-CursorTexture::CursorTexture(BuiltinCursorTexture texture) :
-internalCursor(SDL_CreateSystemCursor((SDL_SystemCursor)texture)) // Hope this is thread-safe lol.
-{ }
-CursorTexture::~CursorTexture()
-{
-    Application::queueJobForWindowThread([cursor = this->internalCursor]
-    {
-        SDL_DestroyCursor(cursor);
-    });
-}
-
-bool Cursor::_visible = true;
-Property<bool, bool> Cursor::visible
-{
-    []() -> bool
-    {
-        return Cursor::_visible;
-    },
-    [](bool value) -> void
-    {
-        Cursor::setVisible(value);
-    }
-};
-
+std::shared_ptr<CursorTexture> Cursor::currentCursor;
 CursorLockState Cursor::_lockState = CursorLockState::None;
-Property<CursorLockState, CursorLockState> Cursor::lockState
+bool Cursor::_visible = true;
+
+Property<bool, bool> Cursor::visible { []() -> bool { return Cursor::_visible; }, [](bool value) -> void
 {
-    []() -> CursorLockState
-    {
-        return Cursor::_lockState;
-    },
-    [](CursorLockState value) -> void
-    {
-        Cursor::setLockState(value);
-    }
-};
+    Cursor::setVisible(value);
+} };
+Property<CursorLockState, CursorLockState> Cursor::lockState { []() -> CursorLockState { return Cursor::_lockState; }, [](CursorLockState value) -> void
+{
+    Cursor::setLockState(value);
+} };
 
 void Cursor::setVisible(bool value)
 {
@@ -50,7 +26,8 @@ void Cursor::setVisible(bool value)
     {
         if (value)
             SDL_ShowCursor();
-        else SDL_HideCursor();
+        else
+            SDL_HideCursor();
     });
     Cursor::_visible = value;
 }
@@ -77,10 +54,18 @@ void Cursor::setLockState(CursorLockState value)
     Cursor::_lockState = value;
 }
 
-void Cursor::setCursor(CursorTexture* texture)
+void Cursor::setCursor(std::shared_ptr<CursorTexture> texture)
 {
-    Application::queueJobForWindowThread([cursor = texture->internalCursor]
+    Application::queueJobForWindowThread([texture = std::move(texture)]
     {
-        SDL_SetCursor(cursor);
+        _fence_value_return(void(), SDL_SetCursor(texture ? texture->internalCursor : nullptr));
+        Cursor::currentCursor = std::move(texture);
     });
+}
+
+CursorTexture::CursorTexture(BuiltinCursorTexture texture) : internalCursor(SDL_CreateSystemCursor((SDL_SystemCursor)texture)) // Hope this is thread-safe lol.
+{ }
+CursorTexture::~CursorTexture()
+{
+    Application::queueJobForWindowThread([cursor = this->internalCursor] { SDL_DestroyCursor(cursor); });
 }

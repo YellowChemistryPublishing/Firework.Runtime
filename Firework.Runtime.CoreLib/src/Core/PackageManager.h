@@ -28,9 +28,8 @@ namespace Firework::PackageSystem
         friend class Firework::PackageSystem::PackageManager;
         friend class Firework::Internal::CoreEngine;
     protected:
-        inline PackageFile() = default;
+        PackageFile() = default;
     };
-
     PackageFile::~PackageFile() = default;
 
     /// @brief Package file for a generic binary format file.
@@ -38,13 +37,13 @@ namespace Firework::PackageSystem
     {
         std::vector<uint8_t> data;
     public:
-        inline BinaryPackageFile(std::vector<uint8_t>&& data) : data(std::move(data))
+        BinaryPackageFile(std::vector<uint8_t>&& data) : data(std::move(data))
         { }
 
         /// @brief Get the binary data of the file.
         /// @return Byte vector.
         /// @note Thread-safe, returned value is not.
-        inline const std::vector<uint8_t>& binaryData()
+        const std::vector<uint8_t>& binaryData()
         {
             return this->data;
         }
@@ -86,7 +85,7 @@ namespace Firework::PackageSystem
         /// @note Main thread only.
         template <typename PackageFileType>
         requires std::is_base_of<PackageFile, PackageFileType>::value && std::is_final<PackageFileType>::value && requires { new PackageFileType(std::vector<uint8_t>()); }
-        inline static void addBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset = 0)
+        static void addBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset = 0)
         {
             PackageManager::binFileHandlers[FileSignatureQuery { .where = offset, .size = signature.size() }][std::basic_string<uint8_t>(signature.data(), signature.size())] =
                 [](std::vector<uint8_t> data) -> std::shared_ptr<PackageFile>
@@ -106,7 +105,7 @@ namespace Firework::PackageSystem
         /// @note Main thread only.
         template <typename PackageFileType>
         requires std::is_final<PackageFileType>::value && std::is_base_of<PackageFile, PackageFileType>::value
-        inline static void addTextFileHandler(std::wstring extension)
+        static void addTextFileHandler(std::wstring extension)
         {
             PackageManager::textFileHandlers[std::move(extension)] = [](std::u8string contents) -> std::shared_ptr<PackageFile>
             {
@@ -116,7 +115,7 @@ namespace Firework::PackageSystem
         /// @brief Remove a registered text file reader.
         /// @param extension File extension.
         /// @note Main thread only.
-        inline static void removeTextFileHandler(const std::wstring& extension)
+        static void removeTextFileHandler(const std::wstring& extension)
         {
             PackageManager::textFileHandlers.erase(extension);
         }

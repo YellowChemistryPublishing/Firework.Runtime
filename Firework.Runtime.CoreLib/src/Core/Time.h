@@ -2,13 +2,13 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+namespace Firework::Internal
+{
+    class CoreEngine;
+}
+
 namespace Firework
 {
-    namespace Internal
-    {
-        class CoreEngine;
-    }
-
     class _fw_core_api Time final
     {
         static float frameDeltaTime;
@@ -19,7 +19,7 @@ namespace Firework
 
         /// @brief Retrive the frame delta time.
         /// @return The time since the last frame in seconds.
-        inline static float deltaTime()
+        static float deltaTime()
         {
             return Time::frameDeltaTime;
         }

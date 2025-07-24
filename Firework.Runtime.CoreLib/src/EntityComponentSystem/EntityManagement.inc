@@ -5,17 +5,17 @@
 #include <robin_hood.h>
 #include <typeindex>
 
+namespace Firework::Internal
+{
+    class Component2D;
+    class CoreEngine;
+} // namespace Firework::Internal
+
 namespace Firework
 {
     struct EntityIterator;
     struct EntityRange;
     class Entity;
-
-    namespace Internal
-    {
-        class Component2D;
-        class CoreEngine;
-    } // namespace Internal
 
     class _fw_core_api Entities final
     {

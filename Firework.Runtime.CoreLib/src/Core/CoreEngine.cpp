@@ -270,7 +270,7 @@ void CoreEngine::internalLoop()
             // My code is held together with glue and duct tape. And not the good stuff either.
             if (Window::width != prevw || Window::height != prevh)
             {
-                CoreEngine::frameRenderJobs.push_back(RenderJob::create([w = Window::width, h = Window::height]
+                CoreEngine::frameRenderJobs.push_back(RenderJob([w = Window::width, h = Window::height]
                 {
                     RenderPipeline::resetBackbuffer(+u32(w), +u32(h));
                     RenderPipeline::resetViewArea(+u16(w), +u16(h));
@@ -278,7 +278,7 @@ void CoreEngine::internalLoop()
                 prevw = float(+Window::width);
                 prevh = float(+Window::height);
             }
-            CoreEngine::frameRenderJobs.push_back(RenderJob::create([] { RenderPipeline::clearViewArea(); }, false));
+            CoreEngine::frameRenderJobs.push_back(RenderJob([] { RenderPipeline::clearViewArea(); }, false));
 
             ssz renderIndex = 0;
             Entities::forEachEntity([&](Entity& entity)
@@ -291,7 +291,7 @@ void CoreEngine::internalLoop()
                 }
             });
 
-            CoreEngine::frameRenderJobs.push_back(RenderJob::create([]
+            CoreEngine::frameRenderJobs.push_back(RenderJob([]
             {
                 RenderPipeline::renderFrame();
                 frameInProgress.clear(std::memory_order_relaxed);
@@ -299,30 +299,17 @@ void CoreEngine::internalLoop()
 
             if (frameInProgress.test(std::memory_order_relaxed))
             {
-                std::erase_if(CoreEngine::frameRenderJobs, [](const auto& job)
-                {
-                    if (!job.required)
-                    {
-                        job.destroy();
-                        return true;
-                    }
-                    else
-                        return false;
-                });
+                std::erase_if(CoreEngine::frameRenderJobs, [](const RenderJob& job) { return !job.required(); });
             }
             else
                 frameInProgress.test_and_set(std::memory_order_relaxed);
 
             if (!CoreEngine::frameRenderJobs.empty())
             {
-                CoreEngine::renderQueue.enqueue(RenderJob::create([jobs = std::move(CoreEngine::frameRenderJobs)]
+                CoreEngine::renderQueue.enqueue(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
                 {
                     renderResizeLock.lock();
-                    for (auto job : jobs)
-                    {
-                        job();
-                        job.destroy();
-                    }
+                    for (const RenderJob& job : jobs) job();
                     renderResizeLock.unlock();
                 }));
                 CoreEngine::frameRenderJobs.clear();
@@ -360,13 +347,12 @@ void CoreEngine::internalLoop()
     Entities::front.reset();
 
     // Render finalise.
-    CoreEngine::renderQueue.enqueue(RenderJob::create([jobs = std::move(CoreEngine::frameRenderJobs)]
+    CoreEngine::renderQueue.enqueue(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
     {
-        for (auto job : jobs)
+        for (const RenderJob& job : jobs)
         {
-            if (job.required)
+            if (job.required())
                 job();
-            job.destroy();
         }
     }));
     CoreEngine::frameRenderJobs.clear();
@@ -395,11 +381,7 @@ void CoreEngine::internalWindowLoop()
     Screen::height = CoreEngine::displMd->h;
     Screen::screenRefreshRate = CoreEngine::displMd->refresh_rate;
 
-    Window::width = Application::_initializationOptions.resolution.x;
-    Window::height = Application::_initializationOptions.resolution.y;
-
-    CoreEngine::wind = SDL_CreateWindow(Application::_initializationOptions.windowName.c_str(), +Application::_initializationOptions.resolution.x,
-                                        +Application::_initializationOptions.resolution.y, SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    CoreEngine::wind = SDL_CreateWindow(Application::_initializationOptions.windowName.c_str(), +Window::width, +Window::height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!CoreEngine::wind)
     {
         Debug::logError("Could not create window: ", SDL_GetError(), ".");
@@ -610,9 +592,9 @@ void CoreEngine::internalRenderLoop()
     };
 
     std::vector<RendererBackend> backends = Renderer::platformBackends();
-    for (auto targetBackend : std::span(backendPriorityOrder, sizeof(backendPriorityOrder) / sizeof(*backendPriorityOrder)))
+    for (RendererBackend targetBackend : std::span(backendPriorityOrder, sizeof(backendPriorityOrder) / sizeof(*backendPriorityOrder)))
     {
-        for (auto platformBackend : backends)
+        for (RendererBackend platformBackend : backends)
         {
             if (targetBackend == platformBackend)
             {
@@ -676,11 +658,10 @@ BreakAll:
         {
             while (renderQueue.try_dequeue(job))
             {
-                if (renderQueue.size_approx() > GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required)
-                    Debug::logInfo("Render queue overburdened, skipping render job id ", job.callFunction, ".\n");
+                if (renderQueue.size_approx() > GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required())
+                    Debug::logInfo("Render queue overburdened, skipping render job id ", static_cast<const void*>(&job.function()), ".\n");
                 else
                     job();
-                job.destroy();
             }
 
 #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
@@ -693,9 +674,8 @@ BreakAll:
         // Cleanup.
         while (renderQueue.try_dequeue(job))
         {
-            if (job.required)
+            if (job.required())
                 job();
-            job.destroy();
         }
     }
 

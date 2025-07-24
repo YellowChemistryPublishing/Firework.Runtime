@@ -15,16 +15,13 @@ using namespace Firework::Internal;
 #include <ExceptionHandler/Signal_dfl.h>
 #endif
 
-namespace Firework::Internal
+static struct _fw_core_api __fw_rt_hw_libexcpt_init final
 {
-    static struct _fw_core_api __fw_rt_hw_libexcpt_init final
+    __fw_rt_hw_libexcpt_init()
     {
-        __fw_rt_hw_libexcpt_init()
-        {
-            ::__fw_rt_hw_sighf();
-        }
-    } init;
-}
+        ::__fw_rt_hw_sighf();
+    }
+} init;
 
 #if __has_include(<cpptrace/cpptrace.hpp>)
 // Should check cpptrace::can_signal_safe_unwind, but it's probably fine without(TM).

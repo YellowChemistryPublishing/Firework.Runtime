@@ -188,7 +188,7 @@ void Text::renderOffload(ssz renderIndex)
         this->dirty = false;
     }
 
-    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get()), color = this->_color]
+    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = rectTransform->matrix(), color = this->_color]
     {
         std::lock_guard guard(renderData->toRenderLock);
         for (auto& [paths, transform] : renderData->toRender) (void)paths->submitDrawStencil(renderIndex, transform);

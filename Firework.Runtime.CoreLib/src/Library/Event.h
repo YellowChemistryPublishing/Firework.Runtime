@@ -9,6 +9,7 @@ namespace Firework
     /// @tparam ...Args Arguments passed by the event when it is raised.
     template <typename... Args>
     using EventHandler = typename std::list<func::function<void(Args...)>>::const_iterator;
+
     /// @brief Event capable of having any type of functor subscribed to it.
     /// @tparam ...Args Arguments passed by the event when it is raised.
     template <typename... Args>
@@ -61,8 +62,7 @@ namespace Firework
         /// @note Not thread-safe.
         inline void operator()(Args... args)
         {
-            for (auto it = this->children.begin(); it != this->children.end(); ++it)
-                (*it)(args...);
+            for (auto it = this->children.begin(); it != this->children.end(); ++it) (*it)(args...);
         }
 
         /// @brief Retrieve whether this event is handled.
@@ -81,7 +81,7 @@ namespace Firework
             this->children.clear();
         }
     };
-    
+
     template <typename... Args>
     class FuncPtrEvent
     {
@@ -110,8 +110,7 @@ namespace Firework
         }
         inline void operator()(Args... args)
         {
-            for (auto it = this->children.begin(); it != this->children.end(); ++it)
-                (*it)(args...);
+            for (auto it = this->children.begin(); it != this->children.end(); ++it) (*it)(args...);
         }
 
         inline bool unhandled()
@@ -123,4 +122,4 @@ namespace Firework
             this->children.clear();
         }
     };
-}
+} // namespace Firework

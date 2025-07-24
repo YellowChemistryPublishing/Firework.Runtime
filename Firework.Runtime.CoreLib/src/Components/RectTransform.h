@@ -2,36 +2,23 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+#include <glm/gtc/matrix_transform.hpp>
 #include <glm/mat4x4.hpp>
 
 #include <EntityComponentSystem/Entity.h>
+#include <Library/Math.h>
 #include <Library/Property.h>
+
+namespace Firework::Internal
+{
+    class CoreEngine;
+} // namespace Firework::Internal
 
 namespace Firework
 {
     class Debug;
     class RectTransform;
 
-    namespace Internal
-    {
-        class CoreEngine;
-
-        /// @internal
-        /// @brief Low-level API. Converts a RectTransform to a RenderTransform for rendering.
-        /// @param transform RectTransform to convert.
-        /// @return RenderTransform representing the same transform to supply to renderer.
-        /// @note Thread-safe.
-        _fw_core_api extern glm::mat4 renderTransformFromRectTransform(const RectTransform* const transform);
-    } // namespace Internal
-
-    /// @brief Describes the bounds of a rectangle, with int32_t.
-    struct Rect
-    {
-        int32_t top, right, bottom, left;
-
-        constexpr Rect(int32_t top, int32_t right, int32_t bottom, int32_t left) : top(top), right(right), bottom(bottom), left(left)
-        { }
-    };
     /// @brief Describes the bounds of a rectangle, with float.
     struct RectFloat
     {
@@ -97,8 +84,10 @@ namespace Firework
         glm::vec2 _position { 0, 0 };
         float _rotation = 0;
         glm::vec2 _scale { 1, 1 };
+        glm::mat4 _matrix;
 
         bool _dirty = true;
+        bool matrixDirty = true;
 
         void onAttach(Entity& entity)
         {
@@ -252,6 +241,8 @@ namespace Firework
         {
             this->_dirty = false;
         }
+
+        const glm::mat4& matrix();
 
         /// @brief Check whether a point is within the rectangle of this transform.
         /// @param point Point to query.

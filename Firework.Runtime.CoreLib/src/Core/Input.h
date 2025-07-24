@@ -9,13 +9,13 @@
 #include <robin_hood.h>
 #include <vector>
 
+namespace Firework::Internal
+{
+    class CoreEngine;
+}
+
 namespace Firework
 {
-    namespace Internal
-    {
-        class CoreEngine;
-    }
-
     /// @brief Mouse buttons.
     enum class MouseButton : uint_fast8_t
     {
@@ -314,8 +314,8 @@ namespace Firework
         static glm::vec2 internalMousePosition;
         static glm::vec2 internalMouseMotion;
 
-        static bool heldMouseInputs[(size_t)MouseButton::Count];
-        static bool heldKeyInputs[(size_t)Key::Count];
+        static bool heldMouseInputs[size_t(MouseButton::Count)];
+        static bool heldKeyInputs[size_t(Key::Count)];
 
         /// @internal
         /// @brief Internal API. SDL mouse code to Firework::MouseButton
@@ -352,7 +352,7 @@ namespace Firework
         /// @note Main thread only.
         inline static bool mouseHeld(MouseButton button)
         {
-            return Input::heldMouseInputs[(size_t)button];
+            return Input::heldMouseInputs[size_t(button)];
         }
         /// @brief Retrieve whether key is pressed this frame.
         /// @param key Key to check.
@@ -360,7 +360,7 @@ namespace Firework
         /// @note Main thread only.
         inline static bool keyHeld(Key key)
         {
-            return Input::heldKeyInputs[(size_t)key];
+            return Input::heldKeyInputs[size_t(key)];
         }
 
         static void beginQueryTextInput();

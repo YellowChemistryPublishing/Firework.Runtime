@@ -43,17 +43,29 @@ extern _fw_core_api void __fw_rt_hw_excpt_handler(int sig);
 #endif
 
 #if __MINGW32__ && !__SEH__
-#define __hwTry __try1(__fw_rt_hw_excpt_handler); try
+#define __hwTry                       \
+    __try1(__fw_rt_hw_excpt_handler); \
+    try
 #define __hwCatch(...) catch (__VA_ARGS__)
 #define __hwEnd() __except1
 #elif __MINGW32__ && !__clang__ && __SEH__
 #define __hwTry [&]() __attribute__((noinline)) -> void { try
 #define __hwCatch(...) catch (__VA_ARGS__)
-#define __hwEnd() }()
+#define __hwEnd() \
+    }             \
+    ()
 #elif _WIN32 && __clang__
-#define __hwTry __try { [&] { try
+#define __hwTry \
+    __try       \
+    {           \
+        [&] { try
 #define __hwCatch(...) catch (__VA_ARGS__)
-#define __hwEnd() }(); } __except(__fw_rt_hw_excpt_handler(GetExceptionInformation())) { }
+#define __hwEnd()                                                  \
+    }                                                              \
+    ();                                                            \
+    }                                                              \
+    __except (__fw_rt_hw_excpt_handler(GetExceptionInformation())) \
+    { }
 #else
 #define __hwTry try
 #define __hwCatch(...) catch (__VA_ARGS__)
@@ -68,37 +80,38 @@ clang64 (seh) - Partial. dtors are ignored, no unwinding.
 MSVC (seh) - Not supported. Has regressed, issue with exception filter across dll-boundary. ~~With /EHa throwing from filter is fine.~~
 */
 
+namespace Firework::Internal
+{
+    class CoreEngine;
+}
+
 namespace Firework
 {
-    namespace Internal
-    {
-        class CoreEngine;
-    }
-
     class Exception : public std::exception
     {
-        #if __has_include(<cpptrace/cpptrace.hpp>)
+#if __has_include(<cpptrace/cpptrace.hpp>)
         cpptrace::safe_object_frame frame;
         cpptrace::frame_ptr buffer[FIREWORK_EXCEPTION_TRACE_DEPTH];
         size_t bufferLen;
         cpptrace::stacktrace trace;
 
         cpptrace::stacktrace resolveStacktrace() const;
-        #endif
+#endif
     public:
-        Exception();// = default;
+        Exception(); // = default;
         inline virtual ~Exception() noexcept = 0;
 
         friend class Firework::Internal::CoreEngine;
     };
-    Exception::~Exception() noexcept = default;
+    Exception::~Exception() = default;
+
     class SegmentationFaultException : public Exception
     {
     public:
-        inline SegmentationFaultException() = default;
-        inline ~SegmentationFaultException() noexcept override = default;
+        SegmentationFaultException() = default;
+        ~SegmentationFaultException() noexcept override = default;
 
-        inline const char* what() const noexcept override
+        const char* what() const noexcept override
         {
             return "Segmentation fault.";
         }
@@ -106,12 +119,12 @@ namespace Firework
     class ArithmeticException : public Exception
     {
     public:
-        inline ArithmeticException() = default;
-        inline ~ArithmeticException() noexcept override = default;
+        ArithmeticException() = default;
+        ~ArithmeticException() noexcept override = default;
 
-        inline const char* what() const noexcept override
+        const char* what() const noexcept override
         {
             return "Arithmetic exception.";
         }
     };
-}
+} // namespace Firework

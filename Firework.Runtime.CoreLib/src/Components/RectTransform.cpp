@@ -26,18 +26,10 @@ inline static void rotatePointAroundOrigin(glm::vec2& point, float angle)
     return rotatePointAround(point, glm::vec2(0.0f), angle);
 };
 
-glm::mat4 Firework::Internal::renderTransformFromRectTransform(const RectTransform* const transform)
-{
-    glm::mat4 ret = glm::translate(glm::mat4(1.0f), glm::vec3(transform->position().x, transform->position().y, 0.0f));
-    ret = glm::rotate(ret, -transform->rotation(), LinAlgConstants::forward);
-    ret = glm::translate(ret, glm::vec3((transform->rect().right + transform->rect().left) / 2.0f, (transform->rect().top + transform->rect().bottom) / 2.0f, 0.0f));
-    ret = glm::scale(ret, glm::vec3(transform->rect().width() / 2.0f * transform->scale().x, transform->rect().height() / 2.0f * transform->scale().y, 0.0f));
-    return ret;
-}
-
 void RectTransform::setRect(const RectFloat& value)
 {
     this->_dirty = true;
+    this->matrixDirty = true;
 
     RectFloat delta = value - this->_rect;
     this->_rect = value;
@@ -50,6 +42,7 @@ void RectTransform::setRect(const RectFloat& value)
             if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
+                rectTransform->matrixDirty = true;
                 localDelta = delta * rectTransform->_anchor;
                 rectTransform->_rect += localDelta;
                 if (rectTransform->_positionAnchor != RectFloat(0.0f))
@@ -68,6 +61,7 @@ void RectTransform::setRect(const RectFloat& value)
 void RectTransform::setPosition(glm::vec2 value)
 {
     this->_dirty = true;
+    this->matrixDirty = true;
 
     glm::vec2 delta = value - this->_position;
     this->_position = value;
@@ -79,6 +73,7 @@ void RectTransform::setPosition(glm::vec2 value)
             if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
+                rectTransform->matrixDirty = true;
                 rectTransform->_position += delta;
             }
             setChildrenPositionRecursive(setChildrenPositionRecursive, child);
@@ -89,6 +84,7 @@ void RectTransform::setPosition(glm::vec2 value)
 void RectTransform::setRotation(float value)
 {
     this->_dirty = true;
+    this->matrixDirty = true;
 
     float delta = value - this->_rotation;
     this->_rotation = value;
@@ -100,6 +96,7 @@ void RectTransform::setRotation(float value)
             if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
+                rectTransform->matrixDirty = true;
                 rectTransform->_rotation += delta;
                 rotatePointAround(rectTransform->_position, this->_position, delta);
             }
@@ -111,6 +108,7 @@ void RectTransform::setRotation(float value)
 void RectTransform::setScale(glm::vec2 value)
 {
     this->_dirty = true;
+    this->matrixDirty = true;
 
     glm::vec2 delta = value / this->_scale;
     this->_scale = value;
@@ -122,6 +120,7 @@ void RectTransform::setScale(glm::vec2 value)
             if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
+                rectTransform->matrixDirty = true;
                 rectTransform->_scale *= delta;
                 rectTransform->_position = delta * (rectTransform->_position - this->_position) + this->_position;
             }
@@ -156,6 +155,7 @@ glm::vec2 RectTransform::getLocalPosition() const
 void RectTransform::setLocalPosition(glm::vec2 value)
 {
     this->_dirty = true;
+    this->matrixDirty = true;
 
     std::shared_ptr<RectTransform> parent = this->parent();
     glm::vec2 delta;
@@ -175,6 +175,7 @@ void RectTransform::setLocalPosition(glm::vec2 value)
             if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
+                rectTransform->matrixDirty = true;
                 rectTransform->_position += delta;
             }
             setChildrenPositionRecursive(setChildrenPositionRecursive, child);
@@ -190,6 +191,7 @@ float RectTransform::getLocalRotation() const
 void RectTransform::setLocalRotation(float value)
 {
     this->_dirty = true;
+    this->matrixDirty = true;
 
     std::shared_ptr<RectTransform> parent = this->parent();
     float delta;
@@ -206,6 +208,7 @@ void RectTransform::setLocalRotation(float value)
             if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
+                rectTransform->matrixDirty = true;
                 rectTransform->_rotation += delta;
                 rotatePointAround(rectTransform->_position, this->_position, delta);
             }
@@ -222,6 +225,7 @@ glm::vec2 RectTransform::getLocalScale() const
 void RectTransform::setLocalScale(glm::vec2 value)
 {
     this->_dirty = true;
+    this->matrixDirty = true;
 
     std::shared_ptr<RectTransform> parent = this->parent();
     glm::vec2 delta;
@@ -238,6 +242,7 @@ void RectTransform::setLocalScale(glm::vec2 value)
             if (std::shared_ptr<RectTransform> rectTransform = child.getComponent<RectTransform>())
             {
                 rectTransform->_dirty = true;
+                rectTransform->matrixDirty = true;
                 rectTransform->_scale *= delta;
                 rectTransform->_position = delta * (rectTransform->_position - this->_position) + this->_position;
             }
@@ -245,6 +250,22 @@ void RectTransform::setLocalScale(glm::vec2 value)
         }
     };
     setChildrenScaleRecursive(setChildrenScaleRecursive, *this->attachedEntity);
+}
+
+const glm::mat4& RectTransform::matrix()
+{
+    if (this->matrixDirty)
+    {
+        glm::mat4 tf = glm::translate(glm::mat4(1.0f), glm::vec3(this->_position.x, this->_position.y, 0.0f));
+        tf = glm::rotate(tf, -this->_rotation, LinAlgConstants::forward);
+        tf = glm::translate(tf, glm::vec3((this->_rect.right + this->_rect.left) / 2.0f, (this->_rect.top + this->_rect.bottom) / 2.0f, 0.0f));
+        tf = glm::scale(tf, glm::vec3(this->_rect.width() / 2.0f * this->_scale.x, this->_rect.height() / 2.0f * this->_scale.y, 0.0f));
+        this->_matrix = tf;
+        
+        this->matrixDirty = false;
+    }
+
+    return this->_matrix;
 }
 
 bool RectTransform::queryPointIn(const glm::vec2& point)

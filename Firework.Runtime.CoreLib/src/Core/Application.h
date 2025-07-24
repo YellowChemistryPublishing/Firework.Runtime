@@ -8,26 +8,25 @@
 
 #include <Library/Property.h>
 
+namespace Firework::Internal
+{
+    class ShaderUtility;
+    class CoreEngine;
+} // namespace Firework::Internal
+
+namespace Firework::PackageSystem
+{
+    class PackageManager;
+}
+
 namespace Firework
 {
     class Image;
-
-    namespace Internal
-    {
-        class ShaderUtility;
-        class CoreEngine;
-    } // namespace Internal
-
-    namespace PackageSystem
-    {
-        class PackageManager;
-    }
 
     struct RuntimeInitializationOptions
     {
         std::string windowName = "Program";
         bool windowResizeable = true;
-        glm::i32vec2 resolution = glm::i32vec2(1280, 720);
     };
 
     /// @brief Static class containing functionality relevant to the currently running program.
@@ -100,8 +99,8 @@ namespace Firework
         /// @param argc Forwarded from int main(...).
         /// @param argv Forwarded from int main(...).
         /// @return Whether the runtime was able to start successfully.
-        /// @retval - EXIT_SUCCESS: The runtime initialized successfully.
-        /// @retval - EXIT_FAILIURE: The runtime failed to initialize.
+        /// @retval - `EXIT_SUCCESS`: The runtime initialized successfully.
+        /// @retval - `EXIT_FAILIURE`: The runtime failed to initialize.
         /// @note Thread-safe.
         static int run(int argc, char* argv[]);
 

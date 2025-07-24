@@ -174,7 +174,7 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
         setViewboxTransform();
     }
 
-    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = renderTransformFromRectTransform(rectTransform.get())]
+    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = rectTransform->matrix()]
     {
         std::lock_guard guard(renderData->toRenderLock);
         _fence_value_return(void(), !renderData->toRender);

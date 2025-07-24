@@ -7,13 +7,13 @@
 
 #include <Library/Property.h>
 
+namespace Firework::Internal
+{
+    class CoreEngine;
+}
+
 namespace Firework
 {
-    namespace Internal
-    {
-        class CoreEngine;
-    }
-
     class Cursor;
 
     class _fw_core_api Window final

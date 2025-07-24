@@ -6,15 +6,13 @@
 
 #include <Library/Property.h>
 
+namespace Firework::Internal
+{
+    class CoreEngine;
+}
+
 namespace Firework
 {
-    namespace Internal
-    {
-        class CoreEngine;
-    }
-
-    class Cursor;
-
     enum class BuiltinCursorTexture
     {
         Default = SDL_SYSTEM_CURSOR_DEFAULT,
@@ -46,6 +44,8 @@ namespace Firework
         Confined
     };
 
+    class Cursor;
+
     struct _fw_core_api CursorTexture final
     {
         CursorTexture(BuiltinCursorTexture texture);
@@ -58,8 +58,10 @@ namespace Firework
 
     class _fw_core_api Cursor final
     {
-        static bool _visible;
+        // Window thread only.
+        static std::shared_ptr<CursorTexture> currentCursor;
         static CursorLockState _lockState;
+        static bool _visible;
 
         static void setVisible(bool value);
         static void setLockState(CursorLockState value);
@@ -67,7 +69,7 @@ namespace Firework
         static Property<bool, bool> visible;
         static Property<CursorLockState, CursorLockState> lockState;
 
-        static void setCursor(CursorTexture* cursor);
+        static void setCursor(std::shared_ptr<CursorTexture> cursor);
 
         friend class Firework::Internal::CoreEngine;
     };
