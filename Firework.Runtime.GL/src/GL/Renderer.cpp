@@ -127,7 +127,8 @@ void Renderer::setViewPerspective(bgfx::ViewId id, float width, float height, fl
     float proj[16] { 0 };
     bx::mtxProj(proj, yFieldOfView, width / height, near, far, bgfx::getCaps()->homogeneousDepth);
 
-    glm::mat4 viewTransform = glm::translate(glm::mat4_cast(rotation), position);
+    glm::mat4 viewTransform = glm::translate(glm::mat4(1.0f), position);
+    viewTransform *= glm::mat4_cast(rotation);
     bgfx::setViewTransform(id, glm::value_ptr(viewTransform), proj);
 }
 

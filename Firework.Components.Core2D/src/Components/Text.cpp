@@ -106,7 +106,7 @@ void Text::swapRenderBuffers()
         }
 
         glm::mat4 ret = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
-        ret = glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -this->rectTransform->rotation()))) * ret;
+        ret *= glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -this->rectTransform->rotation())));
         ret = glm::translate(ret, glm::vec3(gPos.x + float(gm.leftSideBearing) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0.0f));
         ret = glm::scale(ret, glm::vec3(sc.x * glSc, sc.y * glSc, 0.0f));
 
