@@ -340,6 +340,7 @@ file(GLOB_RECURSE RPSRCS configure_depends
 target_compile_shaders(shaders_Firework.Runtime.RenderPipeline "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders")
 
 add_library(Firework.Runtime.RenderPipeline SHARED ${RPSRCS})
+add_dependencies(Firework.Runtime.RenderPipeline shaders_Firework.Runtime.RenderPipeline)
 
 generate_export_header(Firework.Runtime.RenderPipeline
     BASE_NAME FIREWORK_RP
