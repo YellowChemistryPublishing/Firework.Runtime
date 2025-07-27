@@ -337,6 +337,7 @@ file(GLOB_RECURSE RPSRCS configure_depends
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/*.h"
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/*.cpp"
 )
+target_compile_shaders(shaders_Firework.Runtime.RenderPipeline "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders")
 
 add_library(Firework.Runtime.RenderPipeline SHARED ${RPSRCS})
 
@@ -350,8 +351,9 @@ target_include_directories(Firework.Runtime.RenderPipeline
     PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}"
     "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/src"
-    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders/include"
     "${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake/bgfx/include"
+    PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/shaders/include"
 )
 target_link_libraries(Firework.Runtime.RenderPipeline
     PUBLIC

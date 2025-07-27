@@ -6,15 +6,20 @@
 #include <glm/gtc/quaternion.hpp>
 #include <module/sys>
 
+#include <GL/TextureFormat.h>
+
 namespace Firework::GL
 {
     struct Uniform;
     struct TextureSampler;
     struct Texture2D;
-    class GeometryProgram;
+    struct Framebuffer;
 
     class StaticMesh;
     class DynamicMesh;
+    class GeometryProgram;
+
+    using ViewIndex = bgfx::ViewId;
 
     enum class RendererBackend
     {
@@ -31,9 +36,17 @@ namespace Firework::GL
         Default = bgfx::RendererType::Count
     };
 
+    enum class DrawOrder
+    {
+        Default = bgfx::ViewMode::Default,
+        Sequential = bgfx::ViewMode::Sequential,
+        DepthAscending = bgfx::ViewMode::DepthAscending,
+        DepthDescending = bgfx::ViewMode::DepthDescending
+    };
+
     class _fw_gl_api Renderer final
     {
-        static std::vector<std::pair<void (*)(bgfx::ViewId, void*), void*>> drawPassIntercepts;
+        static std::vector<std::pair<void (*)(ViewIndex, void*), void*>> drawPassIntercepts;
     public:
         Renderer() = delete;
 
@@ -46,32 +59,35 @@ namespace Firework::GL
         static RendererBackend rendererBackend();
         static std::vector<RendererBackend> platformBackends();
 
-        static void setViewOrthographic(bgfx::ViewId id, float width, float height, glm::vec3 position = { 0.0f, 0.0f, 0.0f }, glm::quat rotation = { 1.0f, 0.0f, 0.0f, 0.0f },
-                                        float near = -1.0f, float far = 2048.0f);
-        static void setViewPerspective(bgfx::ViewId id, float width, float height, float yFieldOfView = 60.0f, glm::vec3 position = { 0.0f, 0.0f, 0.0f },
-                                       glm::quat rotation = { 1.0f, 0.0f, 0.0f, 0.0f }, float near = 0.0f, float far = 2048.0f);
+        static void setViewOrthographic(ViewIndex id, float width, float height, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
+                                        glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f), float near = -1.0f, float far = 2048.0f);
+        static void setViewPerspective(ViewIndex id, float width, float height, float yFieldOfView = 60.0f, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
+                                       glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f), float near = 0.0f, float far = 2048.0f);
 
-        static void setViewClear(bgfx::ViewId id, u32 rgbaColor = 0x000000ff, u16 flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL, float depth = 1.0f,
+        static void setViewClear(ViewIndex id, u32 rgbaColor = 0x000000ff, u16 flags = BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL, float depth = 1.0f,
                                  byte stencil = 0);
-        static void setViewArea(bgfx::ViewId id, u16 x, u16 y, u16 width, u16 height);
-        static void setViewDrawOrder(bgfx::ViewId id, bgfx::ViewMode::Enum order);
+        static void setViewArea(ViewIndex id, u16 x, u16 y, u16 width, u16 height);
+        static void setViewDrawOrder(ViewIndex id, bgfx::ViewMode::Enum order);
+        static void setViewFramebuffer(ViewIndex id, const Framebuffer& framebuffer);
 
-        static void resetBackbuffer(u32 width, u32 height, u32 flags = BGFX_RESET_NONE, bgfx::TextureFormat::Enum format = bgfx::TextureFormat::Count);
+        static void resetBackbuffer(u32 width, u32 height, u32 flags = BGFX_RESET_NONE, TextureFormat format = TextureFormat::Count);
 
         static void setDrawTransform(const glm::mat4& transform);
         [[nodiscard]] static bool setDrawUniform(const Uniform& uniform, const void* data);
         [[nodiscard]] static bool setDrawArrayUniform(const Uniform& uniform, const void* data, u16 count);
         [[nodiscard]] static bool setDrawTexture(u8 stage, const Texture2D& texture, const TextureSampler& sampler, u32 flags = std::numeric_limits<u32::underlying_type>::max());
+        [[nodiscard]] static bool setDrawTexture(u8 stage, const Framebuffer& framebuffer, const TextureSampler& sampler, u8 attachmentIndex = 0,
+                                                 u32 flags = std::numeric_limits<u32::underlying_type>::max());
         static void setDrawStencil(u32 func, u32 back = BGFX_STENCIL_NONE);
 
-        static void addDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*), void* data = nullptr);
-        static void removeDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*));
+        static void addDrawPassIntercept(void (*intercept)(ViewIndex, void*), void* data = nullptr);
+        static void removeDrawPassIntercept(void (*intercept)(ViewIndex, void*));
 
-        [[nodiscard]] static bool submitDraw(bgfx::ViewId id, const StaticMesh& mesh, const GeometryProgram& program,
+        [[nodiscard]] static bool submitDraw(ViewIndex id, const StaticMesh& mesh, const GeometryProgram& program,
                                              u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA |
                                                  BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS,
                                              u32 blendFactor = 0);
-        [[nodiscard]] static bool submitDraw(bgfx::ViewId id, const DynamicMesh& mesh, const GeometryProgram& program,
+        [[nodiscard]] static bool submitDraw(ViewIndex id, const DynamicMesh& mesh, const GeometryProgram& program,
                                              u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA |
                                                  BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS,
                                              u32 blendFactor = 0);

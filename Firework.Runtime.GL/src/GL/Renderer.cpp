@@ -6,6 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <module/sys>
 
+#include <GL/Framebuffer.h>
 #include <GL/Geometry.h>
 #include <GL/Shader.h>
 #include <GL/Texture.h>
@@ -14,7 +15,7 @@
 
 using namespace Firework::GL;
 
-std::vector<std::pair<void (*)(bgfx::ViewId, void*), void*>> Renderer::drawPassIntercepts;
+std::vector<std::pair<void (*)(ViewIndex, void*), void*>> Renderer::drawPassIntercepts;
 
 #if _DEBUG
 static struct Vertex
@@ -54,14 +55,6 @@ bool Renderer::initialize(void* ndt, void* nwh, u32 width, u32 height, RendererB
     createShaderFromPrecompiled(cubeProgram, DebugCube);
 #endif
 
-    bx::Vec3 eye { 0.0f, 0.0f, -1.0f }, at { 0.0f, 0.0f, 0.0f };
-    float view[16];
-    float proj[16];
-    bx::mtxLookAt(view, eye, at);
-    bx::mtxOrtho(proj, -float(width) / 2.0f, float(width) / 2.0f, -float(height) / 2.0f, float(height) / 2.0f, -1.0f, 2048.0f, 0, bgfx::getCaps()->homogeneousDepth);
-    bgfx::setViewTransform(0, view, proj);
-    bgfx::setViewRect(0, 0, 0, +u16(width), +u16(height));
-
     return true;
 }
 void Renderer::shutdown()
@@ -75,7 +68,7 @@ void Renderer::shutdown()
 }
 
 static u32 debugFlags = BGFX_DEBUG_NONE;
-void Renderer::showDebugInformation(bool visible)
+void Renderer::showDebugInformation(const bool visible)
 {
     if (visible)
     {
@@ -88,7 +81,7 @@ void Renderer::showDebugInformation(bool visible)
         bgfx::setDebug(+debugFlags);
     }
 }
-void Renderer::showDebugWireframes(bool visible)
+void Renderer::showDebugWireframes(const bool visible)
 {
     if (visible)
     {
@@ -113,7 +106,7 @@ std::vector<RendererBackend> Renderer::platformBackends()
     return std::vector<RendererBackend>(backends, backends + +end);
 }
 
-void Renderer::setViewOrthographic(bgfx::ViewId id, float width, float height, glm::vec3 position, glm::quat rotation, float near, float far)
+void Renderer::setViewOrthographic(const ViewIndex id, const float width, const float height, const glm::vec3 position, const glm::quat rotation, const float near, const float far)
 {
     glm::mat4 view = glm::translate(glm::mat4(1.0f), position);
     view *= glm::mat4_cast(rotation);
@@ -122,7 +115,8 @@ void Renderer::setViewOrthographic(bgfx::ViewId id, float width, float height, g
     bx::mtxOrtho(proj, -width / 2.0f, width / 2.0f, -height / 2.0f, height / 2.0f, near, far, 0, bgfx::getCaps()->homogeneousDepth);
     bgfx::setViewTransform(id, glm::value_ptr(view), proj);
 }
-void Renderer::setViewPerspective(bgfx::ViewId id, float width, float height, float yFieldOfView, glm::vec3 position, glm::quat rotation, float near, float far)
+void Renderer::setViewPerspective(const ViewIndex id, const float width, const float height, const float yFieldOfView, const glm::vec3 position, const glm::quat rotation,
+                                  const float near, const float far)
 {
     float proj[16] { 0 };
     bx::mtxProj(proj, yFieldOfView, width / height, near, far, bgfx::getCaps()->homogeneousDepth);
@@ -132,19 +126,24 @@ void Renderer::setViewPerspective(bgfx::ViewId id, float width, float height, fl
     bgfx::setViewTransform(id, glm::value_ptr(viewTransform), proj);
 }
 
-void Renderer::setViewClear(bgfx::ViewId id, u32 rgbaColor, u16 flags, float depth, byte stencil)
+void Renderer::setViewClear(const ViewIndex id, const u32 rgbaColor, const u16 flags, float depth, byte stencil)
 {
     bgfx::setViewClear(id, +flags, +rgbaColor, depth, stencil);
 }
-void Renderer::setViewArea(bgfx::ViewId id, u16 x, u16 y, u16 width, u16 height)
+void Renderer::setViewArea(const ViewIndex id, const u16 x, const u16 y, const u16 width, const u16 height)
 {
     bgfx::setViewRect(id, +x, +y, +width, +height);
 }
-void Renderer::setViewDrawOrder(bgfx::ViewId id, bgfx::ViewMode::Enum order)
+void Renderer::setViewDrawOrder(const ViewIndex id, const bgfx::ViewMode::Enum order)
 {
     bgfx::setViewMode(id, order);
 }
-void Renderer::resetBackbuffer(u32 width, u32 height, u32 flags, bgfx::TextureFormat::Enum format)
+void Renderer::setViewFramebuffer(const ViewIndex id, const Framebuffer& framebuffer)
+{
+    bgfx::setViewFrameBuffer(id, framebuffer.internalHandle);
+}
+
+void Renderer::resetBackbuffer(const u32 width, const u32 height, const u32 flags, TextureFormat format)
 {
     bgfx::reset(+width, +height, +flags, format);
 }
@@ -160,30 +159,40 @@ bool Renderer::setDrawUniform(const Uniform& uniform, const void* data)
     bgfx::setUniform(uniform.internalHandle, data);
     return true;
 }
-bool Renderer::setDrawArrayUniform(const Uniform& uniform, const void* data, u16 count)
+bool Renderer::setDrawArrayUniform(const Uniform& uniform, const void* data, const u16 count)
 {
     _fence_value_return(false, !uniform);
 
     bgfx::setUniform(uniform.internalHandle, data, +count);
     return true;
 }
-bool Renderer::setDrawTexture(u8 stage, const Texture2D& texture, const TextureSampler& sampler, u32 flags)
+bool Renderer::setDrawTexture(const u8 stage, const Texture2D& texture, const TextureSampler& sampler, const u32 flags)
 {
     _fence_value_return(false, !texture || !sampler);
 
     bgfx::setTexture(+stage, sampler.internalHandle, texture.internalHandle, +flags);
     return true;
 }
-void Renderer::setDrawStencil(u32 func, u32 back)
+bool Renderer::setDrawTexture(const u8 stage, const Framebuffer& framebuffer, const TextureSampler& sampler, const u8 attachmentIndex, const u32 flags)
+{
+    _fence_value_return(false, !framebuffer);
+
+    bgfx::TextureHandle tex = bgfx::getTexture(framebuffer.internalHandle, +attachmentIndex);
+    _fence_value_return(false, !bgfx::isValid(tex));
+
+    bgfx::setTexture(+stage, sampler.internalHandle, tex, +flags);
+    return true;
+}
+void Renderer::setDrawStencil(const u32 func, const u32 back)
 {
     bgfx::setStencil(+func, +back);
 }
 
-void Renderer::addDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*), void* data)
+void Renderer::addDrawPassIntercept(void (*intercept)(ViewIndex, void*), void* data)
 {
     Renderer::drawPassIntercepts.push_back(std::make_pair(intercept, data));
 }
-void Renderer::removeDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*))
+void Renderer::removeDrawPassIntercept(void (*intercept)(ViewIndex, void*))
 {
     for (auto it = Renderer::drawPassIntercepts.begin(); it != Renderer::drawPassIntercepts.end(); ++it)
     {
@@ -195,7 +204,7 @@ void Renderer::removeDrawPassIntercept(void (*intercept)(bgfx::ViewId, void*))
     }
 }
 
-bool Renderer::submitDraw(bgfx::ViewId id, const StaticMesh& mesh, const GeometryProgram& program, u64 state, u32 blendFactor)
+bool Renderer::submitDraw(const ViewIndex id, const StaticMesh& mesh, const GeometryProgram& program, const u64 state, const u32 blendFactor)
 {
     _fence_value_return(false, !mesh || !program);
 
@@ -206,7 +215,7 @@ bool Renderer::submitDraw(bgfx::ViewId id, const StaticMesh& mesh, const Geometr
     bgfx::submit(id, program.internalHandle);
     return true;
 }
-bool Renderer::submitDraw(bgfx::ViewId id, const DynamicMesh& mesh, const GeometryProgram& program, u64 state, u32 blendFactor)
+bool Renderer::submitDraw(const ViewIndex id, const DynamicMesh& mesh, const GeometryProgram& program, const u64 state, const u32 blendFactor)
 {
     _fence_value_return(false, !mesh || !program);
 

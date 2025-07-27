@@ -17,7 +17,7 @@ namespace
 namespace Firework::GL
 {
     class GeometryProgram;
-} // namespace Firework::GL
+}
 
 namespace Firework
 {

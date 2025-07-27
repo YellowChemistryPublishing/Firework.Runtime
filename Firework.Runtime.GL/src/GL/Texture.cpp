@@ -12,12 +12,15 @@ TextureSampler::TextureSampler(std::string_view name)
 }
 _fw_gl_common_handle_dtor(TextureSampler);
 
-Texture2D::Texture2D(const std::span<const byte> textureData, const u16 width, const u16 height, bool hasMipMaps, const u16 layerCount, bgfx::TextureFormat::Enum format,
+Texture2D::Texture2D(const std::span<const byte> textureData, const u16 width, const u16 height, const bool hasMipMaps, const u16 layerCount, const TextureFormat format,
                      const u64 flags) :
     internalHandle(bgfx::createTexture2D(+width, +height, hasMipMaps, +layerCount, format, +flags, bgfx::copy(textureData.data(), textureData.size_bytes())))
 { }
-Texture2D::Texture2D(const u16 width, const u16 height, bool hasMipMaps, const u16 layerCount, bgfx::TextureFormat::Enum format, const u64 flags) :
+Texture2D::Texture2D(const u16 width, const u16 height, const bool hasMipMaps, const u16 layerCount, const TextureFormat format, const u64 flags) :
     internalHandle(bgfx::createTexture2D(+width, +height, hasMipMaps, +layerCount, format, +flags))
+{ }
+Texture2D::Texture2D(const BackbufferRatio ratio, const bool hasMipMaps, const u16 layerCount, const TextureFormat format, const u64 flags) :
+    internalHandle(bgfx::createTexture2D(_as(bgfx::BackbufferRatio::Enum, ratio), hasMipMaps, +layerCount, format, +flags))
 { }
 
 void Texture2D::updateDynamic(const std::span<const byte> textureData, const u16 layer, const u8 mip, const u16 x, const u16 y, const u16 width, const u16 height)
@@ -32,3 +35,5 @@ void Texture2D::copyTo(const u16 view, const Texture2D& dest, const u16 dstX, co
 {
     bgfx::blit(+view, dest.internalHandle, +dstX, +dstY, this->internalHandle, +srcX, +srcY, +width, +height);
 }
+
+_fw_gl_common_handle_dtor(Texture2D);

@@ -24,13 +24,13 @@ int main(int, char*[])
 
         auto paragraph = entity->addComponent<Text>();
         paragraph->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Bagnard.otf"));
-        paragraph->fontSize = 48;
+        paragraph->fontSize = 1000;
         paragraph->text = U"It is not the duty of the typographer to consciously display or emulate the style of current trends, not to reflect the spirit of the times.";
         paragraph->color = Color(0, 255, 255);
 
         auto rectTransform = entity->getOrAddComponent<RectTransform>();
         rectTransform->position = glm::vec2(0.0f, float(Window::pixelHeight()) / 2.0f);
-        rectTransform->rect = RectFloat(0.0f, float(Window::pixelWidth()) / 2.0f, -180.0f, -float(Window::pixelWidth()) / 2.0f);
+        rectTransform->rect = RectFloat(0.0f, float(Window::pixelWidth()) / 2.0f, -720.0f, -float(Window::pixelWidth()) / 2.0f);
 
         Debug::printHierarchy();
     };

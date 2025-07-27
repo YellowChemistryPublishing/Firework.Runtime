@@ -34,23 +34,23 @@ namespace Firework
 
         constexpr RectFloat operator+(const RectFloat& other) const noexcept
         {
-            return RectFloat { this->top + other.top, this->right + other.right, this->bottom + other.bottom, this->left + other.left };
+            return RectFloat(this->top + other.top, this->right + other.right, this->bottom + other.bottom, this->left + other.left);
         }
         constexpr RectFloat operator-(const RectFloat& other) const noexcept
         {
-            return RectFloat { this->top - other.top, this->right - other.right, this->bottom - other.bottom, this->left - other.left };
+            return RectFloat(this->top - other.top, this->right - other.right, this->bottom - other.bottom, this->left - other.left);
         }
         constexpr RectFloat operator*(const RectFloat& other) const noexcept
         {
-            return RectFloat { this->top * other.top, this->right * other.right, this->bottom * other.bottom, this->left * other.left };
+            return RectFloat(this->top * other.top, this->right * other.right, this->bottom * other.bottom, this->left * other.left);
         }
         constexpr RectFloat operator*(float other) const noexcept
         {
-            return RectFloat { this->top * other, this->right * other, this->bottom * other, this->left * other };
+            return RectFloat(this->top * other, this->right * other, this->bottom * other, this->left * other);
         }
         constexpr RectFloat operator/(float other) const noexcept
         {
-            return RectFloat { this->top * other, this->right * other, this->bottom * other, this->left * other };
+            return RectFloat(this->top * other, this->right * other, this->bottom * other, this->left * other);
         }
 
         constexpr RectFloat& operator+=(const RectFloat& other) noexcept
@@ -75,7 +75,7 @@ namespace Firework
     /// @brief The transform component of a 2D entity.
     class _fw_core_api [[fw::component]] RectTransform final
     {
-        std::shared_ptr<class Entity> attachedEntity;
+        std::shared_ptr<class Entity> attachedEntity = nullptr;
 
         RectFloat _rect { 10, 10, -10, -10 };
         RectFloat _anchor { 0, 0, 0, 0 };

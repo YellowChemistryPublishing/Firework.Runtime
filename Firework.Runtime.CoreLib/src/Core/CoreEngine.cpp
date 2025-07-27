@@ -641,14 +641,11 @@ BreakAll:
         goto EarlyReturn;
     }
 
-    if (!Renderer::initialize(ndt, nwh, +u32(Window::width), +u32(Window::height), initBackend))
+    if (!RenderPipeline::renderInitialize(ndt, nwh, u32(Window::width), u32(Window::height), initBackend))
     {
         Debug::logError("Failed to initialize renderer!");
         goto EarlyReturn;
     }
-
-    RenderPipeline::resetViewArea(+u16(Window::width), +u16(Window::height));
-    RenderPipeline::clearViewArea();
 
     CoreEngine::state.store(EngineState::RenderThreadReady, std::memory_order_seq_cst); // Signal main thread.
 
@@ -680,7 +677,7 @@ BreakAll:
     }
 
     InternalEngineEvent::OnRenderShutdown();
-    Renderer::shutdown();
+    RenderPipeline::renderShutdown();
 EarlyReturn:
     CoreEngine::state.store(EngineState::RenderThreadDone, std::memory_order_seq_cst); // Signal window thread.
 }
