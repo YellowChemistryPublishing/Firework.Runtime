@@ -1,5 +1,6 @@
 #include "Renderer.h"
 
+#include <array>
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 #include <bx/math.h>
