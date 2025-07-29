@@ -43,7 +43,7 @@ FringeRenderer::FringeRenderer(const std::span<const FringePoint> points, const 
     for (auto boundBegIt = closedPathRanges.cbegin(); boundBegIt != --closedPathRanges.cend(); ++boundBegIt)
     {
         auto boundEndIt = ++decltype(boundBegIt)(boundBegIt);
-        for (u16 i = u16(*boundBegIt); i < u16(*boundEndIt); i++)
+        for (u16 i = u16(*boundBegIt); i < u16(*boundEndIt) - 1_u16; i++)
         {
             inds.emplace_back(+i);
             inds.emplace_back(+(i + 1_u16));
@@ -54,11 +54,14 @@ FringeRenderer::FringeRenderer(const std::span<const FringePoint> points, const 
                             VertexLayout(std::array { VertexDescriptor { .attribute = VertexAttributeName::Position, .type = VertexAttributeType::Float, .count = 3 } }), inds);
 }
 
-bool FringeRenderer::submitDraw(const ssz renderIndex, const glm::mat4 transform) const
+bool FringeRenderer::submitDraw(const float renderIndex, const glm::mat4 transform, const Color color) const
 {
     _fence_value_return(false, !this->fill || !FringeRenderer::drawProgram);
 
-    glm::mat4 shapeTransform = glm::translate(glm::mat4(1.0f), LinAlgConstants::forward * float(+renderIndex));
+    float colUniform[4] { float(color.r) / 255.0f, float(color.g) / 255.0f, float(color.b) / 255.0f, float(color.a) / 255.0f };
+    (void)FringeRenderer::drawProgram.setUniform("u_color", &colUniform);
+
+    glm::mat4 shapeTransform = glm::translate(glm::mat4(1.0f), LinAlgConstants::forward * renderIndex);
     shapeTransform *= transform;
     Renderer::setDrawTransform(shapeTransform);
 

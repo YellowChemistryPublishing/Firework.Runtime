@@ -95,11 +95,11 @@ ShapeRenderer::ShapeRenderer(const std::span<const ShapePoint> points, const std
                             inds);
 }
 
-bool ShapeRenderer::submitDrawStencil(const ssz renderIndex, const glm::mat4 shape, const bool forceHole) const
+bool ShapeRenderer::submitDrawStencil(const float renderIndex, const glm::mat4 shape, const bool forceHole) const
 {
     _fence_value_return(false, !this->fill || !ShapeRenderer::stencilProgram || !ShapeRenderer::drawProgram);
 
-    glm::mat4 shapeTransform = glm::translate(glm::mat4(1.0f), LinAlgConstants::forward * float(+renderIndex));
+    glm::mat4 shapeTransform = glm::translate(glm::mat4(1.0f), LinAlgConstants::forward * renderIndex);
     shapeTransform *= shape;
     Renderer::setDrawTransform(shapeTransform);
 
@@ -110,14 +110,14 @@ bool ShapeRenderer::submitDrawStencil(const ssz renderIndex, const glm::mat4 sha
 
     return true;
 }
-bool ShapeRenderer::submitDraw(const ssz renderIndex, const glm::mat4 clip, const u8 whenStencil, const Color color)
+bool ShapeRenderer::submitDraw(const float renderIndex, const glm::mat4 clip, const u8 whenStencil, const Color color)
 {
     _fence_value_return(false, !ShapeRenderer::unitSquare || !ShapeRenderer::stencilProgram || !ShapeRenderer::drawProgram);
 
     float colUniform[4] { float(color.r) / 255.0f, float(color.g) / 255.0f, float(color.b) / 255.0f, float(color.a) / 255.0f };
     (void)ShapeRenderer::drawProgram.setUniform("u_color", &colUniform);
 
-    glm::mat4 clipTransform = glm::translate(glm::mat4(1.0f), LinAlgConstants::forward * float(+renderIndex));
+    glm::mat4 clipTransform = glm::translate(glm::mat4(1.0f), LinAlgConstants::forward * renderIndex);
     clipTransform *= clip;
     Renderer::setDrawTransform(clip);
 

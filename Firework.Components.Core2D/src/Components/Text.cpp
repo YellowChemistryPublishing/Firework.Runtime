@@ -205,8 +205,14 @@ void Text::renderOffload(ssz renderIndex)
         for (auto& [renderers, transform] : renderData->toRender)
         {
             auto& [shape, fringe] = *renderers;
-            (void)shape.submitDrawStencil(renderIndex, transform);
+            (void)shape.submitDrawStencil(float(+renderIndex) + 0.5f, transform);
         }
-        (void)ShapeRenderer::submitDraw(renderIndex, rectTransform, ~0_u8, color);
+        (void)ShapeRenderer::submitDraw(float(+renderIndex) + 0.5f, rectTransform, ~0_u8, color);
+
+        for (auto& [renderers, transform] : renderData->toRender)
+        {
+            auto& [shape, fringe] = *renderers;
+            (void)fringe.submitDraw(float(+renderIndex), transform, color);
+        }
     }, false);
 }

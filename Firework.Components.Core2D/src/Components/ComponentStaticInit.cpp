@@ -55,6 +55,8 @@ namespace
             {
                 if (!ShapeRenderer::renderInitialize()) [[unlikely]]
                     Debug::logError("`ShapeRenderer` failed to render initialize.");
+                if (!FringeRenderer::renderInitialize()) [[unlikely]]
+                    Debug::logError("`FringeRenderer` failed to render initialize.");
             });
         }
     } init;

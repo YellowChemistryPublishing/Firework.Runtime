@@ -4,6 +4,7 @@
 
 #include <glm/mat4x4.hpp>
 
+#include <Friends/Color.h>
 #include <GL/Geometry.h>
 
 namespace
@@ -56,7 +57,7 @@ namespace Firework
             return *this;
         }
 
-        [[nodiscard]] bool submitDraw(ssz renderIndex, glm::mat4 transform) const;
+        [[nodiscard]] bool submitDraw(float renderIndex, glm::mat4 transform, Color color = Color::unknown) const;
 
         friend void swap(FringeRenderer& a, FringeRenderer& b)
         {

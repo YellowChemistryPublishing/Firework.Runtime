@@ -185,8 +185,8 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
             switch (renderable.type)
             {
             case ScalableVectorGraphic::RenderableType::FilledPath:
-                (void)renderable.filledPath.rend.submitDrawStencil(renderIndex, renderData->tf);
-                (void)ShapeRenderer::submitDraw(renderIndex, rectTransform, ~0_u8, renderable.filledPath.col);
+                (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), renderData->tf);
+                (void)ShapeRenderer::submitDraw(float(+renderIndex), rectTransform, ~0_u8, renderable.filledPath.col);
                 break;
             }
         }

@@ -61,8 +61,8 @@ namespace Firework
             return *this;
         }
 
-        [[nodiscard]] bool submitDrawStencil(ssz renderIndex, glm::mat4 shape, bool forceHole = false) const;
-        [[nodiscard]] static bool submitDraw(ssz renderIndex, glm::mat4 clip, u8 whenStencil = ~0_u8, Color color = Color::unknown);
+        [[nodiscard]] bool submitDrawStencil(float renderIndex, glm::mat4 shape, bool forceHole = false) const;
+        [[nodiscard]] static bool submitDraw(float renderIndex, glm::mat4 clip, u8 whenStencil = ~0_u8, Color color = Color::unknown);
 
         friend void swap(ShapeRenderer& a, ShapeRenderer& b)
         {
