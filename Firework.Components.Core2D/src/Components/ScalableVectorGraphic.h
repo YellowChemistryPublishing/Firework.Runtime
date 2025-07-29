@@ -5,7 +5,7 @@
 #include <mutex>
 #include <robin_hood.h>
 
-#include <Friends/FilledPathRenderer.h>
+#include <Friends/ShapeRenderer.h>
 #include <Friends/VectorTools.h>
 #include <Library/Property.h>
 
@@ -33,10 +33,10 @@ namespace Firework
         };
         struct FilledPathRenderable
         {
-            FilledPathRenderer rend = nullptr;
+            ShapeRenderer rend = nullptr;
             Color col = Color::unknown;
 
-            FilledPathRenderable(FilledPathRenderer rend, Color col) : rend(std::move(rend)), col(col)
+            FilledPathRenderable(ShapeRenderer rend, Color col) : rend(std::move(rend)), col(col)
             { }
             FilledPathRenderable(FilledPathRenderable&& other)
             {

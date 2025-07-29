@@ -4,7 +4,7 @@
 #include <Components/Text.h>
 
 #include <Friends/Color.h>
-#include <Friends/FilledPathRenderer.h>
+#include <Friends/ShapeRenderer.h>
 #include <Friends/ParagraphIterator.h>
 #include <Friends/VectorTools.h>
 

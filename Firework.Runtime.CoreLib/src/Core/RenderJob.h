@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <Core/Debug.h>
+
 namespace Firework
 {
     /// @internal
@@ -14,12 +16,13 @@ namespace Firework
     {
         RenderJob() = default;
         /// @internal
-        /// @brief Internal API. Creates a new RenderJob.
+        /// @brief Internal API. Creates a new `RenderJob`.
         /// @tparam Func ```requires requires { func::function<void()>(func); }```
         /// @param func Function to create job from.
         /// @param required Whether this job has to run if the runtime is behind.
         /// @return Render job that will call the given function.
         template <std::invocable<> Func>
+        requires (!std::same_as<RenderJob, std::remove_cvref_t<Func>>) // msvc will pass a `RenderJob` as `func`.
         RenderJob(Func&& func, bool required = true) : func(func), _required(required)
         { }
         RenderJob(const RenderJob&) = default;

@@ -585,10 +585,11 @@ void CoreEngine::internalRenderLoop()
     RendererBackend initBackend = RendererBackend::Default;
     RendererBackend backendPriorityOrder[] {
 #if _WIN32
-        RendererBackend::OpenGL, RendererBackend::Vulkan, RendererBackend::Direct3D12, RendererBackend::Direct3D11
+        RendererBackend::OpenGL, RendererBackend::Direct3D12, RendererBackend::Vulkan, RendererBackend::Direct3D11,
 #else
-        RendererBackend::Vulkan, RendererBackend::OpenGL
+        RendererBackend::Vulkan, RendererBackend::OpenGL,
 #endif
+        RendererBackend::Default
     };
 
     std::vector<RendererBackend> backends = Renderer::platformBackends();

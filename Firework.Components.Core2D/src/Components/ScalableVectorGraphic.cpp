@@ -50,7 +50,7 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
             std::vector<VectorTools::PathCommand> pathCommands;
             _fence_value_return(void(), !VectorTools::parsePath(node.attribute("d").value(), pathCommands));
 
-            std::vector<FilledPathPoint> paths;
+            std::vector<ShapePoint> paths;
             std::vector<ssz> spans { 0_z };
             float alternatePtCtrl = 1.0f;
 
@@ -66,11 +66,11 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                 {
                 case VectorTools::PathCommandType::MoveTo:
                     pc.moveTo.to = transformByMatrix(pc.moveTo.to, childTransform);
-                    paths.emplace_back(FilledPathPoint { .x = pc.moveTo.to.x, .y = pc.moveTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                    paths.emplace_back(ShapePoint { .x = pc.moveTo.to.x, .y = pc.moveTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
                     break;
                 case VectorTools::PathCommandType::LineTo:
                     pc.lineTo.to = transformByMatrix(pc.lineTo.to, childTransform);
-                    paths.emplace_back(FilledPathPoint { .x = pc.lineTo.to.x, .y = pc.lineTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                    paths.emplace_back(ShapePoint { .x = pc.lineTo.to.x, .y = pc.lineTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
                     break;
                 case VectorTools::PathCommandType::CubicTo:
                     {
@@ -80,17 +80,17 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                         converted.c2 = transformByMatrix(converted.c2, childTransform);
                         converted.p3 = transformByMatrix(converted.p3, childTransform);
 
-                        paths.emplace_back(FilledPathPoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                        paths.emplace_back(FilledPathPoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-                        paths.emplace_back(FilledPathPoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                        paths.emplace_back(FilledPathPoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                        paths.emplace_back(ShapePoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                        paths.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                        paths.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                        paths.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
                     }
                     break;
                 case VectorTools::PathCommandType::QuadraticTo:
                     pc.quadraticTo.ctrl = transformByMatrix(pc.quadraticTo.ctrl, childTransform);
                     pc.quadraticTo.to = transformByMatrix(pc.quadraticTo.to, childTransform);
-                    paths.emplace_back(FilledPathPoint { .x = pc.quadraticTo.ctrl.x, .y = pc.quadraticTo.ctrl.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                    paths.emplace_back(FilledPathPoint { .x = pc.quadraticTo.to.x, .y = pc.quadraticTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                    paths.emplace_back(ShapePoint { .x = pc.quadraticTo.ctrl.x, .y = pc.quadraticTo.ctrl.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                    paths.emplace_back(ShapePoint { .x = pc.quadraticTo.to.x, .y = pc.quadraticTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
                     break;
                 case VectorTools::PathCommandType::ClosePath:
                     spans.emplace_back(ssz(paths.size()));
@@ -98,7 +98,7 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                 }
             }
 
-            if (FilledPathRenderer pr = FilledPathRenderer(paths, spans))
+            if (ShapeRenderer pr = ShapeRenderer(paths, spans))
                 ret.emplace_back(std::move(FilledPathRenderable(std::move(pr), childFill)));
         }
         // Otherwise, do nothing.
@@ -186,7 +186,7 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
             {
             case ScalableVectorGraphic::RenderableType::FilledPath:
                 (void)renderable.filledPath.rend.submitDrawStencil(renderIndex, renderData->tf);
-                (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform, ~0_u8, renderable.filledPath.col);
+                (void)ShapeRenderer::submitDraw(renderIndex, rectTransform, ~0_u8, renderable.filledPath.col);
                 break;
             }
         }

@@ -21,13 +21,13 @@ namespace Firework::GL
 
 namespace Firework
 {
-    struct _packed FilledPathPoint
+    struct _packed ShapePoint
     {
         float x, y, z = 1.0f; // Leave `z` as 1.0f unless you're really confident in what you're doing.
         float xCtrl = 0.0f, yCtrl = 0.0f;
     };
 
-    class _fw_cc2d_api FilledPathRenderer final
+    class _fw_cc2d_api ShapeRenderer final
     {
         static GL::GeometryProgram stencilProgram;
         static GL::GeometryProgram drawProgram;
@@ -38,24 +38,24 @@ namespace Firework
 
         GL::StaticMesh fill = nullptr;
     public:
-        inline FilledPathRenderer(std::nullptr_t)
+        ShapeRenderer(std::nullptr_t)
         { }
-        FilledPathRenderer(std::span<const FilledPathPoint> points, std::span<const ssz> closedPathRanges);
-        FilledPathRenderer(std::span<const FilledPathPoint> points) : FilledPathRenderer(points, std::array<ssz, 2> { 0_z, ssz(points.size()) })
+        ShapeRenderer(std::span<const ShapePoint> points, std::span<const ssz> closedPathRanges);
+        ShapeRenderer(std::span<const ShapePoint> points) : ShapeRenderer(points, std::array<ssz, 2> { 0_z, ssz(points.size()) })
         { }
-        inline FilledPathRenderer(const FilledPathRenderer&) = delete;
-        inline FilledPathRenderer(FilledPathRenderer&& other)
+        ShapeRenderer(const ShapeRenderer&) = delete;
+        ShapeRenderer(ShapeRenderer&& other)
         {
             swap(*this, other);
         }
 
-        inline operator bool()
+        operator bool()
         {
             return this->fill;
         }
 
-        inline FilledPathRenderer& operator=(const FilledPathRenderer&) = delete;
-        inline FilledPathRenderer& operator=(FilledPathRenderer&& other)
+        ShapeRenderer& operator=(const ShapeRenderer&) = delete;
+        ShapeRenderer& operator=(ShapeRenderer&& other)
         {
             swap(*this, other);
             return *this;
@@ -64,7 +64,7 @@ namespace Firework
         [[nodiscard]] bool submitDrawStencil(ssz renderIndex, glm::mat4 shape, bool forceHole = false) const;
         [[nodiscard]] static bool submitDraw(ssz renderIndex, glm::mat4 clip, u8 whenStencil = ~0_u8, Color color = Color::unknown);
 
-        friend inline void swap(FilledPathRenderer& a, FilledPathRenderer& b)
+        friend void swap(ShapeRenderer& a, ShapeRenderer& b)
         {
             using std::swap;
 

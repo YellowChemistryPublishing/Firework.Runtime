@@ -20,23 +20,24 @@
 #include <EntityComponentSystem/Entity.h>
 #include <Firework/Config.h>
 
+namespace Firework::Internal
+{
+    // This is a bit of a hack.
+    inline static std::wostream& operator<<(std::wostream& stream, const std::string& rhs)
+    {
+        std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> conv;
+        stream << conv.from_bytes(rhs);
+        return stream;
+    }
+    inline static std::wostream& operator<<(std::wostream& stream, const std::string_view& rhs)
+    {
+        for (auto it = rhs.begin(); it != rhs.end(); ++it) stream << *it;
+        return stream;
+    }
+} // namespace Firework::Internal
+
 namespace Firework
 {
-    namespace Internal
-    {
-        // This is a bit of a hack.
-        inline static std::wostream& operator<<(std::wostream& stream, const std::string& rhs)
-        {
-            std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> conv;
-            stream << conv.from_bytes(rhs);
-            return stream;
-        }
-        inline static std::wostream& operator<<(std::wostream& stream, const std::string_view& rhs)
-        {
-            for (auto it = rhs.begin(); it != rhs.end(); ++it) stream << *it;
-            return stream;
-        }
-    } // namespace Internal
 
     /// @internal
     /// @brief Internal API. Special escape sequences.

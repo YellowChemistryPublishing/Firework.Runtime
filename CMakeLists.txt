@@ -147,9 +147,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/concurrentqueue")
 # robin-hood-hashing
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/robin-hood-hashing")
 
-# pugixml
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
-
 # cpptrace
 if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL "MacOS" OR FIREWORK_BUILD_PLATFORM STREQUAL "Linux")
     set(CPPTRACE_STATIC ON CACHE INTERNAL "" FORCE)
@@ -160,6 +157,9 @@ if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL
     endif()
     set_target_properties(cpptrace-lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+
+# libcxxext
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/libcxxext")
 
 # SDL3
 set(SDL_STATIC_PIC ON CACHE INTERNAL "" FORCE)
@@ -177,6 +177,29 @@ set(GLM_ENABLE_LANG_EXTENSIONS ON CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/glm")
 target_compile_definitions(glm PUBLIC GLM_FORCE_LEFT_HANDED)
 
+# bgfx
+
+set(BGFX_LIBRARY_TYPE "STATIC" CACHE INTERNAL "" FORCE)
+set(BGFX_BUILD_EXAMPLES ON CACHE INTERNAL "" FORCE)
+set(BGFX_CONFIG_MULTITHREADED OFF CACHE INTERNAL "" FORCE)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
+
+# pugixml
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
+
+# Clipper2
+set(CLIPPER2_UTILS OFF CACHE INTERNAL "" FORCE)
+set(CLIPPER2_EXAMPLES OFF CACHE INTERNAL "" FORCE)
+set(CLIPPER2_TESTS OFF CACHE INTERNAL "" FORCE)
+set(CLIPPER2_USINGZ OFF CACHE INTERNAL "" FORCE)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/Clipper2/CPP")
+
+# earcut.hpp
+set(EARCUT_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
+set(EARCUT_BUILD_BENCH OFF CACHE INTERNAL "" FORCE)
+set(EARCUT_BUILD_VIZ OFF CACHE INTERNAL "" FORCE)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/earcut.hpp")
+
 # assimp
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
@@ -189,16 +212,6 @@ get_target_property(ASSIMP_LINK_LIBRARIES assimp LINK_LIBRARIES)
 list(REMOVE_ITEM ASSIMP_LINK_LIBRARIES "-static-libgcc" "-static-libstdc++" "-Wl,-Bstatic" "-lstdc++" "-lwinpthread")
 set_target_properties(assimp PROPERTIES LINK_LIBRARIES "${ASSIMP_LINK_LIBRARIES}")
 unset(BUILD_SHARED_LIBS)
-
-# bgfx
-
-set(BGFX_LIBRARY_TYPE "STATIC" CACHE INTERNAL "" FORCE)
-set(BGFX_BUILD_EXAMPLES ON CACHE INTERNAL "" FORCE)
-set(BGFX_CONFIG_MULTITHREADED OFF CACHE INTERNAL "" FORCE)
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
-
-# libcxxext
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/libcxxext")
 
 # Firework.Runtime
 

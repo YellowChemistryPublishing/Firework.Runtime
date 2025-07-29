@@ -14,14 +14,14 @@ using namespace Firework::Internal;
 using namespace Firework::PackageSystem;
 using namespace Firework::Typography;
 
-robin_hood::unordered_map<Text::FontCharacterQuery, std::shared_ptr<FilledPathRenderer>, Text::FontCharacterQueryHash> Text::characterPaths;
+robin_hood::unordered_map<Text::FontCharacterQuery, std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, Text::FontCharacterQueryHash> Text::characterPaths;
 
 void Text::onAttach(Entity& entity)
 {
     this->rectTransform = entity.getOrAddComponent<RectTransform>();
 }
 
-std::shared_ptr<FilledPathRenderer> Text::findOrCreateGlyphPath(char32_t c)
+std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> Text::findOrCreateGlyphPath(char32_t c)
 {
     auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = this->_font.get(), .c = c });
     _fence_value_return(charPathIt->second, charPathIt != Text::characterPaths.end());
@@ -30,45 +30,56 @@ std::shared_ptr<FilledPathRenderer> Text::findOrCreateGlyphPath(char32_t c)
     int glyphIndex = f.getGlyphIndex(c);
     GlyphOutline go = f.getGlyphOutline(glyphIndex);
 
-    std::vector<ssz> spans;
-    std::vector<FilledPathPoint> paths;
+    std::vector<ShapePoint> shapePoints;
+    std::vector<ssz> shapePaths;
     float alternatePtCtrl = 1.0f;
+
+    std::vector<FringePoint> fringePoints;
+
     for (sys::integer<int> i = 0; i < go.vertsSize; i++)
     {
         switch (go.verts[+i].type)
         {
         case STBTT_vmove:
-            spans.emplace_back(ssz(paths.size()));
+            shapePaths.emplace_back(ssz(shapePoints.size()));
             [[fallthrough]];
         case STBTT_vline:
-            paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            fringePoints.emplace_back(FringePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
             break;
         case STBTT_vcurve:
-            paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .xCtrl = 0.0f, .yCtrl = -1.0f });
-            paths.emplace_back(FilledPathPoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .xCtrl = 0.0f, .yCtrl = -1.0f });
+            shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+
+            fringePoints.emplace_back(FringePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
             break;
         case STBTT_vcubic:
             {
-                if (paths.empty())
+                if (shapePoints.empty())
                     break;
 
                 VectorTools::QuadApproxCubic converted =
-                    VectorTools::cubicBeizerToQuadratic(glm::vec2(paths.back().x, paths.back().y), glm::vec2(float(go.verts[+i].cx), float(go.verts[+i].cy)),
+                    VectorTools::cubicBeizerToQuadratic(glm::vec2(shapePoints.back().x, shapePoints.back().y), glm::vec2(float(go.verts[+i].cx), float(go.verts[+i].cy)),
                                                         glm::vec2(go.verts[+i].cx1, go.verts[+i].cy1), glm::vec2(float(go.verts[+i].x), float(go.verts[+i].y)));
 
-                paths.emplace_back(FilledPathPoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                paths.emplace_back(FilledPathPoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-                paths.emplace_back(FilledPathPoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                paths.emplace_back(FilledPathPoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                shapePoints.emplace_back(ShapePoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                shapePoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                shapePoints.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                shapePoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+
+                fringePoints.emplace_back(FringePoint { .x = converted.p3.x, .y = converted.p3.y });
             }
             break;
         }
     }
-    spans.emplace_back(paths.size());
+    shapePaths.emplace_back(shapePoints.size());
 
-    _fence_value_return(nullptr, spans.size() <= 1);
+    _fence_value_return(nullptr, shapePaths.size() < 2);
+    _fence_value_return(nullptr, shapePoints.size() < 3);
 
-    std::shared_ptr<FilledPathRenderer> pathRenderers = std::make_shared<FilledPathRenderer>(paths, spans);
+    std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> pathRenderers =
+        std::make_shared<std::pair<ShapeRenderer, FringeRenderer>>(ShapeRenderer(shapePoints, shapePaths), FringeRenderer(fringePoints));
+
     Text::characterPaths.emplace(FontCharacterQuery { .file = this->_font.get(), .c = c }, pathRenderers);
 
     return pathRenderers;
@@ -120,7 +131,7 @@ void Text::swapRenderBuffers()
         gPos.y -= scaledLineHeight * howMany;
     };
 
-    std::vector<std::pair<std::shared_ptr<FilledPathRenderer>, glm::mat4>> swapToRender;
+    std::vector<std::pair<std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, glm::mat4>> swapToRender;
     for (auto wordIt = ParagraphIterator<char32_t>::begin(this->_text); wordIt != ParagraphIterator<char32_t>::end(this->_text); ++wordIt)
     {
         float wordLenScaled = std::accumulate(wordIt.textBegin(), wordIt.textEnd(), 0.0f, [&](float a, char32_t b)
@@ -148,7 +159,7 @@ void Text::swapRenderBuffers()
 
         for (auto cIt = wordIt.textBegin(); cIt != wordIt.textEnd(); ++cIt)
         {
-            std::shared_ptr<FilledPathRenderer> gPath = this->findOrCreateGlyphPath(*cIt);
+            std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> gPath = this->findOrCreateGlyphPath(*cIt);
             if (!gPath)
                 continue;
 
@@ -191,7 +202,11 @@ void Text::renderOffload(ssz renderIndex)
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = rectTransform->matrix(), color = this->_color]
     {
         std::lock_guard guard(renderData->toRenderLock);
-        for (auto& [paths, transform] : renderData->toRender) (void)paths->submitDrawStencil(renderIndex, transform);
-        (void)FilledPathRenderer::submitDraw(renderIndex, rectTransform, ~0_u8, color);
+        for (auto& [renderers, transform] : renderData->toRender)
+        {
+            auto& [shape, fringe] = *renderers;
+            (void)shape.submitDrawStencil(renderIndex, transform);
+        }
+        (void)ShapeRenderer::submitDraw(renderIndex, rectTransform, ~0_u8, color);
     }, false);
 }

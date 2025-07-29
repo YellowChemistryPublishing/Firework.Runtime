@@ -7,7 +7,8 @@
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/Entity.h>
 #include <Friends/Color.h>
-#include <Friends/FilledPathRenderer.h>
+#include <Friends/FringeRenderer.h>
+#include <Friends/ShapeRenderer.h>
 #include <Library/Property.h>
 
 namespace
@@ -44,7 +45,7 @@ namespace Firework
         };
 
         // Main thread only.
-        static robin_hood::unordered_map<FontCharacterQuery, std::shared_ptr<FilledPathRenderer>, FontCharacterQueryHash> characterPaths;
+        static robin_hood::unordered_map<FontCharacterQuery, std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, FontCharacterQueryHash> characterPaths;
 
         std::shared_ptr<RectTransform> rectTransform = nullptr;
 
@@ -59,14 +60,14 @@ namespace Firework
 
         struct RenderData
         {
-            std::vector<std::pair<std::shared_ptr<FilledPathRenderer>, glm::mat4>> toRender;
+            std::vector<std::pair<std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, glm::mat4>> toRender;
             std::mutex toRenderLock;
         };
         std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
 
         void onAttach(Entity& entity);
 
-        std::shared_ptr<FilledPathRenderer> findOrCreateGlyphPath(char32_t c);
+        std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> findOrCreateGlyphPath(char32_t c);
         void tryBuryOrphanedGlyphPathSixFeetUnder(FontCharacterQuery q);
         void swapRenderBuffers();
 

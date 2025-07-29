@@ -8,7 +8,7 @@
 #include <Core/PackageManager.h>
 #include <EntityComponentSystem/EngineEvent.h>
 #include <EntityComponentSystem/EntityManagement.h>
-#include <Friends/FilledPathRenderer.h>
+#include <Friends/ShapeRenderer.h>
 #include <GL/Renderer.h>
 #include <PackageSystem/ExtensibleMarkupFile.h>
 #include <PackageSystem/PortableNetworkGraphicFile.h>
@@ -53,8 +53,8 @@ namespace
 
             CoreEngine::queueRenderJobForFrame([]
             {
-                if (!FilledPathRenderer::renderInitialize()) [[unlikely]]
-                    Debug::logError("`FilledPathRenderer` failed to render initialize.");
+                if (!ShapeRenderer::renderInitialize()) [[unlikely]]
+                    Debug::logError("`ShapeRenderer` failed to render initialize.");
             });
         }
     } init;
