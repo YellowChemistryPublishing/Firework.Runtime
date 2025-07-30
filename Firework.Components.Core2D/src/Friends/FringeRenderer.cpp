@@ -30,6 +30,7 @@ FringeRenderer::FringeRenderer(const std::span<const FringePoint> points, const 
 {
     _fence_value_return(, points.size() < 2);
     _fence_value_return(, closedPathRanges.size() < 2);
+    auto z = closedPathRanges.size();
 
     std::vector<FringePoint> verts;
     verts.reserve(+(sz(points.size()) + 1_uz));
@@ -43,7 +44,7 @@ FringeRenderer::FringeRenderer(const std::span<const FringePoint> points, const 
     for (auto boundBegIt = closedPathRanges.cbegin(); boundBegIt != --closedPathRanges.cend(); ++boundBegIt)
     {
         auto boundEndIt = ++decltype(boundBegIt)(boundBegIt);
-        for (u16 i = u16(*boundBegIt); i < u16(*boundEndIt) - 1_u16; i++)
+        for (u16 i = u16(*boundBegIt); i < u16(*boundEndIt - 1_z); i++)
         {
             inds.emplace_back(+i);
             inds.emplace_back(+(i + 1_u16));

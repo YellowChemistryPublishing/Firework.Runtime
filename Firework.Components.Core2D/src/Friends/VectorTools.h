@@ -23,11 +23,11 @@ namespace Firework
             float x, y, w, h;
         };
 
-        static sys::result<Viewbox> parseViewbox(std::string_view attrVal);
+        [[nodiscard]] static sys::result<Viewbox> parseViewbox(std::string_view attrVal);
 
-        static sys::result<Color> parseColor(std::string_view attrVal);
+        [[nodiscard]] static sys::result<Color> parseColor(std::string_view attrVal);
 
-        static sys::result<glm::mat3x3> parseTransform(std::string_view attrVal);
+        [[nodiscard]] static sys::result<glm::mat3x3> parseTransform(std::string_view attrVal);
 
         struct PathCommandMoveTo
         {
@@ -100,13 +100,17 @@ namespace Firework
             { }
         };
 
-        static bool parsePath(std::string_view attrVal, std::vector<PathCommand>& out);
+        [[nodiscard]] static bool parsePath(std::string_view attrVal, std::vector<PathCommand>& out);
 
         struct QuadApproxCubic
         {
             glm::vec2 p1, c1, p2, c2, p3;
         };
 
-        static QuadApproxCubic cubicBeizerToQuadratic(glm::vec2 p1, glm::vec2 c1, glm::vec2 c2, glm::vec2 p2);
+        [[nodiscard]] static QuadApproxCubic cubicBeizerToQuadratic(glm::vec2 p1, glm::vec2 c1, glm::vec2 c2, glm::vec2 p2);
+
+        [[nodiscard]] static float fastQuadraticBezierLength(glm::vec2 p1, glm::vec2 c, glm::vec2 p2);
+        [[nodiscard]] static bool quadraticBezierToLines(glm::vec2 p1, glm::vec2 c, glm::vec2 p2, ssz segments, std::vector<glm::vec2>& out);
+        [[nodiscard]] static bool quadraticBezierToLines(glm::vec2 p1, glm::vec2 c, glm::vec2 p2, float segmentLength, std::vector<glm::vec2>& out);
     };
 } // namespace Firework

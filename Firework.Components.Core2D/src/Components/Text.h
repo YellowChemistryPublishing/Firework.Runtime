@@ -60,7 +60,7 @@ namespace Firework
 
         struct RenderData
         {
-            std::vector<std::pair<std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, glm::mat4>> toRender;
+            std::vector<std::pair<std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, std::pair<glm::mat4, glm::mat4>>> toRender;
             std::mutex toRenderLock;
         };
         std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();

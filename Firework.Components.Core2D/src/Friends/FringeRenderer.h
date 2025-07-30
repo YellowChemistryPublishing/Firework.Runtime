@@ -2,6 +2,7 @@
 
 #include "Firework.Components.Core2D.Exports.h"
 
+#include <array>
 #include <glm/mat4x4.hpp>
 
 #include <Friends/Color.h>

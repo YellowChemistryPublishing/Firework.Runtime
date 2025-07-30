@@ -35,10 +35,10 @@ bool ShapeRenderer::renderInitialize()
     createShaderFromPrecompiled(ShapeRenderer::drawProgram, Colored, std::array { ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
 
     float unitSquareVerts[] {
-        -1.0f, -1.0f, 1.0f, // [0]
-        -1.0f, 1.0f,  1.0f, // [1]
-        1.0f,  1.0f,  1.0f, // [2]
-        1.0f,  -1.0f, 1.0f  // [3]
+        -0.5f, -0.5f, 0.5f, // [0]
+        -0.5f, 0.5f,  0.5f, // [1]
+        0.5f,  0.5f,  0.5f, // [2]
+        0.5f,  -0.5f, 0.5f  // [3]
     };
     uint16_t unitSquareInds[] { 2, 1, 0, 3, 2, 0 };
     ShapeRenderer::unitSquare = StaticMesh(
@@ -103,7 +103,7 @@ bool ShapeRenderer::submitDrawStencil(const float renderIndex, const glm::mat4 s
     shapeTransform *= shape;
     Renderer::setDrawTransform(shapeTransform);
 
-    Renderer::setDrawStencil(BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_FUNC_RMASK(0) |
+    Renderer::setDrawStencil(BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_FUNC_RMASK(0xFF) |
                              (forceHole ? BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE
                                         : BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_INVERT));
     (void)Renderer::submitDraw(1, this->fill, ShapeRenderer::stencilProgram, BGFX_STATE_DEPTH_TEST_LESS);
@@ -123,9 +123,7 @@ bool ShapeRenderer::submitDraw(const float renderIndex, const glm::mat4 clip, co
 
     Renderer::setDrawStencil(BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_FUNC_REF(+whenStencil) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_S_KEEP |
                              BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
-    (void)Renderer::submitDraw(1, ShapeRenderer::unitSquare, ShapeRenderer::drawProgram,
-                               BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_WRITE_Z |
-                                   BGFX_STATE_DEPTH_TEST_LESS);
+    (void)Renderer::submitDraw(1, ShapeRenderer::unitSquare, ShapeRenderer::drawProgram);
 
     return true;
 }

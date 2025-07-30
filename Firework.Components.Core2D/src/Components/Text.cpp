@@ -35,6 +35,8 @@ std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> Text::findOrCreateGlyp
     float alternatePtCtrl = 1.0f;
 
     std::vector<FringePoint> fringePoints;
+    std::vector<ssz> fringePaths;
+    std::vector<glm::vec2> thisFringe;
 
     for (sys::integer<int> i = 0; i < go.vertsSize; i++)
     {
@@ -42,16 +44,28 @@ std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> Text::findOrCreateGlyp
         {
         case STBTT_vmove:
             shapePaths.emplace_back(ssz(shapePoints.size()));
+            fringePaths.emplace_back(ssz(fringePoints.size()));
             [[fallthrough]];
         case STBTT_vline:
             shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
             fringePoints.emplace_back(FringePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
             break;
         case STBTT_vcurve:
-            shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .xCtrl = 0.0f, .yCtrl = -1.0f });
-            shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            {
+                shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .xCtrl = 0.0f, .yCtrl = -1.0f });
+                shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
 
-            fringePoints.emplace_back(FringePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
+                if (fringePoints.empty())
+                    continue;
+
+                const glm::vec2 from(fringePoints.back().x, fringePoints.back().y);
+                const glm::vec2 ctrl(float(go.verts[+i].cx), float(go.verts[+i].cy));
+                const glm::vec2 to(float(go.verts[+i].x), float(go.verts[+i].y));
+                (void)VectorTools::quadraticBezierToLines(from, ctrl, to, 32.0f, thisFringe);
+                if (!thisFringe.empty())
+                    std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(fringePoints), [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
+                thisFringe.clear();
+            }
             break;
         case STBTT_vcubic:
             {
@@ -67,18 +81,24 @@ std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> Text::findOrCreateGlyp
                 shapePoints.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
                 shapePoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
 
-                fringePoints.emplace_back(FringePoint { .x = converted.p3.x, .y = converted.p3.y });
+                if (VectorTools::quadraticBezierToLines(converted.p1, converted.c1, converted.p2, 32.0f, thisFringe) && !thisFringe.empty())
+                    thisFringe.pop_back();
+                (void)VectorTools::quadraticBezierToLines(converted.p2, converted.c2, converted.p3, 32.0f, thisFringe);
+                if (!thisFringe.empty())
+                    std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(fringePoints), [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
+                thisFringe.clear();
             }
             break;
         }
     }
     shapePaths.emplace_back(shapePoints.size());
+    fringePaths.emplace_back(fringePoints.size());
 
     _fence_value_return(nullptr, shapePaths.size() < 2);
     _fence_value_return(nullptr, shapePoints.size() < 3);
 
     std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> pathRenderers =
-        std::make_shared<std::pair<ShapeRenderer, FringeRenderer>>(ShapeRenderer(shapePoints, shapePaths), FringeRenderer(fringePoints));
+        std::make_shared<std::pair<ShapeRenderer, FringeRenderer>>(ShapeRenderer(shapePoints, shapePaths), FringeRenderer(fringePoints, fringePaths));
 
     Text::characterPaths.emplace(FontCharacterQuery { .file = this->_font.get(), .c = c }, pathRenderers);
 
@@ -96,6 +116,7 @@ void Text::swapRenderBuffers()
 {
     const RectFloat& r = this->rectTransform->rect();
     const glm::vec2& pos = this->rectTransform->position();
+    const float rot = this->rectTransform->rotation();
     const glm::vec2& sc = this->rectTransform->scale();
     const Font& font = this->_font->fontHandle();
     const float glSc = this->_fontSize / float(font.height());
@@ -103,7 +124,7 @@ void Text::swapRenderBuffers()
 
     glm::vec2 gPos(0.0f);
 
-    auto calcGlyphRenderTransformAndAdvance = [&](char32_t c) -> glm::mat4
+    auto calcGlyphRenderTransformAndAdvance = [&](char32_t c) -> std::pair<glm::mat4, glm::mat4>
     {
         _fence_contract_enforce(this->_font != nullptr);
         _fence_contract_enforce(this->rectTransform != nullptr);
@@ -116,14 +137,22 @@ void Text::swapRenderBuffers()
             gPos.y -= scaledLineHeight;
         }
 
-        glm::mat4 ret = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
-        ret *= glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -this->rectTransform->rotation())));
-        ret = glm::translate(ret, glm::vec3(gPos.x + float(gm.leftSideBearing) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0.0f));
-        ret = glm::scale(ret, glm::vec3(sc.x * glSc, sc.y * glSc, 0.0f));
+        glm::mat4 glTransform = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
+        glTransform *= glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -rot)));
+        glTransform =
+            glm::translate(glTransform, glm::vec3(gPos.x + float(std::abs(gm.leftSideBearing)) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0.0f));
+        glTransform = glm::scale(glTransform, glm::vec3(sc.x * glSc, sc.y * glSc, 0.0f));
+
+        glm::mat4 clipTransform = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
+        clipTransform *= glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -rot)));
+        clipTransform = glm::translate(clipTransform, glm::vec3(gPos.x + r.left * sc.x, gPos.y - float(font.height()) * glSc + r.top * sc.y, 0.0f));
+        clipTransform =
+            glm::scale(clipTransform, glm::vec3(sc.x * glSc * (float(gm.advanceWidth) + float(std::abs(gm.leftSideBearing)) * 2.0f), sc.y * glSc * float(font.height()), 0.0f));
+        clipTransform = glm::translate(clipTransform, glm::vec3(0.5f, 0.5f, 0.0f));
 
         gPos.x += float(gm.advanceWidth) * glSc;
 
-        return ret;
+        return std::make_pair(glTransform, clipTransform);
     };
     auto incrementLine = [&](float howMany = 1.0f)
     {
@@ -131,7 +160,7 @@ void Text::swapRenderBuffers()
         gPos.y -= scaledLineHeight * howMany;
     };
 
-    std::vector<std::pair<std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, glm::mat4>> swapToRender;
+    std::vector<std::pair<std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, std::pair<glm::mat4, glm::mat4>>> swapToRender;
     for (auto wordIt = ParagraphIterator<char32_t>::begin(this->_text); wordIt != ParagraphIterator<char32_t>::end(this->_text); ++wordIt)
     {
         float wordLenScaled = std::accumulate(wordIt.textBegin(), wordIt.textEnd(), 0.0f, [&](float a, char32_t b)
@@ -202,17 +231,20 @@ void Text::renderOffload(ssz renderIndex)
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = rectTransform->matrix(), color = this->_color]
     {
         std::lock_guard guard(renderData->toRenderLock);
-        for (auto& [renderers, transform] : renderData->toRender)
-        {
-            auto& [shape, fringe] = *renderers;
-            (void)shape.submitDrawStencil(float(+renderIndex) + 0.5f, transform);
-        }
-        (void)ShapeRenderer::submitDraw(float(+renderIndex) + 0.5f, rectTransform, ~0_u8, color);
 
-        for (auto& [renderers, transform] : renderData->toRender)
+        for (const auto& [renderers, transforms] : renderData->toRender)
         {
-            auto& [shape, fringe] = *renderers;
-            (void)fringe.submitDraw(float(+renderIndex), transform, color);
+            const auto& [shape, _] = *renderers;
+            const auto& [glTf, clipTf] = transforms;
+            (void)shape.submitDrawStencil(float(+renderIndex), glTf);
+            (void)ShapeRenderer::submitDraw(float(+renderIndex), clipTf, ~0_u8, color);
+        }
+
+        for (const auto& [renderers, transforms] : renderData->toRender)
+        {
+            const auto& [_1, fringe] = *renderers;
+            const auto& [glTf, _2] = transforms;
+            (void)fringe.submitDraw(float(+renderIndex) + 0.5f, glTf, color);
         }
     }, false);
 }

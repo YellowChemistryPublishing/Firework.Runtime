@@ -390,3 +390,28 @@ VectorTools::QuadApproxCubic VectorTools::cubicBeizerToQuadratic(glm::vec2 p1, g
     ret.p3 = p2;
     return ret;
 }
+
+float VectorTools::fastQuadraticBezierLength(glm::vec2 p1, glm::vec2 c, glm::vec2 p2)
+{
+    return (glm::length(p2 - p1) + glm::length(c - p1) + glm::length(p2 - c)) * 0.5f;
+}
+bool VectorTools::quadraticBezierToLines(const glm::vec2 p1, const glm::vec2 c, const glm::vec2 p2, const ssz segments, std::vector<glm::vec2>& out)
+{
+    _fence_value_return(false, segments < 1_z);
+
+    for (ssz i = 0; i < segments + 1_z; i++)
+    {
+        const float t = float(+i) / float(+segments);
+        out.emplace_back((1.0f - t) * (1.0f - t) * p1 + 2.0f * t * (1.0f - t) * c + t * t * p2);
+    }
+    return true;
+}
+bool VectorTools::quadraticBezierToLines(const glm::vec2 p1, const glm::vec2 c, const glm::vec2 p2, const float segmentLength, std::vector<glm::vec2>& out)
+{
+    const float len = VectorTools::fastQuadraticBezierLength(p1, c, p2);
+    const float segmentsUnrounded = std::ceilf(len / segmentLength);
+    _fence_value_return(false, segmentsUnrounded >= float(std::numeric_limits<ssz::underlying_type>::max()));
+
+    ssz segments = segmentsUnrounded;
+    return VectorTools::quadraticBezierToLines(p1, c, p2, segments, out);
+}
