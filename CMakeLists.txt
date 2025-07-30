@@ -187,12 +187,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 # pugixml
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
 
-# earcut.hpp
-set(EARCUT_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
-set(EARCUT_BUILD_BENCH OFF CACHE INTERNAL "" FORCE)
-set(EARCUT_BUILD_VIZ OFF CACHE INTERNAL "" FORCE)
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/earcut.hpp")
-
 # assimp
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
