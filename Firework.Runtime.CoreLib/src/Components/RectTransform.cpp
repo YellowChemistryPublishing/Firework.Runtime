@@ -259,7 +259,7 @@ const glm::mat4& RectTransform::matrix()
         glm::mat4 tf = glm::translate(glm::mat4(1.0f), glm::vec3(this->_position.x, this->_position.y, 0.0f));
         tf = glm::rotate(tf, -this->_rotation, LinAlgConstants::forward);
         tf = glm::translate(tf, glm::vec3((this->_rect.right + this->_rect.left) / 2.0f, (this->_rect.top + this->_rect.bottom) / 2.0f, 0.0f));
-        tf = glm::scale(tf, glm::vec3(this->_rect.width() / 2.0f * this->_scale.x, this->_rect.height() / 2.0f * this->_scale.y, 0.0f));
+        tf = glm::scale(tf, glm::vec3(this->_rect.width() * this->_scale.x, this->_rect.height() * this->_scale.y, 0.0f));
         this->_matrix = tf;
 
         this->matrixDirty = false;
