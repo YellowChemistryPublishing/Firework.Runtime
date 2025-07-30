@@ -25,6 +25,7 @@ As well as the following tools and examples:
 | `tool_packager`                  | The packaging utility to generate archives that can be loaded at runtime. |
 | `cmake/package_archive.cmake`    | CMake include for creating a packaging target.                            |
 | `cmake/precompile_shaders.cmake` | CMake include for creating a shader precompilation target.                |
+| `cmake/install_headers.cmake`    | CMake include for copying files over to a destination.                    |
 
 ## Acknowledgements
 

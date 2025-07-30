@@ -7,15 +7,9 @@
 [submodule "dependencies/stb"]
 	path = dependencies/stb
 	url = https://github.com/nothings/stb.git
-[submodule "external/tracy"]
-	path = external/tracy
-	url = https://github.com/wolfpld/tracy.git
 [submodule "cmake/cmake-bin2h"]
 	path = cmake/cmake-bin2h
 	url = https://github.com/sivachandran/cmake-bin2h.git
-[submodule "dependencies/earcut.hpp"]
-	path = dependencies/earcut.hpp
-	url = https://github.com/mapbox/earcut.hpp.git
 [submodule "dependencies/concurrentqueue"]
 	path = dependencies/concurrentqueue
 	url = https://github.com/cameron314/concurrentqueue.git
@@ -28,9 +22,6 @@
 [submodule "external/assimp"]
 	path = external/assimp
 	url = https://github.com/assimp/assimp.git
-[submodule "external/bgfx.cmake"]
-	path = external/bgfx.cmake
-	url = https://github.com/bkaradzic/bgfx.cmake.git
 [submodule "external/cpptrace"]
 	path = external/cpptrace
 	url = https://github.com/jeremy-rifkin/cpptrace.git
@@ -40,12 +31,7 @@
 [submodule "external/pugixml"]
 	path = external/pugixml
 	url = https://github.com/zeux/pugixml.git
-[submodule "external/svgpp"]
-	path = external/svgpp
-	url = https://github.com/svgpp/svgpp.git
 [submodule "dependencies/glm"]
 	path = dependencies/glm
 	url = https://github.com/g-truc/glm.git
-[submodule "external/Clipper2"]
-	path = external/Clipper2
-	url = https://github.com/AngusJohnson/Clipper2.git
+    

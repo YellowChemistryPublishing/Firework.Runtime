@@ -1,0 +1,6 @@
+function(copy_files WITH_ROOT INCLUDE_FILES OUTPUT_DEST)
+    foreach (INCLUDE_FILE ${INCLUDE_FILES})
+        cmake_path(RELATIVE_PATH INCLUDE_FILE BASE_DIRECTORY ${WITH_ROOT} OUTPUT_VARIABLE TARGET_FILE)
+        configure_file(${INCLUDE_FILE} "${OUTPUT_DEST}/${TARGET_FILE}" COPYONLY)
+    endforeach()
+endfunction()

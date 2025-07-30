@@ -187,13 +187,6 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 # pugixml
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
 
-# Clipper2
-set(CLIPPER2_UTILS OFF CACHE INTERNAL "" FORCE)
-set(CLIPPER2_EXAMPLES OFF CACHE INTERNAL "" FORCE)
-set(CLIPPER2_TESTS OFF CACHE INTERNAL "" FORCE)
-set(CLIPPER2_USINGZ OFF CACHE INTERNAL "" FORCE)
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/Clipper2/CPP")
-
 # earcut.hpp
 set(EARCUT_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(EARCUT_BUILD_BENCH OFF CACHE INTERNAL "" FORCE)
@@ -220,6 +213,7 @@ set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
 set(CMAKE_DEBUG_POSTFIX "" CACHE INTERNAL "")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
+set(FIREWORK_INCLUDE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/include")
 if (FIREWORK_COMPILER STREQUAL "MinGW" OR FIREWORK_COMPILER STREQUAL "gcc")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
@@ -236,8 +230,9 @@ message(STATUS "[FireworkConfigure] [INFO]  Compilation target ${FIREWORK_TARGET
 
 # Firework.Tools
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/Firework.Tools")
-include("${CMAKE_CURRENT_LIST_DIR}/cmake/package_archive.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/install_headers.cmake")
 include("${CMAKE_CURRENT_LIST_DIR}/cmake/precompile_shaders.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/cmake/package_archive.cmake")
 
 # Firework.Typography
 
@@ -272,6 +267,9 @@ set_target_properties(Firework.Typography
     LIBRARY_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Typography"
     RUNTIME_OUTPUT_DIRECTORY "../bin/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/Firework.Typography"
 )
+
+file(GLOB_RECURSE FIREWORK_TYP_HEADERS configure_depends "${CMAKE_CURRENT_LIST_DIR}/Firework.Typography/src/*.h")
+copy_files("${CMAKE_CURRENT_LIST_DIR}/Firework.Typography/src" "${FIREWORK_TYP_HEADERS}" ${FIREWORK_INCLUDE_OUTPUT_DIRECTORY})
 
 # Firework.Runtime.GL
 
@@ -344,6 +342,9 @@ set_target_properties(Firework.Runtime.GL
     CXX_VISIBILITY_PRESET hidden
 )
 
+file(GLOB_RECURSE FIREWORK_GL_HEADERS configure_depends "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/src/*.h")
+copy_files("${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.GL/src" "${FIREWORK_GL_HEADERS}" ${FIREWORK_INCLUDE_OUTPUT_DIRECTORY})
+
 # Firework.Runtime.RenderPipeline
 
 file(GLOB_RECURSE RPSRCS configure_depends
@@ -386,6 +387,9 @@ set_target_properties(Firework.Runtime.RenderPipeline
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden
 )
+
+file(GLOB_RECURSE FIREWORK_RP_HEADERS configure_depends "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/src/*.h")
+copy_files("${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.RenderPipeline/src" "${FIREWORK_RP_HEADERS}" ${FIREWORK_INCLUDE_OUTPUT_DIRECTORY})
 
 # Firework.Runtime.CoreLib
 
@@ -464,6 +468,9 @@ set_target_properties(Firework.Runtime.CoreLib
     CXX_VISIBILITY_PRESET hidden
 )
 
+file(GLOB_RECURSE FIREWORK_CORE_HEADERS configure_depends "${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/src/*.h")
+copy_files("${CMAKE_CURRENT_LIST_DIR}/Firework.Runtime.CoreLib/src" "${FIREWORK_CORE_HEADERS}" ${FIREWORK_INCLUDE_OUTPUT_DIRECTORY})
+
 # Firework.Components.Core2D
 
 file(GLOB_RECURSE CORE2DSRCS configure_depends
@@ -513,6 +520,9 @@ set_target_properties(Firework.Components.Core2D
     C_VISIBILITY_PRESET hidden
     CXX_VISIBILITY_PRESET hidden
 )
+
+file(GLOB_RECURSE FIREWORK_CC2D_HEADERS configure_depends "${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core2D/src/*.h")
+copy_files("${CMAKE_CURRENT_LIST_DIR}/Firework.Components.Core2D/src" "${FIREWORK_CC2D_HEADERS}" ${FIREWORK_INCLUDE_OUTPUT_DIRECTORY})
 
 # Examples and tests.
 

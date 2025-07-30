@@ -134,7 +134,7 @@ jobs:
               run: cmake --build '${{github.workspace}}/build' --config ${{env.BUILD_TYPE}}
 
             - name: Archive
-              run: 7z a ${{matrix.arch}}-${{matrix.compiler}}-${{env.BUILD_TYPE}}-${{matrix.os}} bin/ lib/
+              run: 7z a ${{matrix.arch}}-${{matrix.compiler}}-${{env.BUILD_TYPE}}-${{matrix.os}} bin/ lib/ include/
 
             - name: Package
               uses: actions/upload-artifact@v4
