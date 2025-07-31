@@ -8,14 +8,6 @@
 
 namespace Firework::Typography
 {
-    template <typename Char>
-    constexpr size_t __strlen(const Char* str) noexcept
-    {
-        size_t ret = 0;
-        while (str[ret++] != 0);
-        return ret;
-    }
-
     class Font;
 
     struct GlyphOutline
