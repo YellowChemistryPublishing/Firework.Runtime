@@ -27,6 +27,16 @@ As well as the following tools and examples:
 | `cmake/precompile_shaders.cmake` | CMake include for creating a shader precompilation target.                |
 | `cmake/install_headers.cmake`    | CMake include for copying files over to a destination.                    |
 
+## Pre-Built Releases
+
+To run the examples provided in our releases, you may need certain system libraries installed on your platform. For MinGW/gcc/Clang, this means having the `libgcc` runtime and
+`libstdc++` installed, provided by default if you're using Linux. You will need to install `libgcc` and `libstdc++` yourself on Windows. For msvc (Windows), you will need the
+Microsoft Visual C++ Redistributable (which you almost certainly have!), downloadable [here](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist).
+
+As an aside, on Windows, please make sure the x86 `libgcc` runtime you use is for dwarf2 exceptions, and the x86_64 `libgcc` runtime is for SEH exceptions.
+
+To find the example executables in the latest release, unzip the `.7z` archive and locate it at `bin/[target_triple]/[example_name]/`.
+
 ## Acknowledgements
 
 -   Truong, N., Yuksel, C. and Seiler, L. (2020). Quadratic Approximation of Cubic Curves. Proceedings of the ACM on Computer Graphics and Interactive Techniques, [online] 3(2),
