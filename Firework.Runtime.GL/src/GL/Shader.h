@@ -2,11 +2,13 @@
 
 #include "Firework.Runtime.GL.Exports.h"
 
+_push_nowarn_clang(_clWarn_clang_zero_as_nullptr);
 #include <bgfx/bgfx.h>
 #include <cstring>
 #include <map>
 #include <module/sys>
 #include <vector>
+_pop_nowarn_clang();
 
 #include <GL/Uniform.h>
 
@@ -34,6 +36,9 @@
     case RendererBackend::Vulkan:                                                                                               \
         prog = GeometryProgram(getGeometryProgramArgsFromPrecompiledShaderName(shaderName, vulkan) __VA_OPT__(, ) __VA_ARGS__); \
         break;                                                                                                                  \
+    case RendererBackend::NoOp:                                                                                                 \
+    default:                                                                                                                    \
+        break;                                                                                                                  \
     }
 #else
 #define createShaderFromPrecompiled(prog, shaderName, ...)                                                                      \
@@ -45,9 +50,13 @@
     case RendererBackend::Vulkan:                                                                                               \
         prog = GeometryProgram(getGeometryProgramArgsFromPrecompiledShaderName(shaderName, vulkan) __VA_OPT__(, ) __VA_ARGS__); \
         break;                                                                                                                  \
+    case RendererBackend::NoOp:                                                                                                 \
+    default:                                                                                                                    \
+        break;                                                                                                                  \
     }
 #endif
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework::GL
 {
     class Renderer;
@@ -81,3 +90,4 @@ namespace Firework::GL
         }
     };
 } // namespace Firework::GL
+_pop_nowarn_msvc();

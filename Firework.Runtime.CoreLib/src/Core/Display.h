@@ -12,6 +12,7 @@ namespace Firework::Internal
     class CoreEngine;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     class Cursor;
@@ -83,3 +84,4 @@ namespace Firework
         friend class Firework::Internal::CoreEngine;
     };
 } // namespace Firework
+_pop_nowarn_msvc();

@@ -2,10 +2,12 @@
 
 #include "Firework.Runtime.GL.Exports.h"
 
+_push_nowarn_clang(_clWarn_clang_zero_as_nullptr);
 #include <bgfx/bgfx.h>
 #include <cstddef>
 #include <module/sys>
 #include <utility>
+_pop_nowarn_clang();
 
 #include <GL/Common.h>
 #include <GL/TextureFormat.h>

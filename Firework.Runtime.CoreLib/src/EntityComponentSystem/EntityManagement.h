@@ -11,15 +11,15 @@
 
 namespace Firework
 {
-    EntityIterator Entities::begin()
+    inline EntityIterator Entities::begin()
     {
         return EntityIterator(Entities::front);
     }
-    EntityIterator Entities::end()
+    inline EntityIterator Entities::end()
     {
         return EntityIterator();
     }
-    EntityRange Entities::range()
+    inline EntityRange Entities::range()
     {
         return EntityRange(Entities::front);
     }

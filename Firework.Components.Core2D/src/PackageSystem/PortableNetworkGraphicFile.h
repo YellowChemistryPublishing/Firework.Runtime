@@ -2,7 +2,17 @@
 
 #include "Firework.Components.Core2D.Exports.h"
 
+_push_nowarn_gcc(_clWarn_gcc_c_cast);
+_push_nowarn_gcc(_clWarn_gcc_zero_as_nullptr);
+_push_nowarn_gcc(_clWarn_gcc_conversion);
+_push_nowarn_gcc(_clWarn_gcc_sign_conversion);
+_push_nowarn_gcc(_clWarn_gcc_double_promotion);
 #include <stb_image.h>
+_pop_nowarn_gcc();
+_pop_nowarn_gcc();
+_pop_nowarn_gcc();
+_pop_nowarn_gcc();
+_pop_nowarn_gcc();
 
 #include <Core/PackageManager.h>
 
@@ -16,7 +26,7 @@ namespace Firework::PackageSystem
         PortableGraphicPackageFile(std::vector<uint8_t>&& data)
         {
             int channels;
-            this->loadedImage = stbi_load_from_memory(data.data(), data.size(), &this->width, &this->height, &channels, 4);
+            this->loadedImage = stbi_load_from_memory(data.data(), +sys::integer<int>(data.size()), &this->width, &this->height, &channels, 4);
         }
         ~PortableGraphicPackageFile() override
         {

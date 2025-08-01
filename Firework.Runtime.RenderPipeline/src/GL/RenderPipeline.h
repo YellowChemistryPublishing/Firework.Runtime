@@ -11,13 +11,6 @@ namespace Firework::GL
     class _fw_rp_api RenderPipeline final
     {
     public:
-        static struct Texture2D framebufferAttachments[2]; // `TextureFormat::RGBA8`, `TextureFormat::D24S8`
-        static struct Framebuffer framebuffer;
-
-        static struct StaticMesh unitSquare;
-        static struct TextureSampler framebufferSampler;
-        static struct GeometryProgram drawFramebuffer;
-
         /// @internal
         /// @brief Low-level API. Function called to clear the view area. Defaults to ```Firework::GL::RenderPipeline::defaultClearViewArea```.
         /// @note Render thread only.

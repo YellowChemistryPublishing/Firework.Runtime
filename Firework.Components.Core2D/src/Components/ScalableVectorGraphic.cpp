@@ -95,11 +95,12 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                 case VectorTools::PathCommandType::ClosePath:
                     spans.emplace_back(ssz(paths.size()));
                     break;
+                case VectorTools::PathCommandType::ArcTo: /* TODO */;
                 }
             }
 
             if (ShapeRenderer pr = ShapeRenderer(paths, spans))
-                ret.emplace_back(std::move(FilledPathRenderable(std::move(pr), childFill)));
+                ret.emplace_back(FilledPathRenderable(std::move(pr), childFill));
         }
         // Otherwise, do nothing.
     };
@@ -148,7 +149,7 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
             {
                 sys::result<VectorTools::Viewbox> vb = VectorTools::parseViewbox(this->_svgFile->document().child(PUGIXML_TEXT("svg")).attribute(PUGIXML_TEXT("viewBox")).value());
 
-                std::lock_guard guard(this->renderData->toRenderLock);
+                std::lock_guard guard(this->renderData->lock);
                 this->renderData->toRender = std::move(swapToRender);
                 if (vb)
                     this->renderData->vb = vb.move();
@@ -159,7 +160,7 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
         }
         else
         {
-            std::lock_guard guard(this->renderData->toRenderLock);
+            std::lock_guard guard(this->renderData->lock);
             this->renderData->toRender = nullptr;
         }
         if (this->deferOldSvg)
@@ -170,13 +171,13 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
     }
     else if (this->rectTransform->dirty())
     {
-        std::lock_guard guard(this->renderData->toRenderLock);
+        std::lock_guard guard(this->renderData->lock);
         setViewboxTransform();
     }
 
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = rectTransform->matrix()]
     {
-        std::lock_guard guard(renderData->toRenderLock);
+        std::lock_guard guard(renderData->lock);
         _fence_value_return(void(), !renderData->toRender);
 
         for (auto it = renderData->toRender->rbegin(); it != renderData->toRender->rend(); ++it)
@@ -188,6 +189,7 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
                 (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), renderData->tf);
                 (void)ShapeRenderer::submitDraw(float(+renderIndex), rectTransform, ~0_u8, renderable.filledPath.col);
                 break;
+            case ScalableVectorGraphic::RenderableType::NoOp:;
             }
         }
     }, false);

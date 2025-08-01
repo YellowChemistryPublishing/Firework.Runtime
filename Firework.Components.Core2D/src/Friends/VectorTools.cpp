@@ -132,38 +132,15 @@ sys::result<glm::mat3x3> VectorTools::parseTransform(std::string_view attrVal)
     return ret;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_overflow);
 bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& out)
 {
     _fence_value_return(false, attrVal.empty());
 
     constexpr auto isCommand = [](char c) -> bool
     {
-        switch (c)
-        {
-        case 'M':
-        case 'm':
-        case 'L':
-        case 'l':
-        case 'H':
-        case 'h':
-        case 'V':
-        case 'v':
-        case 'C':
-        case 'c':
-        case 'S':
-        case 's':
-        case 'Q':
-        case 'q':
-        case 'T':
-        case 't':
-        case 'A':
-        case 'a':
-        case 'Z':
-        case 'z':
-            return true;
-        default:
-            return false;
-        }
+        return c == 'M' || c == 'm' || c == 'L' || c == 'l' || c == 'H' || c == 'h' || c == 'V' || c == 'v' || c == 'C' || c == 'c' || c == 'S' || c == 's' || c == 'Q' ||
+            c == 'q' || c == 'T' || c == 't' || c == 'A' || c == 'a' || c == 'Z' || c == 'z';
     };
 
     const char* it = std::to_address(attrVal.begin());
@@ -192,8 +169,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
         float ret = std::numeric_limits<float>::quiet_NaN();
         std::from_chars_result res = std::from_chars(it, end, ret);
 
-        _fence_value_return(
-            false, res.ec != std::errc() || it == res.ptr || ret == float(HUGE_VAL) || ret == float(HUGE_VALF) || ret == float(HUGE_VALL) || std::isinf(ret) || std::isnan(ret));
+        _fence_value_return(false, res.ec != std::errc() || it == res.ptr || ret == HUGE_VALF || std::isinf(ret) || std::isnan(ret));
         it = res.ptr;
         out += ret;
 
@@ -230,7 +206,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             injectedNextCommand = injectAs;
     };
 
-    glm::vec2 to;
+    glm::vec2 to(0.0f, 0.0f);
     while (it != end)
     {
         glm::vec2 c1, c2;
@@ -376,6 +352,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
 
     return true;
 }
+_pop_nowarn_msvc();
 
 // https://www.cemyuksel.com/research/papers/quadratic_approximation_of_cubic_curves.pdf
 VectorTools::QuadApproxCubic VectorTools::cubicBeizerToQuadratic(glm::vec2 p1, glm::vec2 c1, glm::vec2 c2, glm::vec2 p2)

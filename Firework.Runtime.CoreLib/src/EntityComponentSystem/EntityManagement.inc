@@ -17,21 +17,21 @@ namespace Firework
     struct EntityRange;
     class Entity;
 
-    class _fw_core_api Entities final
+    class Entities final
     {
         //                               v Component type.
         //                                                                          v Entity is key.
         //                                                                                   v Component instance.
-        static robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<Entity*, std::shared_ptr<void>>> table;
+        static _fw_core_api robin_hood::unordered_map<std::type_index, robin_hood::unordered_map<Entity*, std::shared_ptr<void>>> table;
 
-        static std::shared_ptr<Entity> front;
-        static std::shared_ptr<Entity> back;
+        static _fw_core_api std::shared_ptr<Entity> front;
+        static _fw_core_api std::shared_ptr<Entity> back;
     public:
         Entities() = delete;
 
-        inline static EntityIterator begin();
-        inline static EntityIterator end();
-        inline static EntityRange range();
+        static EntityIterator begin();
+        static EntityIterator end();
+        static EntityRange range();
 
         inline static void forEachEntity(auto&& func)
         requires requires(Entity& entity) { func(entity); };

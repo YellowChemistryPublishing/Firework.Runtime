@@ -1,6 +1,7 @@
 #pragma once
 
 #include <function.h>
+#include <module/sys>
 #include <type_traits>
 
 namespace Firework
@@ -66,35 +67,35 @@ namespace Firework
         {
             GetterReturnType type = this->getter();
             type += rhs;
-            this->setter((SetterInputType)type);
+            this->setter(_as(SetterInputType, type));
             return this->getter();
         }
         inline GetterReturnType operator-=(SetterInputType rhs) const
         {
             GetterReturnType type = this->getter();
             type -= rhs;
-            this->setter((SetterInputType)type);
+            this->setter(_as(SetterInputType, type));
             return this->getter();
         }
         inline GetterReturnType operator*=(SetterInputType rhs) const
         {
             GetterReturnType type = this->getter();
             type *= rhs;
-            this->setter((SetterInputType)type);
+            this->setter(_as(SetterInputType, type));
             return this->getter();
         }
         inline GetterReturnType operator/=(SetterInputType rhs) const
         {
             GetterReturnType type = this->getter();
             type /= rhs;
-            this->setter((SetterInputType)type);
+            this->setter(_as(SetterInputType, type));
             return this->getter();
         }
         inline GetterReturnType operator%=(SetterInputType rhs) const
         {
             GetterReturnType type = this->getter();
             type %= rhs;
-            this->setter((SetterInputType)type);
+            this->setter(_as(SetterInputType, type));
             return this->getter();
         }
 #pragma endregion

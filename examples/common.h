@@ -23,6 +23,7 @@ static void hookExampleControls()
             f3Active = !f3Active;
             Debug::showF3Menu(f3Active);
             break;
+        default:;
         }
     };
 }
@@ -61,6 +62,7 @@ static void inputTransformEntity(Firework::Entity& entity, Firework::Key key)
     case Key::LetterE:
         rectTransform->rotation -= 2.0f * std::numbers::pi_v<float> * 0.25f * Time::deltaTime();
         break;
+    default:;
     }
 }
 

@@ -2,8 +2,10 @@
 
 #include "Firework.Runtime.GL.Exports.h"
 
+_push_nowarn_clang(_clWarn_clang_zero_as_nullptr);
 #include <bgfx/bgfx.h>
 #include <type_traits>
+_pop_nowarn_clang();
 
 #define _fw_gl_common_mh_interface(T)                                                                 \
     T(std::nullptr_t) noexcept                                                                        \
@@ -37,6 +39,7 @@
                                                                                                       \
     friend class Firework::GL::Renderer
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework::GL
 {
     class Renderer;
@@ -113,3 +116,4 @@ namespace Firework::GL
         _fw_gl_common_mh_interface(DynamicMesh);
     };
 } // namespace Firework::GL
+_pop_nowarn_msvc();

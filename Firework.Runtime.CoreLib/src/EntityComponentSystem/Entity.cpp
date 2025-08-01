@@ -48,23 +48,23 @@ void Entity::orphan() noexcept
     this->next = nullptr;
     this->_parent = nullptr;
 }
-void Entity::reparentAfterOrphan(std::shared_ptr<Entity> parent) noexcept
+void Entity::reparentAfterOrphan(std::shared_ptr<Entity> newParent) noexcept
 {
     std::shared_ptr<Entity> _this = shared_from_this();
-    if (parent)
+    if (newParent)
     {
-        if (parent->_childrenBack == nullptr)
+        if (newParent->_childrenBack == nullptr)
         {
-            parent->_childrenFront = _this;
-            parent->_childrenBack = _this;
+            newParent->_childrenFront = _this;
+            newParent->_childrenBack = _this;
         }
         else
         {
-            parent->_childrenBack->next = _this;
-            this->prev = parent->_childrenBack;
-            parent->_childrenBack = _this;
+            newParent->_childrenBack->next = _this;
+            this->prev = newParent->_childrenBack;
+            newParent->_childrenBack = _this;
         }
-        this->_parent = parent;
+        this->_parent = newParent;
     }
     else
     {

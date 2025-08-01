@@ -1,15 +1,19 @@
 #pragma once
 
-#include <Core/Application.h>
-#include <Core/Debug.h>
-#include <Core/HardwareExcept.h>
+_push_nowarn_clang(_clWarn_clang_zero_as_nullptr);
 #include <SDL3/SDL_main.h>
+_pop_nowarn_clang();
+
 #undef main
 #ifdef SDL_main_impl_h_
 #define __entryPoint SDL_main
 #else
 #define __entryPoint main
 #endif
+
+#include <Core/Application.h>
+#include <Core/Debug.h>
+#include <Core/HardwareExcept.h>
 
 inline int __fw_rt_handleInitializeAndExit(int argc, char* argv[])
 {

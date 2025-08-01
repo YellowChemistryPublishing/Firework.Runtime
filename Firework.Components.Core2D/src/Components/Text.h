@@ -21,12 +21,13 @@ namespace Firework::PackageSystem
     class TrueTypeFontPackageFile;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     class Entity;
     class RectTransform;
 
-    class _fw_cc2d_api [[fw::component]] Text final
+    class _fw_cc2d_api Text final
     {
         struct FontCharacterQuery
         {
@@ -106,3 +107,4 @@ namespace Firework
         friend class Firework::Entity;
     };
 } // namespace Firework
+_pop_nowarn_msvc();

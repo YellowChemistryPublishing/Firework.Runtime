@@ -6,6 +6,7 @@
 
 #include <Core/PackageManager.h>
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework::PackageSystem
 {
     class _fw_cc2d_api ExtensibleMarkupPackageFile final : public PackageFile
@@ -39,3 +40,4 @@ namespace Firework::PackageSystem
         }
     };
 } // namespace Firework::PackageSystem
+_pop_nowarn_msvc();

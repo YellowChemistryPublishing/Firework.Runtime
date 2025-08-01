@@ -66,10 +66,10 @@ namespace Firework
             auto tBeg = beg;
 
             auto sBeg = tBeg;
-            while (sBeg != str.end() && !std::isspace(*sBeg)) ++sBeg;
+            while (sBeg != str.end() && !std::isspace(int(*sBeg))) ++sBeg;
 
             auto end = sBeg;
-            while (end != str.end() && std::isspace(*end)) ++end;
+            while (end != str.end() && std::isspace(int(*end))) ++end;
 
             return IteratorTriplet { tBeg, sBeg, end };
         }

@@ -11,7 +11,11 @@ namespace Firework
     {
         static const Color unknown;
 
-        union
+        _push_nowarn_gcc(_clWarn_gcc_pedantic);
+        _push_nowarn_clang(_clWarn_clang_anon_union_struct);
+        _push_nowarn_clang(_clWarn_clang_nameless_struct_union);
+        _push_nowarn_msvc(_clWarn_msvc_nameless_struct_union);
+        union _packed
         {
             struct
             {
@@ -22,6 +26,10 @@ namespace Firework
             };
             uint8_t data[4] {};
         };
+        _pop_nowarn_msvc();
+        _pop_nowarn_clang();
+        _pop_nowarn_clang();
+        _pop_nowarn_gcc();
 
         constexpr Color() noexcept = default;
         constexpr Color(const uint8_t (&color)[3]) noexcept : r(color[0]), g(color[1]), b(color[2]), a(255)

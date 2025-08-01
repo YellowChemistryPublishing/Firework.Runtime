@@ -2,12 +2,15 @@
 
 #include "Firework.Runtime.GL.Exports.h"
 
+_push_nowarn_clang(_clWarn_clang_zero_as_nullptr);
 #include <bgfx/bgfx.h>
 #include <glm/gtc/quaternion.hpp>
 #include <module/sys>
+_pop_nowarn_clang();
 
 #include <GL/TextureFormat.h>
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework::GL
 {
     struct Uniform;
@@ -83,6 +86,8 @@ namespace Firework::GL
         static void addDrawPassIntercept(void (*intercept)(ViewIndex, void*), void* data = nullptr);
         static void removeDrawPassIntercept(void (*intercept)(ViewIndex, void*));
 
+        _push_nowarn_gcc(_clWarn_gcc_c_cast);
+        _push_nowarn_clang(_clWarn_clang_c_cast);
         [[nodiscard]] static bool submitDraw(ViewIndex id, const StaticMesh& mesh, const GeometryProgram& program,
                                              u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA |
                                                  BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS,
@@ -91,6 +96,8 @@ namespace Firework::GL
                                              u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA |
                                                  BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS,
                                              u32 blendFactor = 0);
+        _pop_nowarn_clang();
+        _pop_nowarn_gcc();
 
 #if _DEBUG
         static void debugDrawCube(glm::vec3 position, float sideLength = 1.0f);
@@ -102,3 +109,4 @@ namespace Firework::GL
         static void drawFrame();
     };
 } // namespace Firework::GL
+_pop_nowarn_msvc();

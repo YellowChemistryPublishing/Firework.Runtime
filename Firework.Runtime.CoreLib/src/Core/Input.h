@@ -2,18 +2,23 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+_push_nowarn_gcc(_clWarn_gcc_c_cast);
+_push_nowarn_clang(_clWarn_clang_c_cast);
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_mouse.h>
 #include <glm/vec2.hpp>
 #include <queue>
 #include <robin_hood.h>
 #include <vector>
+_pop_nowarn_clang();
+_pop_nowarn_gcc();
 
 namespace Firework::Internal
 {
     class CoreEngine;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     /// @brief Mouse buttons.
@@ -369,3 +374,4 @@ namespace Firework
         friend class Firework::Internal::CoreEngine;
     };
 } // namespace Firework
+_pop_nowarn_msvc();

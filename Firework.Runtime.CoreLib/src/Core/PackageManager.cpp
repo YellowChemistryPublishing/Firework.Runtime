@@ -54,7 +54,7 @@ bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
         filePathLength = toEndianness(uint32_t(+filePathLength), std::endian::big, std::endian::native);
 
         std::wstring filePath(+filePathLength, L' ');
-        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(filePath.data()), +(sizeof(wchar_t) * filePathLength)));
+        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(filePath.data()), +sys::integer<std::streamsize>(sizeof(wchar_t) * filePathLength)));
         PackageManager::normalizePath(filePath);
         Debug::logTrace("Package File - ", filePath, ".");
 
@@ -64,7 +64,7 @@ bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
         Debug::logTrace("Package File Size - ", +fileLen, "B.");
 
         std::vector<byte> fileBytes(+fileLen);
-        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(fileBytes.data()), +fileLen));
+        _fence_value_return(false, !packageFile.read(reinterpret_cast<char*>(fileBytes.data()), +sys::integer<std::streamsize>(fileLen)));
 
         auto pushLoadedFile = [&](std::shared_ptr<PackageFile> file)
         {
@@ -109,8 +109,8 @@ void PackageManager::freePackageInMemory(const std::filesystem::path& packagePat
     PackageManager::normalizePath(packagePathNormalized);
     for (auto loadedFileIt = PackageManager::loadedFiles.begin(); loadedFileIt != PackageManager::loadedFiles.end();)
     {
-        const auto& [file, packagePath] = loadedFileIt->second;
-        if (packagePath == packagePathNormalized)
+        const auto& [file, path] = loadedFileIt->second;
+        if (path == packagePathNormalized)
             loadedFileIt = PackageManager::loadedFiles.erase(loadedFileIt);
         else
             ++loadedFileIt;

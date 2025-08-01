@@ -103,9 +103,13 @@ bool ShapeRenderer::submitDrawStencil(const float renderIndex, const glm::mat4 s
     shapeTransform *= shape;
     Renderer::setDrawTransform(shapeTransform);
 
+    _push_nowarn_gcc(_clWarn_gcc_c_cast);
+    _push_nowarn_clang(_clWarn_clang_c_cast);
     Renderer::setDrawStencil(BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_FUNC_RMASK(0xFF) |
                              (forceHole ? BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE
                                         : BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_INVERT));
+    _pop_nowarn_clang();
+    _pop_nowarn_gcc();
     (void)Renderer::submitDraw(1, this->fill, ShapeRenderer::stencilProgram, BGFX_STATE_DEPTH_TEST_LESS);
 
     return true;
@@ -121,8 +125,12 @@ bool ShapeRenderer::submitDraw(const float renderIndex, const glm::mat4 clip, co
     clipTransform *= clip;
     Renderer::setDrawTransform(clip);
 
+    _push_nowarn_gcc(_clWarn_gcc_c_cast);
+    _push_nowarn_clang(_clWarn_clang_c_cast);
     Renderer::setDrawStencil(BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_FUNC_REF(+whenStencil) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_S_KEEP |
                              BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+    _pop_nowarn_clang();
+    _pop_nowarn_gcc();
     (void)Renderer::submitDraw(1, ShapeRenderer::unitSquare, ShapeRenderer::drawProgram);
 
     return true;

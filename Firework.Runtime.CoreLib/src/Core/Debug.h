@@ -25,7 +25,11 @@ namespace Firework::Internal
     // This is a bit of a hack.
     inline static std::wostream& operator<<(std::wostream& stream, const std::string& rhs)
     {
+        _push_nowarn_gcc(_clWarn_gcc_deprecated);
+        _push_nowarn_clang(_clWarn_clang_deprecated);
         std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> conv;
+        _pop_nowarn_clang();
+        _pop_nowarn_gcc();
         stream << conv.from_bytes(rhs);
         return stream;
     }

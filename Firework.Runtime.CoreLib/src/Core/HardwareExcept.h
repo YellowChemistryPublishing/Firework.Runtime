@@ -99,7 +99,7 @@ namespace Firework
 #endif
     public:
         Exception(); // = default;
-        inline virtual ~Exception() noexcept = 0;
+        inline virtual ~Exception() = 0;
 
         friend class Firework::Internal::CoreEngine;
     };

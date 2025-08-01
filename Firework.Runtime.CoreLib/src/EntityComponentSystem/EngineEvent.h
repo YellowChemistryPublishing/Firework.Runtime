@@ -11,6 +11,8 @@
 #include <Core/Input.h>
 #include <Library/Event.h>
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
+
 namespace Firework
 {
     class Entity;
@@ -120,3 +122,5 @@ namespace Firework::Internal
         static FuncPtrEvent<> OnRenderShutdown;
     };
 } // namespace Firework::Internal
+
+_pop_nowarn_msvc();

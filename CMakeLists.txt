@@ -14,6 +14,11 @@ option(FIREWORK_BUILD_EXAMPLES "Build various examples." ON)
 option(FIREWORK_LOCAL_DBGINFO_PATHS "Use local paths embedded in program for debug information." OFF)
 option(FIREWORK_SANITIZE "Enable supported sanitizers." OFF)
 option(FIREWORK_LTO "Enable link-time optimization on release builds." OFF)
+if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(FIREWORK_DEVELOPMENT_MODE ON CACHE STRING "Turn on warnings as errors.")
+else()
+    set(FIREWORK_DEVELOPMENT_MODE OFF CACHE STRING "Turn on warnings as errors.")
+endif()
 
 include(GenerateExportHeader)
 
@@ -111,10 +116,13 @@ elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC" OR FIREWORK_COMPILER
     set(FIREWORK_COMPILER "MSVC")
     set(FIREWORK_BUILD_TYPE "Any")
     set(FIREWORK_TARGET_NAME "${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-${FIREWORK_BUILD_PLATFORM}")
+    string(REPLACE " /EHsc" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+    string(REPLACE " /EHsc" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     string(REPLACE " /EHs" "" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
     string(REPLACE " /EHs" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
     set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} /Zc:__cplusplus /utf-8 /EHa)
-    list(APPEND CMAKE_CXX_FLAGS /utf-8) # Otherwise assimp adds conflicting /source-charset:utf-8.
+    set(FIREWORK_COMPILE_DEFINITIONS ${FIREWORK_COMPILE_DEFINITIONS} _CRT_SECURE_NO_WARNINGS _SILENCE_CXX17_CODECVT_HEADER_DEPRECATION_WARNING)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /utf-8")
 
     if (FIREWORK_SANITIZE)
         set(FIREWORK_COMPILE_FLAGS ${FIREWORK_COMPILE_FLAGS} /fsanitize=address)
@@ -175,7 +183,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/SDL")
 set(GLM_ENABLE_CXX_20 ON CACHE INTERNAL "" FORCE)
 set(GLM_ENABLE_LANG_EXTENSIONS ON CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/glm")
-target_compile_definitions(glm PUBLIC GLM_FORCE_LEFT_HANDED)
+target_compile_definitions(glm PUBLIC GLM_FORCE_LEFT_HANDED GLM_FORCE_SIZE_T_LENGTH)
 
 # bgfx
 
@@ -188,17 +196,23 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
 
 # assimp
+
+string(REPLACE "/utf-8" "/D__workaround=;/utf-8; " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
 set(BUILD_SHARED_LIBS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_TESTS OFF CACHE INTERNAL "" FORCE)
 set(ASSIMP_BUILD_ZLIB ON CACHE INTERNAL "" FORCE)
 set(ASSIMP_WARNINGS_AS_ERRORS OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/assimp")
+
 get_target_property(ASSIMP_LINK_LIBRARIES assimp LINK_LIBRARIES)
 # external/assimp/code/CMakeLists.txt - 1348: TARGET_LINK_LIBRARIES ( assimp -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lwinpthread ) -> Breaks our binary.
 # This doesn't actually work. Thanks assimp for ruining my day.
 list(REMOVE_ITEM ASSIMP_LINK_LIBRARIES "-static-libgcc" "-static-libstdc++" "-Wl,-Bstatic" "-lstdc++" "-lwinpthread")
 set_target_properties(assimp PROPERTIES LINK_LIBRARIES "${ASSIMP_LINK_LIBRARIES}")
+
 unset(BUILD_SHARED_LIBS)
+string(REPLACE "/D__workaround=;/utf-8; " "/utf-8" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 # Firework.Runtime
 
@@ -251,6 +265,9 @@ target_include_directories(Firework.Typography
     PRIVATE
     "${CMAKE_CURRENT_LIST_DIR}/dependencies/stb"
 )
+if (FIREWORK_DEVELOPMENT_MODE)
+    target_link_libraries(Firework.Typography PRIVATE sys.BuildSupport.WarningsAsErrors)
+endif()
 
 target_compile_definitions(Firework.Typography PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
 target_compile_options(Firework.Typography PUBLIC ${FIREWORK_COMPILE_FLAGS})
@@ -323,6 +340,9 @@ if (FIREWORK_BUILD_TYPE STREQUAL "Debug")
 else()
     target_compile_definitions(Firework.Runtime.GL PUBLIC BX_CONFIG_DEBUG=0)
 endif()
+if (FIREWORK_DEVELOPMENT_MODE)
+    target_link_libraries(Firework.Runtime.GL PRIVATE sys.BuildSupport.WarningsAsErrors)
+endif()
 
 target_compile_definitions(Firework.Runtime.GL PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
 target_compile_options(Firework.Runtime.GL PUBLIC ${FIREWORK_COMPILE_FLAGS})
@@ -369,6 +389,9 @@ target_link_libraries(Firework.Runtime.RenderPipeline
     Firework.Runtime.GL
     sys
 )
+if (FIREWORK_DEVELOPMENT_MODE)
+    target_link_libraries(Firework.Runtime.RenderPipeline PRIVATE sys.BuildSupport.WarningsAsErrors)
+endif()
 
 target_compile_definitions(Firework.Runtime.RenderPipeline PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
 target_compile_options(Firework.Runtime.RenderPipeline PUBLIC ${FIREWORK_COMPILE_FLAGS})
@@ -449,6 +472,9 @@ endif()
 if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32")
     target_link_libraries(Firework.Runtime.CoreLib PRIVATE psapi)
 endif()
+if (FIREWORK_DEVELOPMENT_MODE)
+    target_link_libraries(Firework.Runtime.CoreLib PRIVATE sys.BuildSupport.WarningsAsErrors)
+endif()
 
 target_compile_definitions(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
 target_compile_options(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_COMPILE_FLAGS})
@@ -502,6 +528,9 @@ target_link_libraries(Firework.Components.Core2D
     Firework.Runtime.GL
     Firework.Typography
 )
+if (FIREWORK_DEVELOPMENT_MODE)
+    target_link_libraries(Firework.Components.Core2D PRIVATE sys.BuildSupport.WarningsAsErrors)
+endif()
 
 target_compile_definitions(Firework.Components.Core2D PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
 target_compile_options(Firework.Components.Core2D PUBLIC ${FIREWORK_COMPILE_FLAGS})
@@ -536,6 +565,10 @@ if (FIREWORK_BUILD_EXAMPLES)
         add_dependencies(example_${EXAMPLE_NAME} package_${EXAMPLE_NAME})
 
         target_link_libraries(example_${EXAMPLE_NAME} PUBLIC Firework.Components.Core2D)
+        if (FIREWORK_DEVELOPMENT_MODE)
+            target_link_libraries(example_${EXAMPLE_NAME} PRIVATE sys.BuildSupport.WarningsAsErrors)
+        endif()
+        
         set_target_properties(example_${EXAMPLE_NAME}
             PROPERTIES
             ARCHIVE_OUTPUT_DIRECTORY "../lib/${FIREWORK_TARGET_ARCH}-${FIREWORK_COMPILER}-$<CONFIG>-${FIREWORK_BUILD_PLATFORM}/example_${EXAMPLE_NAME}"

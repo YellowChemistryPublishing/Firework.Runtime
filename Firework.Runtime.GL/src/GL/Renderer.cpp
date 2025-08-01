@@ -1,11 +1,31 @@
 #include "Renderer.h"
 
+_push_nowarn_gcc(_clWarn_gcc_c_cast);
+_push_nowarn_gcc(_clWarn_gcc_sign_conversion);
+_push_nowarn_gcc(_clWarn_gcc_float_conversion);
+_push_nowarn_gcc(_clWarn_gcc_conversion);
+_push_nowarn_clang(_clWarn_clang_c_cast);
+_push_nowarn_clang(_clWarn_clang_variadic_macro_args);
+_push_nowarn_clang(_clWarn_clang_sign_conversion);
+_push_nowarn_clang(_clWarn_clang_float_conversion);
+_push_nowarn_clang(_clWarn_clang_double_promotion);
+_push_nowarn_clang(_clWarn_clang_conversion);
 #include <array>
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 #include <bx/math.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <module/sys>
+_pop_nowarn_clang();
+_pop_nowarn_clang();
+_pop_nowarn_clang();
+_pop_nowarn_clang();
+_pop_nowarn_clang();
+_pop_nowarn_clang();
+_pop_nowarn_gcc();
+_pop_nowarn_gcc();
+_pop_nowarn_gcc();
+_pop_nowarn_gcc();
 
 #include <GL/Framebuffer.h>
 #include <GL/Geometry.h>
@@ -41,7 +61,7 @@ bool Renderer::initialize(void* ndt, void* nwh, u32 width, u32 height, RendererB
     pd.backBufferDS = nullptr;
 
     bgfx::Init init;
-    init.type = (bgfx::RendererType::Enum)backend;
+    init.type = _as(bgfx::RendererType::Enum, backend);
     init.vendorId = BGFX_PCI_ID_NONE;
     init.resolution.width = +width;
     init.resolution.height = +height;
@@ -234,7 +254,7 @@ void Renderer::debugDrawCube(glm::vec3 position, float sideLength)
     glm::mat4 transform = glm::translate(glm::mat4(1.0f), position);
     transform = glm::scale(transform, glm::vec3(sideLength));
     Renderer::setDrawTransform(transform);
-    Renderer::submitDraw(0, cubeMesh, cubeProgram);
+    (void)Renderer::submitDraw(0, cubeMesh, cubeProgram);
 }
 #endif
 

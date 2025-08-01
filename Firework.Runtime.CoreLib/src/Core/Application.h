@@ -19,6 +19,7 @@ namespace Firework::PackageSystem
     class PackageManager;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     class Image;
@@ -111,3 +112,4 @@ namespace Firework
         friend class Firework::Internal::CoreEngine;
     };
 } // namespace Firework
+_pop_nowarn_msvc();

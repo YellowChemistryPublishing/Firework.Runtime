@@ -24,8 +24,8 @@ GeometryProgram::GeometryProgram(const std::span<const byte> vertexShaderData, c
         }
     }
 
-    this->internalHandle = bgfx::createProgram(bgfx::createShader(bgfx::copy(vertexShaderData.data(), vertexShaderData.size_bytes())),
-                                               bgfx::createShader(bgfx::copy(fragmentShaderData.data(), fragmentShaderData.size_bytes())), true);
+    this->internalHandle = bgfx::createProgram(bgfx::createShader(bgfx::copy(vertexShaderData.data(), +u32(vertexShaderData.size_bytes()))),
+                                               bgfx::createShader(bgfx::copy(fragmentShaderData.data(), +u32(fragmentShaderData.size_bytes()))), true);
 
     rollback.release();
 }

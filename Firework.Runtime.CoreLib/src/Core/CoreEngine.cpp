@@ -243,7 +243,7 @@ void CoreEngine::internalLoop()
 
     while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::ExitRequested)
     {
-        deltaTime = (float)(SDL_GetPerformanceCounter() - frameBegin) / (float)perfFreq;
+        deltaTime = float(SDL_GetPerformanceCounter() - frameBegin) / float(perfFreq);
         if (Application::mainThreadQueue.try_dequeue(job))
             job();
         else if (deltaTime >= targetDeltaTime)
@@ -251,12 +251,12 @@ void CoreEngine::internalLoop()
 #pragma region Pre-Tick
             while (CoreEngine::pendingPreTickQueue.try_dequeue(job)) job();
 
-            for (uint_fast16_t i = 0; i < (uint_fast16_t)MouseButton::Count; i++)
+            for (uint_fast16_t i = 0; i < uint_fast16_t(MouseButton::Count); i++)
             {
                 if (Input::heldMouseInputs[i])
                     userFunctionInvoker([&] { EngineEvent::OnMouseHeld(MouseButton(i)); });
             }
-            for (uint_fast16_t i = 0; i < (uint_fast16_t)Key::Count; i++)
+            for (uint_fast16_t i = 0; i < uint_fast16_t(Key::Count); i++)
             {
                 if (Input::heldKeyInputs[i])
                     userFunctionInvoker([&] { EngineEvent::OnKeyHeld(Key(i)); });
@@ -395,9 +395,9 @@ void CoreEngine::internalWindowLoop()
         func::function<void()> job;
         struct
         {
-            int32_t w, h;
+            int32_t w = 0, h = 0;
             bool shouldUnlock = false;
-            std::mutex shouldUnlockLock;
+            std::mutex shouldUnlockLock {};
             func::function<void()>& job;
         } resizeData { .job = job };
 
@@ -426,13 +426,6 @@ void CoreEngine::internalWindowLoop()
                     i32 prevw = Window::width, prevh = Window::height;
                     Window::width = w;
                     Window::height = h;
-
-                    RectFloat windowDelta = RectFloat {
-                        (float)(h - prevh) / 2.0f,
-                        (float)(w - prevw) / 2.0f,
-                        (float)(-h + prevh) / 2.0f,
-                        (float)(-w + prevw) / 2.0f,
-                    };
 
                     userFunctionInvoker([&] { EngineEvent::OnWindowResize(glm::i32vec2 { prevw, prevh }); });
                 });
@@ -528,25 +521,24 @@ void CoreEngine::internalWindowLoop()
                         std::u32string input;
                         for (auto it = ev.text.text; *it; ++it)
                         {
-                            char8_t c = *it;
-                            if ((c & 0b11110000) == 0b11110000) // 4 bytes.
+                            if ((*it & 0b11110000) == 0b11110000) // 4 bytes.
                             {
-                                char32_t cAppend =
-                                    char32_t(c & 0b00000111) << 18 | char32_t(*(++it) & 0b00111111) << 12 | char32_t(*(++it) & 0b00111111) << 6 | char32_t(*(++it) & 0b00111111);
+                                char32_t cAppend = (char32_t(*it & 0b00000111) << 18) | (char32_t(*(it + 1) & 0b00111111) << 12) | (char32_t(*(it + 2) & 0b00111111) << 6) |
+                                    char32_t(*(it + 3) & 0b00111111);
                                 input.push_back(cAppend);
                             }
-                            else if ((c & 0b11100000) == 0b11100000) // 3 bytes.
+                            else if ((*it & 0b11100000) == 0b11100000) // 3 bytes.
                             {
-                                char32_t cAppend = char32_t(c & 0b00001111) << 12 | char32_t(*(++it) & 0b00111111) << 6 | char32_t(*(++it) & 0b00111111);
+                                char32_t cAppend = char32_t(*it & 0b00001111) << 12 | char32_t(*(it + 1) & 0b00111111) << 6 | char32_t(*(it + 2) & 0b00111111);
                                 input.push_back(cAppend);
                             }
-                            else if ((c & 0b11000000) == 0b11000000) // 2 bytes.
+                            else if ((*it & 0b11000000) == 0b11000000) // 2 bytes.
                             {
-                                char32_t cAppend = char32_t(c & 0b00011111) << 6 | char32_t(*(++it) & 0b00111111);
+                                char32_t cAppend = char32_t(*it & 0b00011111) << 6 | char32_t(*(it + 1) & 0b00111111);
                                 input.push_back(cAppend);
                             }
                             else
-                                input.push_back(char32_t(c)); // 1 byte.
+                                input.push_back(char32_t(*it)); // 1 byte.
                         }
                         Application::mainThreadQueue.enqueue([input = std::move(input)] { userFunctionInvoker([&] { EngineEvent::OnTextInput(input); }); });
                     }
@@ -607,19 +599,19 @@ void CoreEngine::internalRenderLoop()
 BreakAll:
     void *nwh = nullptr, *ndt = nullptr;
 #if defined(SDL_PLATFORM_WIN32)
-    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, NULL);
+    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
 #elif defined(SDL_PLATFORM_MACOS)
-    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, NULL);
+    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
 #elif defined(SDL_PLATFORM_LINUX)
     if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0)
     {
-        ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, NULL);
+        ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr);
         nwh = (void*)SDL_GetNumberProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
     }
     else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0)
     {
-        ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, NULL);
-        nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, NULL);
+        ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr);
+        nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
     }
     else
     {
@@ -633,7 +625,7 @@ BreakAll:
         goto EarlyReturn;
     }
 #elif defined(SDL_PLATFORM_IOS)
-    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, NULL);
+    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, nullptr);
 #endif
 
     if (!nwh)

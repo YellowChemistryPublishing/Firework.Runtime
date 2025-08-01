@@ -13,6 +13,7 @@ namespace Firework::Internal
     class CoreEngine;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework::PackageSystem
 {
     class PackageManager;
@@ -134,3 +135,4 @@ namespace Firework::PackageSystem
         friend class Firework::Internal::CoreEngine;
     };
 } // namespace Firework::PackageSystem
+_pop_nowarn_msvc();

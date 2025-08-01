@@ -118,9 +118,9 @@ void Text::swapRenderBuffers()
     const glm::vec2& pos = this->rectTransform->position();
     const float rot = this->rectTransform->rotation();
     const glm::vec2& sc = this->rectTransform->scale();
-    const Font& font = this->_font->fontHandle();
-    const float glSc = this->_fontSize / float(font.height());
-    const float scaledLineHeight = this->_fontSize + float(font.lineGap) * glSc;
+    const Font& fh = this->_font->fontHandle();
+    const float glSc = this->_fontSize / float(fh.height());
+    const float scaledLineHeight = this->_fontSize + float(fh.lineGap) * glSc;
 
     glm::vec2 gPos(0.0f);
 
@@ -129,7 +129,7 @@ void Text::swapRenderBuffers()
         _fence_contract_enforce(this->_font != nullptr);
         _fence_contract_enforce(this->rectTransform != nullptr);
 
-        const GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(c));
+        const GlyphMetrics gm = fh.getGlyphMetrics(fh.getGlyphIndex(c));
 
         if (gPos.x != 0.0f && gPos.x + float(gm.advanceWidth) * glSc >= r.width())
         {
@@ -140,14 +140,14 @@ void Text::swapRenderBuffers()
         glm::mat4 glTransform = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
         glTransform *= glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -rot)));
         glTransform =
-            glm::translate(glTransform, glm::vec3(gPos.x + float(std::abs(gm.leftSideBearing)) * glSc + r.left * sc.x, gPos.y - float(font.ascent) * glSc + r.top * sc.y, 0.0f));
+            glm::translate(glTransform, glm::vec3(gPos.x + float(std::abs(gm.leftSideBearing)) * glSc + r.left * sc.x, gPos.y - float(fh.ascent) * glSc + r.top * sc.y, 0.0f));
         glTransform = glm::scale(glTransform, glm::vec3(sc.x * glSc, sc.y * glSc, 0.0f));
 
         glm::mat4 clipTransform = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
         clipTransform *= glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -rot)));
-        clipTransform = glm::translate(clipTransform, glm::vec3(gPos.x + r.left * sc.x, gPos.y - float(font.height()) * glSc + r.top * sc.y, 0.0f));
+        clipTransform = glm::translate(clipTransform, glm::vec3(gPos.x + r.left * sc.x, gPos.y - float(fh.height()) * glSc + r.top * sc.y, 0.0f));
         clipTransform =
-            glm::scale(clipTransform, glm::vec3(sc.x * glSc * (float(gm.advanceWidth) + float(std::abs(gm.leftSideBearing)) * 2.0f), sc.y * glSc * float(font.height()), 0.0f));
+            glm::scale(clipTransform, glm::vec3(sc.x * glSc * (float(gm.advanceWidth) + float(std::abs(gm.leftSideBearing)) * 2.0f), sc.y * glSc * float(fh.height()), 0.0f));
         clipTransform = glm::translate(clipTransform, glm::vec3(0.5f, 0.5f, 0.0f));
 
         gPos.x += float(gm.advanceWidth) * glSc;
@@ -165,7 +165,7 @@ void Text::swapRenderBuffers()
     {
         float wordLenScaled = std::accumulate(wordIt.textBegin(), wordIt.textEnd(), 0.0f, [&](float a, char32_t b)
         {
-            GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(b));
+            GlyphMetrics gm = fh.getGlyphMetrics(fh.getGlyphIndex(b));
             return a + float(gm.advanceWidth);
         }) * glSc;
         ssz newLineCount = 0;
@@ -178,7 +178,7 @@ void Text::swapRenderBuffers()
             }
             else
             {
-                GlyphMetrics gm = font.getGlyphMetrics(font.getGlyphIndex(b));
+                GlyphMetrics gm = fh.getGlyphMetrics(fh.getGlyphIndex(b));
                 return a + float(gm.advanceWidth);
             }
         }) * glSc;

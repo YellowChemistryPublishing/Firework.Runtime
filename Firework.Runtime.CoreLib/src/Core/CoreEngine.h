@@ -2,6 +2,8 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+_push_nowarn_gcc(_clWarn_gcc_c_cast);
+_push_nowarn_clang(_clWarn_clang_c_cast);
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_version.h>
 #include <atomic>
@@ -10,6 +12,8 @@
 #include <function.h>
 #include <list>
 #include <vector>
+_pop_nowarn_clang();
+_pop_nowarn_gcc();
 
 #include <Core/RenderJob.h>
 
@@ -24,6 +28,7 @@ namespace Firework
     class Input;
 } // namespace Firework
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework::Internal
 {
     /// @internal
@@ -111,3 +116,4 @@ namespace Firework::Internal
         friend class Firework::Cursor;
     };
 } // namespace Firework::Internal
+_pop_nowarn_msvc();

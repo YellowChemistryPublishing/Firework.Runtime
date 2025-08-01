@@ -18,9 +18,10 @@ namespace Firework::GL
     class GeometryProgram;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
-    struct _packed FringePoint
+    struct alignas(float) FringePoint
     {
         float x, y, z = 1.0f; // Leave `z` as 1.0f unless you're really confident in what you're doing.
 
@@ -70,3 +71,4 @@ namespace Firework
         friend struct ::ComponentStaticInit;
     };
 } // namespace Firework
+_pop_nowarn_msvc();

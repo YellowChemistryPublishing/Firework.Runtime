@@ -14,6 +14,7 @@ namespace Firework::Internal
     class CoreEngine;
 } // namespace Firework::Internal
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     class Debug;
@@ -73,7 +74,7 @@ namespace Firework
     };
 
     /// @brief The transform component of a 2D entity.
-    class _fw_core_api [[fw::component]] RectTransform final
+    class _fw_core_api RectTransform final
     {
         std::shared_ptr<class Entity> attachedEntity = nullptr;
 
@@ -255,3 +256,4 @@ namespace Firework
         friend class Firework::Debug;
     };
 } // namespace Firework
+_pop_nowarn_msvc();

@@ -2,10 +2,12 @@
 
 #include "Firework.Components.Core2D.Exports.h"
 
+_push_nowarn_gcc(_clWarn_gcc_sign_compare);
 #include <glm/mat3x3.hpp>
 #include <glm/vec3.hpp>
 #include <module/sys>
 #include <vector>
+_pop_nowarn_gcc();
 
 #include <Friends/Color.h>
 

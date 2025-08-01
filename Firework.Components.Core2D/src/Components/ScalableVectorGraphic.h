@@ -19,12 +19,13 @@ namespace Firework::PackageSystem
     class ExtensibleMarkupPackageFile;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     class Entity;
     class RectTransform;
 
-    class _fw_cc2d_api [[fw::component]] ScalableVectorGraphic final
+    class _fw_cc2d_api ScalableVectorGraphic final
     {
         enum class RenderableType
         {
@@ -59,7 +60,7 @@ namespace Firework
             };
             const RenderableType type = RenderableType::NoOp;
 
-            Renderable() = default;
+            Renderable() { };
             Renderable(FilledPathRenderable filledPath) : filledPath(std::move(filledPath)), type(RenderableType::FilledPath)
             { }
             Renderable(Renderable&& other)
@@ -73,6 +74,7 @@ namespace Firework
                 case RenderableType::FilledPath:
                     this->filledPath.~FilledPathRenderable();
                     break;
+                case RenderableType::NoOp:;
                 }
             }
 
@@ -99,7 +101,7 @@ namespace Firework
             VectorTools::Viewbox vb;
             glm::mat4 tf;
 
-            std::mutex toRenderLock;
+            std::mutex lock;
         };
         std::shared_ptr<RenderData> renderData = std::make_shared<RenderData>();
 
@@ -126,3 +128,4 @@ namespace Firework
         friend class Firework::Entity;
     };
 } // namespace Firework
+_pop_nowarn_msvc();

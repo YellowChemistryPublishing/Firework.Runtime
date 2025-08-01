@@ -33,7 +33,7 @@ void Cursor::setVisible(bool value)
 }
 void Cursor::setLockState(CursorLockState value)
 {
-    Application::queueJobForWindowThread([value, w = Window::width, h = Window::height]() -> void
+    Application::queueJobForWindowThread([value]() -> void
     {
         switch (value)
         {
@@ -63,7 +63,7 @@ void Cursor::setCursor(std::shared_ptr<CursorTexture> texture)
     });
 }
 
-CursorTexture::CursorTexture(BuiltinCursorTexture texture) : internalCursor(SDL_CreateSystemCursor((SDL_SystemCursor)texture)) // Hope this is thread-safe lol.
+CursorTexture::CursorTexture(BuiltinCursorTexture texture) : internalCursor(SDL_CreateSystemCursor(_as(SDL_SystemCursor, texture))) // Hope this is thread-safe lol.
 { }
 CursorTexture::~CursorTexture()
 {

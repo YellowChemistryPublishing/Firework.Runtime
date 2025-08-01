@@ -2,7 +2,11 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
+_push_nowarn_gcc(_clWarn_gcc_c_cast);
+_push_nowarn_clang(_clWarn_clang_c_cast);
 #include <SDL3/SDL.h>
+_pop_nowarn_clang();
+_pop_nowarn_gcc();
 
 #include <Library/Property.h>
 
@@ -11,6 +15,7 @@ namespace Firework::Internal
     class CoreEngine;
 }
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     enum class BuiltinCursorTexture
@@ -74,3 +79,4 @@ namespace Firework
         friend class Firework::Internal::CoreEngine;
     };
 } // namespace Firework
+_pop_nowarn_msvc();

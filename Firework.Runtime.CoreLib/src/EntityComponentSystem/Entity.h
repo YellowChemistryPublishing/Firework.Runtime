@@ -12,6 +12,7 @@
 #include <EntityComponentSystem/EntityManagement.inc>
 #include <Library/Property.h>
 
+_push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     class Entity;
@@ -88,7 +89,7 @@ namespace Firework
         Entity() noexcept = default;
 
         void orphan() noexcept;
-        void reparentAfterOrphan(std::shared_ptr<Entity> parent) noexcept;
+        void reparentAfterOrphan(std::shared_ptr<Entity> newParent) noexcept;
 
         template <typename T, bool Get, bool Add>
         requires (Get || Add)
@@ -208,3 +209,4 @@ namespace Firework
         return true;
     }
 } // namespace Firework
+_pop_nowarn_msvc();
