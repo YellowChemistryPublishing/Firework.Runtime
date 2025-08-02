@@ -234,17 +234,11 @@ void Text::renderOffload(ssz renderIndex)
 
         for (const auto& [renderers, transforms] : renderData->toRender)
         {
-            const auto& [shape, _] = *renderers;
+            const auto& [shape, fringe] = *renderers;
             const auto& [glTf, clipTf] = transforms;
+            (void)fringe.submitDraw(float(+renderIndex), glTf, color);
             (void)shape.submitDrawStencil(float(+renderIndex), glTf);
             (void)ShapeRenderer::submitDraw(float(+renderIndex), clipTf, ~0_u8, color);
-        }
-
-        for (const auto& [renderers, transforms] : renderData->toRender)
-        {
-            const auto& [_1, fringe] = *renderers;
-            const auto& [glTf, _2] = transforms;
-            (void)fringe.submitDraw(float(+renderIndex) + 0.5f, glTf, color);
         }
     }, false);
 }

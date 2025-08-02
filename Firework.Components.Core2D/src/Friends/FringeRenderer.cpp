@@ -68,8 +68,8 @@ bool FringeRenderer::submitDraw(const float renderIndex, const glm::mat4 transfo
     _push_nowarn_gcc(_clWarn_gcc_c_cast);
     _push_nowarn_clang(_clWarn_clang_c_cast);
     (void)Renderer::submitDraw(1, this->fill, FringeRenderer::drawProgram,
-                               BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_WRITE_Z |
-                                   BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_PT_LINES | BGFX_STATE_LINEAA);
+                               BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA | BGFX_STATE_DEPTH_TEST_LESS |
+                                   BGFX_STATE_PT_LINES | BGFX_STATE_LINEAA);
     _pop_nowarn_clang();
     _pop_nowarn_gcc();
 

@@ -50,9 +50,13 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
             std::vector<VectorTools::PathCommand> pathCommands;
             _fence_value_return(void(), !VectorTools::parsePath(node.attribute("d").value(), pathCommands));
 
-            std::vector<ShapePoint> paths;
-            std::vector<ssz> spans { 0_z };
+            std::vector<ShapePoint> filledPathPoints;
+            std::vector<ssz> filledPaths { 0_z };
             float alternatePtCtrl = 1.0f;
+
+            std::vector<FringePoint> fringePoints;
+            std::vector<ssz> fringePaths { 0_z };
+            std::vector<glm::vec2> thisFringe;
 
             constexpr auto transformByMatrix = [](glm::vec2 point, glm::mat3x3 transform) -> glm::vec2
             {
@@ -66,11 +70,13 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                 {
                 case VectorTools::PathCommandType::MoveTo:
                     pc.moveTo.to = transformByMatrix(pc.moveTo.to, childTransform);
-                    paths.emplace_back(ShapePoint { .x = pc.moveTo.to.x, .y = pc.moveTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                    filledPathPoints.emplace_back(ShapePoint { .x = pc.moveTo.to.x, .y = pc.moveTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                    fringePoints.emplace_back(FringePoint { .x = pc.moveTo.to.x, .y = pc.moveTo.to.y });
                     break;
                 case VectorTools::PathCommandType::LineTo:
                     pc.lineTo.to = transformByMatrix(pc.lineTo.to, childTransform);
-                    paths.emplace_back(ShapePoint { .x = pc.lineTo.to.x, .y = pc.lineTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                    filledPathPoints.emplace_back(ShapePoint { .x = pc.lineTo.to.x, .y = pc.lineTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                    fringePoints.emplace_back(FringePoint { .x = pc.lineTo.to.x, .y = pc.lineTo.to.y });
                     break;
                 case VectorTools::PathCommandType::CubicTo:
                     {
@@ -80,26 +86,50 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                         converted.c2 = transformByMatrix(converted.c2, childTransform);
                         converted.p3 = transformByMatrix(converted.p3, childTransform);
 
-                        paths.emplace_back(ShapePoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                        paths.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-                        paths.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                        paths.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                        filledPathPoints.emplace_back(ShapePoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                        filledPathPoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                        filledPathPoints.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                        filledPathPoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+
+                        if (VectorTools::quadraticBezierToLines(converted.p1, converted.c1, converted.p2, 32.0f, thisFringe) && !thisFringe.empty())
+                            thisFringe.pop_back();
+                        (void)VectorTools::quadraticBezierToLines(converted.p2, converted.c2, converted.p3, 32.0f, thisFringe);
+                        if (!thisFringe.empty())
+                            std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(fringePoints),
+                                           [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
+                        thisFringe.clear();
                     }
                     break;
                 case VectorTools::PathCommandType::QuadraticTo:
-                    pc.quadraticTo.ctrl = transformByMatrix(pc.quadraticTo.ctrl, childTransform);
-                    pc.quadraticTo.to = transformByMatrix(pc.quadraticTo.to, childTransform);
-                    paths.emplace_back(ShapePoint { .x = pc.quadraticTo.ctrl.x, .y = pc.quadraticTo.ctrl.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                    paths.emplace_back(ShapePoint { .x = pc.quadraticTo.to.x, .y = pc.quadraticTo.to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                    {
+                        pc.quadraticTo.ctrl = transformByMatrix(pc.quadraticTo.ctrl, childTransform);
+                        pc.quadraticTo.to = transformByMatrix(pc.quadraticTo.to, childTransform);
+
+                        const glm::vec2& from = pc.quadraticTo.from;
+                        const glm::vec2& ctrl = pc.quadraticTo.ctrl;
+                        const glm::vec2& to = pc.quadraticTo.to;
+
+                        filledPathPoints.emplace_back(ShapePoint { .x = ctrl.x, .y = ctrl.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                        filledPathPoints.emplace_back(ShapePoint { .x = to.x, .y = to.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+
+                        (void)VectorTools::quadraticBezierToLines(from, ctrl, to, 32.0f, thisFringe);
+                        if (!thisFringe.empty())
+                            std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(fringePoints),
+                                           [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
+                        thisFringe.clear();
+                    }
                     break;
                 case VectorTools::PathCommandType::ClosePath:
-                    spans.emplace_back(ssz(paths.size()));
+                    filledPaths.emplace_back(ssz(filledPathPoints.size()));
+                    fringePaths.emplace_back(ssz(fringePoints.size()));
                     break;
                 case VectorTools::PathCommandType::ArcTo: /* TODO */;
                 }
             }
 
-            if (ShapeRenderer pr = ShapeRenderer(paths, spans))
+            if (FringeRenderer fr = FringeRenderer(fringePoints, fringePaths))
+                ret.emplace_back(FringeRenderable(std::move(fr), childFill));
+            if (ShapeRenderer pr = ShapeRenderer(filledPathPoints, filledPaths))
                 ret.emplace_back(FilledPathRenderable(std::move(pr), childFill));
         }
         // Otherwise, do nothing.
@@ -188,6 +218,9 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
             case ScalableVectorGraphic::RenderableType::FilledPath:
                 (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), renderData->tf);
                 (void)ShapeRenderer::submitDraw(float(+renderIndex), rectTransform, ~0_u8, renderable.filledPath.col);
+                break;
+            case ScalableVectorGraphic::RenderableType::Fringe:
+                (void)renderable.fringe.rend.submitDraw(float(+renderIndex), renderData->tf);
                 break;
             case ScalableVectorGraphic::RenderableType::NoOp:;
             }
