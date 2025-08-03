@@ -2,17 +2,11 @@
 
 #include "Firework.Components.Core2D.Exports.h"
 
-_push_nowarn_gcc(_clWarn_gcc_sign_compare);
-_push_nowarn_gcc(_clWarn_gcc_sign_conversion);
-_push_nowarn_clang(_clWarn_clang_sign_compare);
-_push_nowarn_clang(_clWarn_clang_sign_conversion);
+_push_nowarn_conv_comp();
 #include <array>
 #include <glm/mat4x4.hpp>
 #include <module/sys>
-_pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_gcc();
-_pop_nowarn_gcc();
+_pop_nowarn_conv_comp();
 
 #include <Friends/Color.h>
 #include <GL/Geometry.h>

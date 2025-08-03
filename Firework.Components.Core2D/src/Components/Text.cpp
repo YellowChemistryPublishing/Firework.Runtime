@@ -31,71 +31,49 @@ std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> Text::findOrCreateGlyp
     GlyphOutline go = f.getGlyphOutline(glyphIndex);
 
     std::vector<ShapePoint> shapePoints;
-    std::vector<ssz> shapePaths;
-    float alternatePtCtrl = 1.0f;
-
+    std::vector<ssz> shapePaths { 0_z };
     std::vector<FringePoint> fringePoints;
-    std::vector<ssz> fringePaths;
-    std::vector<glm::vec2> thisFringe;
+    std::vector<ssz> fringePaths { 0_z };
+    std::vector<ShapeOutlinePoint> currentPath;
+
+    const auto pushShapeData = [&]
+    {
+        _fence_value_return(void(), currentPath.empty());
+
+        (void)VectorTools::shapeFromOutline(currentPath, shapePoints);
+        shapePaths.emplace_back(shapePoints.size());
+        (void)VectorTools::fringeFromOutline(currentPath, fringePoints);
+        fringePaths.emplace_back(fringePoints.size());
+    };
 
     for (sys::integer<int> i = 0; i < go.vertsSize; i++)
     {
         switch (go.verts[+i].type)
         {
         case STBTT_vmove:
-            shapePaths.emplace_back(ssz(shapePoints.size()));
-            fringePaths.emplace_back(ssz(fringePoints.size()));
+            pushShapeData();
+            currentPath.clear();
             [[fallthrough]];
         case STBTT_vline:
-            shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-            fringePoints.emplace_back(FringePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y) });
+            currentPath.emplace_back(ShapeOutlinePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .isCtrl = false });
             break;
         case STBTT_vcurve:
-            {
-                shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .xCtrl = 0.0f, .yCtrl = -1.0f });
-                shapePoints.emplace_back(ShapePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-
-                if (fringePoints.empty())
-                    continue;
-
-                const glm::vec2 from(fringePoints.back().x, fringePoints.back().y);
-                const glm::vec2 ctrl(float(go.verts[+i].cx), float(go.verts[+i].cy));
-                const glm::vec2 to(float(go.verts[+i].x), float(go.verts[+i].y));
-                (void)VectorTools::quadraticBezierToLines(from, ctrl, to, 32.0f, thisFringe);
-                if (!thisFringe.empty())
-                    std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(fringePoints), [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
-                thisFringe.clear();
-            }
+            currentPath.emplace_back(ShapeOutlinePoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .isCtrl = true });
+            currentPath.emplace_back(ShapeOutlinePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .isCtrl = false });
             break;
         case STBTT_vcubic:
-            {
-                if (shapePoints.empty())
-                    break;
-
-                VectorTools::QuadApproxCubic converted =
-                    VectorTools::cubicBeizerToQuadratic(glm::vec2(shapePoints.back().x, shapePoints.back().y), glm::vec2(float(go.verts[+i].cx), float(go.verts[+i].cy)),
-                                                        glm::vec2(go.verts[+i].cx1, go.verts[+i].cy1), glm::vec2(float(go.verts[+i].x), float(go.verts[+i].y)));
-
-                shapePoints.emplace_back(ShapePoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                shapePoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-                shapePoints.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                shapePoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-
-                if (VectorTools::quadraticBezierToLines(converted.p1, converted.c1, converted.p2, 32.0f, thisFringe) && !thisFringe.empty())
-                    thisFringe.pop_back();
-                (void)VectorTools::quadraticBezierToLines(converted.p2, converted.c2, converted.p3, 32.0f, thisFringe);
-                if (!thisFringe.empty())
-                    std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(fringePoints), [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
-                thisFringe.clear();
-            }
+            currentPath.emplace_back(ShapeOutlinePoint { .x = float(go.verts[+i].cx), .y = float(go.verts[+i].cy), .isCtrl = true });
+            currentPath.emplace_back(ShapeOutlinePoint { .x = float(go.verts[+i].cx1), .y = float(go.verts[+i].cy1), .isCtrl = true });
+            currentPath.emplace_back(ShapeOutlinePoint { .x = float(go.verts[+i].x), .y = float(go.verts[+i].y), .isCtrl = false });
             break;
         }
     }
-    shapePaths.emplace_back(shapePoints.size());
-    fringePaths.emplace_back(fringePoints.size());
+    pushShapeData();
 
-    _fence_value_return(nullptr, shapePaths.size() < 2);
     _fence_value_return(nullptr, shapePoints.size() < 3);
+    _fence_value_return(nullptr, shapePaths.size() < 2);
+    _fence_value_return(nullptr, fringePoints.size() < 3);
+    _fence_value_return(nullptr, fringePaths.size() < 2);
 
     std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> pathRenderers =
         std::make_shared<std::pair<ShapeRenderer, FringeRenderer>>(ShapeRenderer(shapePoints, shapePaths), FringeRenderer(fringePoints, fringePaths));

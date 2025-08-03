@@ -476,7 +476,7 @@ if (FIREWORK_DEVELOPMENT_MODE)
     target_link_libraries(Firework.Runtime.CoreLib PRIVATE sys.BuildSupport.WarningsAsErrors)
 endif()
 
-target_compile_definitions(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_COMPILE_DEFINITIONS})
+target_compile_definitions(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_COMPILE_DEFINITIONS} _GLIBCXX_SYSHDR)
 target_compile_options(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_COMPILE_FLAGS})
 target_link_options(Firework.Runtime.CoreLib PUBLIC ${FIREWORK_LINKER_FLAGS})
 set_target_properties(Firework.Runtime.CoreLib

@@ -13,6 +13,12 @@ _pop_nowarn_gcc();
 
 namespace Firework
 {
+    struct ShapeOutlinePoint
+    {
+        float x, y;
+        bool isCtrl; // Is bezier control point?
+    };
+
     class _fw_cc2d_api VectorTools final
     {
         static void ignoreWhitespace(const char*& it, const char* end);
@@ -114,5 +120,8 @@ namespace Firework
         [[nodiscard]] static float fastQuadraticBezierLength(glm::vec2 p1, glm::vec2 c, glm::vec2 p2);
         [[nodiscard]] static bool quadraticBezierToLines(glm::vec2 p1, glm::vec2 c, glm::vec2 p2, ssz segments, std::vector<glm::vec2>& out);
         [[nodiscard]] static bool quadraticBezierToLines(glm::vec2 p1, glm::vec2 c, glm::vec2 p2, float segmentLength, std::vector<glm::vec2>& out);
+
+        [[nodiscard]] static bool shapeFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints);
+        [[nodiscard]] static bool fringeFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct FringePoint>& outPoints, float segmentLength = 1.0f);
     };
 } // namespace Firework

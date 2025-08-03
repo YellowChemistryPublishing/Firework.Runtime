@@ -2,8 +2,10 @@
 
 #include "Firework.Components.Core2D.Exports.h"
 
+_push_nowarn_conv_comp();
 #include <array>
 #include <glm/mat4x4.hpp>
+_pop_nowarn_conv_comp();
 
 #include <Friends/Color.h>
 #include <GL/Geometry.h>

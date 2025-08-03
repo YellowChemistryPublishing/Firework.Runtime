@@ -17,27 +17,17 @@
 #define STB_IMAGE_IMPLEMENTATION
 _push_nowarn_gcc(_clWarn_gcc_c_cast);
 _push_nowarn_gcc(_clWarn_gcc_zero_as_nullptr);
-_push_nowarn_gcc(_clWarn_gcc_conversion);
-_push_nowarn_gcc(_clWarn_gcc_sign_conversion);
-_push_nowarn_gcc(_clWarn_gcc_double_promotion);
 _push_nowarn_clang(_clWarn_clang_zero_as_nullptr);
 _push_nowarn_clang(_clWarn_clang_c_cast);
-_push_nowarn_clang(_clWarn_clang_sign_conversion);
 _push_nowarn_clang(_clWarn_clang_cast_align);
-_push_nowarn_clang(_clWarn_clang_double_promotion);
-_push_nowarn_clang(_clWarn_clang_conversion);
 _push_nowarn_clang(_clWarn_clang_implicit_fallthrough);
+_push_nowarn_conv_comp();
 #include <stb_image.h>
+_pop_nowarn_conv_comp();
 _pop_nowarn_clang();
 _pop_nowarn_clang();
 _pop_nowarn_clang();
 _pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_gcc();
-_pop_nowarn_gcc();
-_pop_nowarn_gcc();
 _pop_nowarn_gcc();
 _pop_nowarn_gcc();
 

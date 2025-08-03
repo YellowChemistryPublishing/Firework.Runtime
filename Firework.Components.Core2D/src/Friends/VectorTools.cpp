@@ -2,6 +2,9 @@
 
 #include <charconv>
 
+#include <Friends/FringeRenderer.h>
+#include <Friends/ShapeRenderer.h>
+
 using namespace Firework;
 
 void VectorTools::ignoreWhitespace(const char*& it, const char* end)
@@ -391,4 +394,92 @@ bool VectorTools::quadraticBezierToLines(const glm::vec2 p1, const glm::vec2 c, 
 
     ssz segments = segmentsUnrounded;
     return VectorTools::quadraticBezierToLines(p1, c, p2, segments, out);
+}
+
+bool VectorTools::shapeFromOutline(const std::span<const ShapeOutlinePoint> points, std::vector<ShapePoint>& outPoints)
+{
+    _fence_value_return(false, points.size() < 3);
+
+    float alternatePtCtrl = 1.0f;
+    for (auto it = points.begin(); it != points.end(); ++it)
+    {
+        if (!it->isCtrl) // Line
+            outPoints.emplace_back(ShapePoint { .x = it->x, .y = it->y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+        else
+        {
+            const glm::vec2 ctrl(it->x, it->y);
+            _fence_value_return(false, ++it == points.end());
+
+            if (!it->isCtrl) // Quadratic bezier.
+            {
+                outPoints.emplace_back(ShapePoint { .x = ctrl.x, .y = ctrl.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                outPoints.emplace_back(ShapePoint { .x = it->x, .y = it->y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            }
+            else // Cubic bezier.
+            {
+                const glm::vec2 ctrl2(it->x, it->y);
+                _fence_value_return(false, ++it == points.end());
+                _fence_value_return(false, it->isCtrl);
+
+                if (outPoints.empty())
+                    break;
+
+                VectorTools::QuadApproxCubic converted =
+                    VectorTools::cubicBeizerToQuadratic(glm::vec2(outPoints.back().x, outPoints.back().y), ctrl, ctrl2, glm::vec2(it->x, it->y));
+
+                outPoints.emplace_back(ShapePoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                outPoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+                outPoints.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+                outPoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
+            }
+        }
+    }
+
+    return true;
+}
+#include <Core/Debug.h>
+bool VectorTools::fringeFromOutline(const std::span<const ShapeOutlinePoint> points, std::vector<FringePoint>& outPoints, const float segmentLength)
+{
+    _fence_value_return(false, points.size() < 2);
+
+    std::vector<glm::vec2> thisFringe;
+    for (auto it = points.begin(); it != points.end(); ++it)
+    {
+        if (!it->isCtrl) // Line
+            outPoints.emplace_back(FringePoint { .x = it->x, .y = it->y });
+        else
+        {
+            const glm::vec2 ctrl(it->x, it->y);
+            _fence_value_return(false, ++it == points.end());
+            _fence_value_return(false, outPoints.empty());
+
+            if (!it->isCtrl) // Quadratic bezier.
+            {
+                const glm::vec2 from(outPoints.back().x, outPoints.back().y);
+                const glm::vec2 to(it->x, it->y);
+                (void)VectorTools::quadraticBezierToLines(from, ctrl, to, segmentLength, thisFringe);
+                if (!thisFringe.empty())
+                    std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(outPoints), [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
+                thisFringe.clear();
+            }
+            else // Cubic bezier.
+            {
+                const glm::vec2 ctrl2(it->x, it->y);
+                _fence_value_return(false, ++it == points.end());
+                _fence_value_return(false, it->isCtrl);
+
+                VectorTools::QuadApproxCubic converted =
+                    VectorTools::cubicBeizerToQuadratic(glm::vec2(outPoints.back().x, outPoints.back().y), ctrl, ctrl2, glm::vec2(it->x, it->y));
+
+                if (VectorTools::quadraticBezierToLines(converted.p1, converted.c1, converted.p2, segmentLength, thisFringe) && !thisFringe.empty())
+                    thisFringe.pop_back();
+                (void)VectorTools::quadraticBezierToLines(converted.p2, converted.c2, converted.p3, segmentLength, thisFringe);
+                if (!thisFringe.empty())
+                    std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(outPoints), [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
+                thisFringe.clear();
+            }
+        }
+    }
+
+    return true;
 }

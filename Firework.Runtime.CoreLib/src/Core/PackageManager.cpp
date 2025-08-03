@@ -20,12 +20,12 @@ constexpr auto toEndianness = [](auto intType, std::endian from, std::endian to)
         return std::byteswap(intType);
 };
 
-bool PackageManager::removeBinaryFileHandler(const std::vector<uint8_t>& signature, std::streamoff offset)
+bool PackageManager::removeBinaryFileHandler(const std::vector<byte>& signature, std::streamoff offset)
 {
     auto handlersWithOffsetIt = PackageManager::binFileHandlers.find(FileSignatureQuery { .where = offset, .size = signature.size() });
     _fence_value_return(false, handlersWithOffsetIt == PackageManager::binFileHandlers.end());
 
-    _fence_value_return(false, !handlersWithOffsetIt->second.erase(std::basic_string<uint8_t>(signature.data(), signature.size())));
+    _fence_value_return(false, !handlersWithOffsetIt->second.erase(std::basic_string<byte>(signature.data(), signature.size())));
 
     if (handlersWithOffsetIt->second.empty())
         PackageManager::binFileHandlers.erase(handlersWithOffsetIt);
@@ -86,7 +86,7 @@ bool PackageManager::loadPackageIntoMemory(const fs::path& packagePath)
             if (off + sigLen > fileLen)
                 continue;
 
-            std::basic_string<uint8_t> sig(fileBytes.data() + off, fileBytes.data() + +(off + sigLen));
+            std::basic_string<byte> sig(fileBytes.data() + off, fileBytes.data() + +(off + sigLen));
             auto handlerIt = handlers.find(sig);
             if (handlerIt != handlers.end())
             {

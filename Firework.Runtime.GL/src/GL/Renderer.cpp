@@ -1,30 +1,18 @@
 #include "Renderer.h"
 
 _push_nowarn_gcc(_clWarn_gcc_c_cast);
-_push_nowarn_gcc(_clWarn_gcc_sign_conversion);
-_push_nowarn_gcc(_clWarn_gcc_float_conversion);
-_push_nowarn_gcc(_clWarn_gcc_conversion);
 _push_nowarn_clang(_clWarn_clang_c_cast);
 _push_nowarn_clang(_clWarn_clang_variadic_macro_args);
-_push_nowarn_clang(_clWarn_clang_sign_conversion);
-_push_nowarn_clang(_clWarn_clang_float_conversion);
-_push_nowarn_clang(_clWarn_clang_double_promotion);
-_push_nowarn_clang(_clWarn_clang_conversion);
+_push_nowarn_conv_comp();
 #include <array>
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 #include <bx/math.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <module/sys>
+_pop_nowarn_conv_comp();
 _pop_nowarn_clang();
 _pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_gcc();
-_pop_nowarn_gcc();
-_pop_nowarn_gcc();
 _pop_nowarn_gcc();
 
 #include <GL/Framebuffer.h>

@@ -4,13 +4,9 @@
 
 _push_nowarn_gcc(_clWarn_gcc_c_cast);
 _push_nowarn_gcc(_clWarn_gcc_zero_as_nullptr);
-_push_nowarn_gcc(_clWarn_gcc_conversion);
-_push_nowarn_gcc(_clWarn_gcc_sign_conversion);
-_push_nowarn_gcc(_clWarn_gcc_double_promotion);
+_push_nowarn_conv_comp();
 #include <stb_image.h>
-_pop_nowarn_gcc();
-_pop_nowarn_gcc();
-_pop_nowarn_gcc();
+_pop_nowarn_conv_comp();
 _pop_nowarn_gcc();
 _pop_nowarn_gcc();
 
