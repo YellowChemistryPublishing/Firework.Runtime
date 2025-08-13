@@ -235,6 +235,30 @@ bool Renderer::submitDraw(const ViewIndex id, const DynamicMesh& mesh, const Geo
     bgfx::submit(id, program.internalHandle);
     return true;
 }
+bool Renderer::submitDraw(const ViewIndex id, const StaticMesh& mesh, const u32 fromVertex, const u32 vertexCount, const u32 fromIndex, const u32 indexCount,
+                          const GeometryProgram& program, const u64 state, const u32 blendFactor)
+{
+    _fence_value_return(false, !mesh || !program);
+
+    bgfx::setVertexBuffer(0, mesh.internalVertexBuffer, +fromVertex, +vertexCount);
+    bgfx::setIndexBuffer(mesh.internalIndexBuffer, +fromIndex, +indexCount);
+    bgfx::setState(+state, +blendFactor);
+    for (auto& [intercept, data] : Renderer::drawPassIntercepts) intercept(id, data);
+    bgfx::submit(id, program.internalHandle);
+    return true;
+}
+bool Renderer::submitDraw(const ViewIndex id, const DynamicMesh& mesh, const u32 fromVertex, const u32 vertexCount, const u32 fromIndex, const u32 indexCount,
+                          const GeometryProgram& program, const u64 state, const u32 blendFactor)
+{
+    _fence_value_return(false, !mesh || !program);
+
+    bgfx::setVertexBuffer(0, mesh.internalVertexBuffer, +fromVertex, +vertexCount);
+    bgfx::setIndexBuffer(mesh.internalIndexBuffer, +fromIndex, +indexCount);
+    bgfx::setState(+state, +blendFactor);
+    for (auto& [intercept, data] : Renderer::drawPassIntercepts) intercept(id, data);
+    bgfx::submit(id, program.internalHandle);
+    return true;
+}
 
 #if _DEBUG
 void Renderer::debugDrawCube(glm::vec3 position, float sideLength)

@@ -1,4 +1,5 @@
 #include "../common.h"
+#include "EntityComponentSystem/EngineEvent.h"
 
 #include <Firework.Components.Core2D>
 #include <Firework.Runtime.CoreLib>
@@ -23,8 +24,8 @@ int main(int, char*[])
         entity->addComponent<EntityAttributes>()->name = "Test Entity (Left-Align)";
 
         auto paragraph = entity->addComponent<Text>();
-        paragraph->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Bagnard.otf"));
-        paragraph->fontSize = 96.0f;
+        paragraph->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Roboto-Regular.ttf"));
+        paragraph->fontSize = 24.0f;
         paragraph->text = U"It is not the duty of the typographer to consciously display or emulate the style of current trends, not to reflect the spirit of the times.";
         paragraph->color = Color(0, 255, 255);
 
@@ -40,6 +41,14 @@ int main(int, char*[])
         {
             _fence_value_return(void(), attributes.name != "Test Entity (Left-Align)");
             inputTransformEntity(entity, key);
+        });
+    };
+    EngineEvent::OnMouseScroll += [](glm::vec2 scroll)
+    {
+        Entities::forEach<EntityAttributes, Text>([&](Entity& entity, EntityAttributes& attributes, Text&) -> void
+        {
+            _fence_value_return(void(), attributes.name != "Test Entity (Left-Align)");
+            inputScaleEntity(entity, scroll);
         });
     };
     EngineEvent::OnMouseMove += [](glm::vec2 from)

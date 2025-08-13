@@ -24,15 +24,23 @@ namespace Firework::GL
 _push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
+    class FringeRenderer;
+
+    enum class WindingRule : uint_least8_t
+    {
+        EvenOdd,
+        NonZero
+    };
     struct alignas(float) ShapePoint
     {
         float x, y, z = 1.0f; // Leave `z` as 1.0f unless you're really confident in what you're doing.
         float xCtrl = 0.0f, yCtrl = 0.0f;
+
+        constexpr friend bool operator==(const ShapePoint&, const ShapePoint&) = default;
     };
 
     class _fw_cc2d_api ShapeRenderer final
     {
-        static GL::GeometryProgram stencilProgram;
         static GL::GeometryProgram drawProgram;
 
         static GL::StaticMesh unitSquare;
@@ -43,9 +51,7 @@ namespace Firework
     public:
         ShapeRenderer(std::nullptr_t)
         { }
-        ShapeRenderer(std::span<const ShapePoint> points, std::span<const ssz> closedPathRanges);
-        ShapeRenderer(std::span<const ShapePoint> points) : ShapeRenderer(points, std::array<ssz, 2> { 0_z, ssz(points.size()) })
-        { }
+        ShapeRenderer(std::span<const ShapePoint> points, std::span<const uint16_t> inds);
         ShapeRenderer(const ShapeRenderer&) = delete;
         ShapeRenderer(ShapeRenderer&& other)
         {
@@ -64,8 +70,15 @@ namespace Firework
             return *this;
         }
 
-        [[nodiscard]] bool submitDrawStencil(float renderIndex, glm::mat4 shape, bool forceHole = false) const;
-        [[nodiscard]] static bool submitDraw(float renderIndex, glm::mat4 clip, u8 whenStencil = ~0_u8, Color color = Color::unknown);
+        [[nodiscard]] bool submitDrawStencil(float renderIndex, glm::mat4 shape, WindingRule fillRule = WindingRule::EvenOdd) const;
+        _push_nowarn_gcc(_clWarn_gcc_c_cast);
+        _push_nowarn_clang(_clWarn_clang_c_cast);
+        [[nodiscard]] static bool submitDrawCover(float renderIndex, glm::mat4 clip, u8 refZero = 0_u8, Color color = Color::unknown, float alphaFract = 1.0f,
+                                                  u64 blendState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_ALWAYS |
+                                                      BGFX_STATE_BLEND_ALPHA,
+                                                  u32 stencilTest = BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+        _pop_nowarn_clang();
+        _pop_nowarn_gcc();
 
         friend void swap(ShapeRenderer& a, ShapeRenderer& b)
         {
@@ -75,6 +88,7 @@ namespace Firework
         }
 
         friend struct ::ComponentStaticInit;
+        friend class Firework::FringeRenderer;
     };
 } // namespace Firework
 _pop_nowarn_msvc();

@@ -1,4 +1,5 @@
 #include "Text.h"
+#include "bgfx/defines.h"
 
 #include <glm/gtc/quaternion.hpp>
 
@@ -14,14 +15,14 @@ using namespace Firework::Internal;
 using namespace Firework::PackageSystem;
 using namespace Firework::Typography;
 
-robin_hood::unordered_map<Text::FontCharacterQuery, std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, Text::FontCharacterQueryHash> Text::characterPaths;
+robin_hood::unordered_map<Text::FontCharacterQuery, std::shared_ptr<ShapeRenderer>, Text::FontCharacterQueryHash> Text::characterPaths;
 
 void Text::onAttach(Entity& entity)
 {
     this->rectTransform = entity.getOrAddComponent<RectTransform>();
 }
 
-std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> Text::findOrCreateGlyphPath(char32_t c)
+std::shared_ptr<ShapeRenderer> Text::findOrCreateGlyphPath(char32_t c)
 {
     auto charPathIt = Text::characterPaths.find(FontCharacterQuery { .file = this->_font.get(), .c = c });
     _fence_value_return(charPathIt->second, charPathIt != Text::characterPaths.end());
@@ -31,19 +32,13 @@ std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> Text::findOrCreateGlyp
     GlyphOutline go = f.getGlyphOutline(glyphIndex);
 
     std::vector<ShapePoint> shapePoints;
-    std::vector<ssz> shapePaths { 0_z };
-    std::vector<FringePoint> fringePoints;
-    std::vector<ssz> fringePaths { 0_z };
+    std::vector<uint16_t> shapeInds;
     std::vector<ShapeOutlinePoint> currentPath;
 
     const auto pushShapeData = [&]
     {
-        _fence_value_return(void(), currentPath.empty());
-
-        (void)VectorTools::shapeFromOutline(currentPath, shapePoints);
-        shapePaths.emplace_back(shapePoints.size());
-        (void)VectorTools::fringeFromOutline(currentPath, fringePoints);
-        fringePaths.emplace_back(fringePoints.size());
+        (void)VectorTools::shapeTrianglesFromOutline(currentPath, shapePoints, shapeInds);
+        (void)VectorTools::shapeProcessCurvesFromOutline(currentPath, shapePoints, shapeInds);
     };
 
     for (sys::integer<int> i = 0; i < go.vertsSize; i++)
@@ -71,12 +66,9 @@ std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> Text::findOrCreateGlyp
     pushShapeData();
 
     _fence_value_return(nullptr, shapePoints.size() < 3);
-    _fence_value_return(nullptr, shapePaths.size() < 2);
-    _fence_value_return(nullptr, fringePoints.size() < 3);
-    _fence_value_return(nullptr, fringePaths.size() < 2);
+    _fence_value_return(nullptr, shapeInds.size() < 3);
 
-    std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> pathRenderers =
-        std::make_shared<std::pair<ShapeRenderer, FringeRenderer>>(ShapeRenderer(shapePoints, shapePaths), FringeRenderer(fringePoints, fringePaths));
+    std::shared_ptr<ShapeRenderer> pathRenderers = std::make_shared<ShapeRenderer>(shapePoints, shapeInds);
 
     Text::characterPaths.emplace(FontCharacterQuery { .file = this->_font.get(), .c = c }, pathRenderers);
 
@@ -118,12 +110,12 @@ void Text::swapRenderBuffers()
         glm::mat4 glTransform = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
         glTransform *= glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -rot)));
         glTransform =
-            glm::translate(glTransform, glm::vec3(gPos.x + float(std::abs(gm.leftSideBearing)) * glSc + r.left * sc.x, gPos.y - float(fh.ascent) * glSc + r.top * sc.y, 0.0f));
+            glm::translate(glTransform, glm::vec3((gPos.x + float(std::abs(gm.leftSideBearing)) * glSc + r.left) * sc.x, (gPos.y - float(fh.ascent) * glSc + r.top) * sc.y, 0.0f));
         glTransform = glm::scale(glTransform, glm::vec3(sc.x * glSc, sc.y * glSc, 0.0f));
 
         glm::mat4 clipTransform = glm::translate(glm::mat4(1.0f), glm::vec3(pos.x, pos.y, 0.0f));
         clipTransform *= glm::mat4_cast(glm::quat(glm::vec3(0.0f, 0.0f, -rot)));
-        clipTransform = glm::translate(clipTransform, glm::vec3(gPos.x + r.left * sc.x, gPos.y - float(fh.height()) * glSc + r.top * sc.y, 0.0f));
+        clipTransform = glm::translate(clipTransform, glm::vec3((gPos.x + r.left) * sc.x, (gPos.y - float(fh.height()) * glSc + r.top) * sc.y, 0.0f));
         clipTransform =
             glm::scale(clipTransform, glm::vec3(sc.x * glSc * (float(gm.advanceWidth) + float(std::abs(gm.leftSideBearing)) * 2.0f), sc.y * glSc * float(fh.height()), 0.0f));
         clipTransform = glm::translate(clipTransform, glm::vec3(0.5f, 0.5f, 0.0f));
@@ -138,7 +130,7 @@ void Text::swapRenderBuffers()
         gPos.y -= scaledLineHeight * howMany;
     };
 
-    std::vector<std::pair<std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>>, std::pair<glm::mat4, glm::mat4>>> swapToRender;
+    std::vector<std::pair<std::shared_ptr<ShapeRenderer>, std::pair<glm::mat4, glm::mat4>>> swapToRender;
     for (auto wordIt = ParagraphIterator<char32_t>::begin(this->_text); wordIt != ParagraphIterator<char32_t>::end(this->_text); ++wordIt)
     {
         float wordLenScaled = std::accumulate(wordIt.textBegin(), wordIt.textEnd(), 0.0f, [&](float a, char32_t b)
@@ -166,7 +158,7 @@ void Text::swapRenderBuffers()
 
         for (auto cIt = wordIt.textBegin(); cIt != wordIt.textEnd(); ++cIt)
         {
-            std::shared_ptr<std::pair<ShapeRenderer, FringeRenderer>> gPath = this->findOrCreateGlyphPath(*cIt);
+            std::shared_ptr<ShapeRenderer> gPath = this->findOrCreateGlyphPath(*cIt);
             if (!gPath)
                 continue;
 
@@ -210,13 +202,35 @@ void Text::renderOffload(ssz renderIndex)
     {
         std::lock_guard guard(renderData->toRenderLock);
 
-        for (const auto& [renderers, transforms] : renderData->toRender)
+        for (const auto& [shape, transforms] : renderData->toRender)
         {
-            const auto& [shape, fringe] = *renderers;
             const auto& [glTf, clipTf] = transforms;
-            (void)fringe.submitDraw(float(+renderIndex), glTf, color);
-            (void)shape.submitDrawStencil(float(+renderIndex), glTf);
-            (void)ShapeRenderer::submitDraw(float(+renderIndex), clipTf, ~0_u8, color);
+            _push_nowarn_gcc(_clWarn_gcc_c_cast);
+            _push_nowarn_clang(_clWarn_clang_c_cast);
+            (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, Color(0, 0, 0, 0), 1.0f,
+                                                 BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+                                                 BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+            const std::initializer_list<glm::vec2> sampleOffsets { { -0.5f + 1.0f / 8.0f, -0.5f + 7.0f / 8.0f }, // | . o . . . . . .
+                                                                   { -0.5f + 6.0f / 8.0f, -0.5f + 6.0f / 8.0f }, // | . . . . . . o .
+                                                                   { -0.5f + 3.0f / 8.0f, -0.5f + 5.0f / 8.0f }, // | . . . o . . . .
+                                                                   { -0.5f + 5.0f / 8.0f, 0.0f },                // | . . . . . o . .
+                                                                   { -0.5f + 2.0f / 8.0f, -0.5f + 3.0f / 8.0f }, // | . . o . . . . .
+                                                                   { -0.5f + 4.0f / 8.0f, -0.5f + 2.0f / 8.0f }, // | . . . . o . . .
+                                                                   { -0.5f + 7.0f / 8.0f, -0.5f + 1.0f / 8.0f }, // | . . . . . . . o
+                                                                   { -0.5f + 0.0f / 8.0f, -0.5f } };             // | o . . . . . . .
+            for (const glm::vec2& off : sampleOffsets)
+            {
+                (void)shape->submitDrawStencil(float(+renderIndex), glm::translate(glm::mat4(1.0f), glm::vec3(off.x, off.y, 0.0f)) * glTf, WindingRule::NonZero);
+                (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, color, std::ceil(255.0f / float(sampleOffsets.size())) / 255.0f,
+                                                     BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD | BGFX_STATE_DEPTH_TEST_ALWAYS,
+                                                     BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+            }
+            (void)ShapeRenderer::submitDrawCover(
+                float(+renderIndex), clipTf, 0_u8, color, 1.0f,
+                BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+                BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+            _pop_nowarn_clang();
+            _pop_nowarn_gcc();
         }
     }, false);
 }

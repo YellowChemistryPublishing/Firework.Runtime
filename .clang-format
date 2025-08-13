@@ -53,6 +53,7 @@ BreakBeforeConceptDeclarations: Always
 BreakTemplateDeclarations: Yes
 BreakConstructorInitializers: AfterColon
 PackConstructorInitializers: BinPack
+# BinPackLongBracedList: true
 BinPackArguments: true
 IndentCaseLabels: false
 IndentCaseBlocks: true

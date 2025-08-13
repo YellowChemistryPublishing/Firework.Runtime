@@ -5,7 +5,6 @@
 #include <mutex>
 #include <robin_hood.h>
 
-#include <Friends/FringeRenderer.h>
 #include <Friends/ShapeRenderer.h>
 #include <Friends/VectorTools.h>
 #include <Library/Property.h>
@@ -31,7 +30,6 @@ namespace Firework
         enum class RenderableType
         {
             FilledPath,
-            Fringe,
             NoOp
         };
         struct FilledPathRenderable
@@ -54,39 +52,16 @@ namespace Firework
                 swap(a.col, b.col);
             }
         };
-        struct FringeRenderable
-        {
-            FringeRenderer rend = nullptr;
-            Color col = Color::unknown;
-
-            FringeRenderable(FringeRenderer rend, Color col) : rend(std::move(rend)), col(col)
-            { }
-            FringeRenderable(FringeRenderable&& other)
-            {
-                swap(*this, other);
-            }
-
-            friend void swap(FringeRenderable& a, FringeRenderable& b)
-            {
-                using std::swap;
-
-                swap(a.rend, b.rend);
-                swap(a.col, b.col);
-            }
-        };
         struct Renderable
         {
             union
             {
                 FilledPathRenderable filledPath;
-                FringeRenderable fringe;
             };
             const RenderableType type = RenderableType::NoOp;
 
             Renderable() { };
             Renderable(FilledPathRenderable filledPath) : filledPath(std::move(filledPath)), type(RenderableType::FilledPath)
-            { }
-            Renderable(FringeRenderable fringe) : fringe(std::move(fringe)), type(RenderableType::Fringe)
             { }
             Renderable(Renderable&& other)
             {
@@ -98,9 +73,6 @@ namespace Firework
                 {
                 case RenderableType::FilledPath:
                     this->filledPath.~FilledPathRenderable();
-                    break;
-                case RenderableType::Fringe:
-                    this->fringe.~FringeRenderable();
                     break;
                 case RenderableType::NoOp:;
                 }

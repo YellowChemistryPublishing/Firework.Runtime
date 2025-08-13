@@ -20,7 +20,7 @@ void (*RenderPipeline::renderFrame)() = RenderPipeline::defaultRenderFrame;
 
 bool RenderPipeline::renderInitialize(void* ndt, void* nwh, u32 w, u32 h, RendererBackend be)
 {
-    if (!Renderer::initialize(ndt, nwh, w, h, be))
+    if (!Renderer::initialize(ndt, nwh, w, h, be, BGFX_RESET_MSAA_X16))
         return false;
 
     RenderPipeline::resetViewArea(u16(w), u16(h));
@@ -45,7 +45,7 @@ void RenderPipeline::defaultResetViewArea(u16 w, u16 h)
 }
 void RenderPipeline::defaultResetBackbuffer(u32 w, u32 h)
 {
-    Renderer::resetBackbuffer(w, h);
+    Renderer::resetBackbuffer(w, h, BGFX_RESET_MSAA_X16);
 }
 void RenderPipeline::defaultRenderFrame()
 {

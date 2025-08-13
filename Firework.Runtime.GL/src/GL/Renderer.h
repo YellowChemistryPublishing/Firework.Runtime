@@ -96,6 +96,14 @@ namespace Firework::GL
                                              u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA |
                                                  BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS,
                                              u32 blendFactor = 0);
+        [[nodiscard]] static bool submitDraw(ViewIndex id, const StaticMesh& mesh, u32 fromVertex, u32 vertexCount, u32 fromIndex, u32 indexCount, const GeometryProgram& program,
+                                             u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA |
+                                                 BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS,
+                                             u32 blendFactor = 0);
+        [[nodiscard]] static bool submitDraw(ViewIndex id, const DynamicMesh& mesh, u32 fromVertex, u32 vertexCount, u32 fromIndex, u32 indexCount, const GeometryProgram& program,
+                                             u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA |
+                                                 BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS,
+                                             u32 blendFactor = 0);
         _pop_nowarn_clang();
         _pop_nowarn_gcc();
 

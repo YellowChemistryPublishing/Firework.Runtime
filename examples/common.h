@@ -34,7 +34,7 @@ static void inputTransformEntity(Firework::Entity& entity, Firework::Key key)
 
     auto rectTransform = entity.getOrAddComponent<RectTransform>();
     auto rect = RectFloat();
-    auto dir = Input::keyHeld(Key::LeftAlt) ? 32.0f : -32.0f;
+    auto dir = Input::keyHeld(Key::LetterZ) ? 32.0f : -32.0f;
 
     switch (key)
     {
@@ -65,7 +65,17 @@ static void inputTransformEntity(Firework::Entity& entity, Firework::Key key)
     default:;
     }
 }
+static void inputScaleEntity(Firework::Entity& entity, glm::vec2 byLinear)
+{
+    using namespace Firework;
 
+    auto rectTransform = entity.getOrAddComponent<RectTransform>();
+    auto sc = rectTransform->scale();
+
+    float w = sc.x * rectTransform->rect().width();
+    float scFact = (w + (byLinear.y > 0.0f ? 256.0f : -256.0f) * Time::deltaTime()) / w;
+    rectTransform->scale = sc * scFact;
+}
 static void inputMoveEntity(Firework::Entity& entity, glm::vec2 from)
 {
     using namespace Firework;

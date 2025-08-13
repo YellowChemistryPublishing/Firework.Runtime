@@ -2,7 +2,6 @@
 
 #include <charconv>
 
-#include <Friends/FringeRenderer.h>
 #include <Friends/ShapeRenderer.h>
 
 using namespace Firework;
@@ -396,89 +395,75 @@ bool VectorTools::quadraticBezierToLines(const glm::vec2 p1, const glm::vec2 c, 
     return VectorTools::quadraticBezierToLines(p1, c, p2, segments, out);
 }
 
-bool VectorTools::shapeFromOutline(const std::span<const ShapeOutlinePoint> points, std::vector<ShapePoint>& outPoints)
+bool VectorTools::shapeTrianglesFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints, std::vector<uint16_t>& outInds,
+                                            const glm::vec2 windAround)
 {
     _fence_value_return(false, points.size() < 3);
 
-    float alternatePtCtrl = 1.0f;
-    for (auto it = points.begin(); it != points.end(); ++it)
+    const u16 outPointsBeg = outPoints.size();
+    outPoints.emplace_back(ShapePoint { .x = windAround.x, .y = windAround.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
+    for (const auto& pt : points)
+        if (!pt.isCtrl)
+            outPoints.emplace_back(ShapePoint { .x = pt.x, .y = pt.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
+    const u16 outPointsEnd = outPoints.size();
+
+    for (u16 i = outPointsBeg + 1_u16; i < outPointsEnd - 1_u16; i++)
     {
-        if (!it->isCtrl) // Line
-            outPoints.emplace_back(ShapePoint { .x = it->x, .y = it->y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-        else
-        {
-            const glm::vec2 ctrl(it->x, it->y);
-            _fence_value_return(false, ++it == points.end());
-
-            if (!it->isCtrl) // Quadratic bezier.
-            {
-                outPoints.emplace_back(ShapePoint { .x = ctrl.x, .y = ctrl.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                outPoints.emplace_back(ShapePoint { .x = it->x, .y = it->y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-            }
-            else // Cubic bezier.
-            {
-                const glm::vec2 ctrl2(it->x, it->y);
-                _fence_value_return(false, ++it == points.end());
-                _fence_value_return(false, it->isCtrl);
-
-                if (outPoints.empty())
-                    break;
-
-                VectorTools::QuadApproxCubic converted =
-                    VectorTools::cubicBeizerToQuadratic(glm::vec2(outPoints.back().x, outPoints.back().y), ctrl, ctrl2, glm::vec2(it->x, it->y));
-
-                outPoints.emplace_back(ShapePoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                outPoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-                outPoints.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
-                outPoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = (alternatePtCtrl = -alternatePtCtrl), .yCtrl = 1.0f });
-            }
-        }
+        outInds.emplace_back(+outPointsBeg);
+        outInds.emplace_back(+i);
+        outInds.emplace_back(+(i + 1_u16));
     }
 
     return true;
 }
-#include <Core/Debug.h>
-bool VectorTools::fringeFromOutline(const std::span<const ShapeOutlinePoint> points, std::vector<FringePoint>& outPoints, const float segmentLength)
+bool VectorTools::shapeProcessCurvesFromOutline(const std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints, std::vector<uint16_t>& outInds)
 {
-    _fence_value_return(false, points.size() < 2);
+    _fence_value_return(false, points.size() < 3);
 
-    std::vector<glm::vec2> thisFringe;
-    for (auto it = points.begin(); it != points.end(); ++it)
+    for (auto ptIt = points.cbegin(); ptIt < --(--points.cend()); ++ptIt)
     {
-        if (!it->isCtrl) // Line
-            outPoints.emplace_back(FringePoint { .x = it->x, .y = it->y });
-        else
+        const auto ptIt2 = ++decltype(ptIt)(ptIt);
+        const auto ptIt3 = ++std::remove_const_t<decltype(ptIt2)>(ptIt2);
+        if (!ptIt2->isCtrl || ptIt->isCtrl /* Probably an error case, but let's be extra fault-tolerant. (1) */)
+            continue; // Not a control point, so no curve to fill.
+
+        if (ptIt3->isCtrl) // Cubic bezier.
         {
-            const glm::vec2 ctrl(it->x, it->y);
-            _fence_value_return(false, ++it == points.end());
-            _fence_value_return(false, outPoints.empty());
+            const auto ptIt4 = ++std::remove_const_t<decltype(ptIt3)>(ptIt3);
+            _fence_value_return(false, ptIt4 == points.cend());
+            if (ptIt4->isCtrl)
+                continue; // See (1.)
 
-            if (!it->isCtrl) // Quadratic bezier.
-            {
-                const glm::vec2 from(outPoints.back().x, outPoints.back().y);
-                const glm::vec2 to(it->x, it->y);
-                (void)VectorTools::quadraticBezierToLines(from, ctrl, to, segmentLength, thisFringe);
-                if (!thisFringe.empty())
-                    std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(outPoints), [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
-                thisFringe.clear();
-            }
-            else // Cubic bezier.
-            {
-                const glm::vec2 ctrl2(it->x, it->y);
-                _fence_value_return(false, ++it == points.end());
-                _fence_value_return(false, it->isCtrl);
+            VectorTools::QuadApproxCubic converted =
+                VectorTools::cubicBeizerToQuadratic(glm::vec2(ptIt->x, ptIt->y), glm::vec2(ptIt2->x, ptIt2->y), glm::vec2(ptIt3->x, ptIt3->y), glm::vec2(ptIt4->x, ptIt4->y));
 
-                VectorTools::QuadApproxCubic converted =
-                    VectorTools::cubicBeizerToQuadratic(glm::vec2(outPoints.back().x, outPoints.back().y), ctrl, ctrl2, glm::vec2(it->x, it->y));
+            outPoints.emplace_back(ShapePoint { .x = converted.p1.x, .y = converted.p1.y, .xCtrl = -1.0f, .yCtrl = 1.0f });
+            outPoints.emplace_back(ShapePoint { .x = converted.c1.x, .y = converted.c1.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+            outPoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = 1.0f, .yCtrl = 1.0f });
+            outPoints.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+            outPoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = -1.0f, .yCtrl = 1.0f });
 
-                if (VectorTools::quadraticBezierToLines(converted.p1, converted.c1, converted.p2, segmentLength, thisFringe) && !thisFringe.empty())
-                    thisFringe.pop_back();
-                (void)VectorTools::quadraticBezierToLines(converted.p2, converted.c2, converted.p3, segmentLength, thisFringe);
-                if (!thisFringe.empty())
-                    std::transform(++thisFringe.cbegin(), thisFringe.cend(), std::back_inserter(outPoints), [](glm::vec2 v) { return FringePoint { .x = v.x, .y = v.y }; });
-                thisFringe.clear();
-            }
+            outPoints.emplace_back(ShapePoint { .x = converted.p1.x, .y = converted.p1.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
+            outPoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
+            outPoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
+
+            u16 i = outPoints.size();
+            for (const u16 sub : { 8_u16, 7_u16, 6_u16, 6_u16, 5_u16, 4_u16, 3_u16, 2_u16, 1_u16 }) outInds.emplace_back(+(i - sub));
         }
+        else // Quadratic bezier.
+        {
+            if (ptIt3->isCtrl)
+                continue; // See (1.)
+
+            outPoints.emplace_back(ShapePoint { .x = ptIt->x, .y = ptIt->y, .xCtrl = -1.0f, .yCtrl = 1.0f });
+            outPoints.emplace_back(ShapePoint { .x = ptIt2->x, .y = ptIt2->y, .xCtrl = 0.0f, .yCtrl = -1.0f });
+            outPoints.emplace_back(ShapePoint { .x = ptIt3->x, .y = ptIt3->y, .xCtrl = 1.0f, .yCtrl = 1.0f });
+
+            u16 i = outPoints.size();
+            for (const u16 sub : { 3_u16, 2_u16, 1_u16 }) outInds.emplace_back(+(i - sub));
+        }
+
+        ptIt = ptIt3; // Go to end of this curve.
     }
 
     return true;

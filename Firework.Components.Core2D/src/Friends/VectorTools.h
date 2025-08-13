@@ -121,7 +121,9 @@ namespace Firework
         [[nodiscard]] static bool quadraticBezierToLines(glm::vec2 p1, glm::vec2 c, glm::vec2 p2, ssz segments, std::vector<glm::vec2>& out);
         [[nodiscard]] static bool quadraticBezierToLines(glm::vec2 p1, glm::vec2 c, glm::vec2 p2, float segmentLength, std::vector<glm::vec2>& out);
 
-        [[nodiscard]] static bool shapeFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints);
-        [[nodiscard]] static bool fringeFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct FringePoint>& outPoints, float segmentLength = 1.0f);
+        [[nodiscard]] static bool shapeTrianglesFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints, std::vector<uint16_t>& outInds,
+                                                            glm::vec2 windAround = glm::vec2(0.0f));
+        [[nodiscard]] static bool shapeProcessCurvesFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints,
+                                                                std::vector<uint16_t>& outInds);
     };
 } // namespace Firework

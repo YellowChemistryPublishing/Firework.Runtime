@@ -50,10 +50,8 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
             std::vector<VectorTools::PathCommand> pathCommands;
             _fence_value_return(void(), !VectorTools::parsePath(node.attribute("d").value(), pathCommands));
 
-            std::vector<ShapePoint> filledPathPoints;
-            std::vector<ssz> filledPaths { 0_z };
-            std::vector<FringePoint> fringePoints;
-            std::vector<ssz> fringePaths { 0_z };
+            std::vector<ShapePoint> shapePoints;
+            std::vector<uint16_t> shapeInds;
             std::vector<ShapeOutlinePoint> currentPath;
 
             constexpr auto transformByMatrix = [](glm::vec2 point, glm::mat3x3 transform) -> glm::vec2
@@ -92,19 +90,15 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                     if (currentPath.empty())
                         break;
 
-                    (void)VectorTools::shapeFromOutline(currentPath, filledPathPoints);
-                    filledPaths.emplace_back(filledPathPoints.size());
-                    (void)VectorTools::fringeFromOutline(currentPath, fringePoints);
-                    fringePaths.emplace_back(fringePoints.size());
+                    (void)VectorTools::shapeTrianglesFromOutline(currentPath, shapePoints, shapeInds);
+                    (void)VectorTools::shapeProcessCurvesFromOutline(currentPath, shapePoints, shapeInds);
                     currentPath.clear();
                     break;
                 case VectorTools::PathCommandType::ArcTo: /* TODO */;
                 }
             }
 
-            if (FringeRenderer fr = FringeRenderer(fringePoints, fringePaths))
-                ret.emplace_back(FringeRenderable(std::move(fr), childFill));
-            if (ShapeRenderer pr = ShapeRenderer(filledPathPoints, filledPaths))
+            if (ShapeRenderer pr = ShapeRenderer(shapePoints, shapeInds))
                 ret.emplace_back(FilledPathRenderable(std::move(pr), childFill));
         }
         // Otherwise, do nothing.
@@ -185,17 +179,45 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
         std::lock_guard guard(renderData->lock);
         _fence_value_return(void(), !renderData->toRender);
 
-        for (auto it = renderData->toRender->rbegin(); it != renderData->toRender->rend(); ++it)
+        for (auto it = renderData->toRender->begin(); it != renderData->toRender->end(); ++it)
         {
             const ScalableVectorGraphic::Renderable& renderable = *it;
             switch (renderable.type)
             {
             case ScalableVectorGraphic::RenderableType::FilledPath:
-                (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), renderData->tf);
-                (void)ShapeRenderer::submitDraw(float(+renderIndex), rectTransform, ~0_u8, renderable.filledPath.col);
-                break;
-            case ScalableVectorGraphic::RenderableType::Fringe:
-                (void)renderable.fringe.rend.submitDraw(float(+renderIndex), renderData->tf, renderable.fringe.col);
+                {
+                    _push_nowarn_gcc(_clWarn_gcc_c_cast);
+                    _push_nowarn_clang(_clWarn_clang_c_cast);
+                    (void)ShapeRenderer::submitDrawCover(float(+renderIndex), rectTransform, 0_u8, Color(0, 0, 0, 0), 1.0f,
+                                                         BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+                                                         BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+                    const std::initializer_list<glm::vec2> sampleOffsets { { -0.5f + 1.0f / 8.0f, -0.5f + 7.0f / 8.0f }, // | . o . . . . . .
+                                                                           { -0.5f + 6.0f / 8.0f, -0.5f + 6.0f / 8.0f }, // | . . . . . . o .
+                                                                           { -0.5f + 3.0f / 8.0f, -0.5f + 5.0f / 8.0f }, // | . . . o . . . .
+                                                                           { -0.5f + 5.0f / 8.0f, 0.0f },                // | . . . . . o . .
+                                                                           { -0.5f + 2.0f / 8.0f, -0.5f + 3.0f / 8.0f }, // | . . o . . . . .
+                                                                           { -0.5f + 4.0f / 8.0f, -0.5f + 2.0f / 8.0f }, // | . . . . o . . .
+                                                                           { -0.5f + 7.0f / 8.0f, -0.5f + 1.0f / 8.0f }, // | . . . . . . . o
+                                                                           { -0.5f + 0.0f / 8.0f, -0.5f } };             // | o . . . . . . .
+                    for (const glm::vec2& off : sampleOffsets)
+                    {
+                        (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), glm::translate(glm::mat4(1.0f), glm::vec3(off.x, off.y, 0.0f)) * renderData->tf,
+                                                                           WindingRule::EvenOdd);
+                        (void)ShapeRenderer::submitDrawCover(float(+renderIndex), rectTransform, 0_u8, renderable.filledPath.col,
+                                                             std::ceil(255.0f / float(sampleOffsets.size())) / 255.0f,
+                                                             BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD | BGFX_STATE_DEPTH_TEST_ALWAYS,
+                                                             BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+                    }
+                    (void)ShapeRenderer::submitDrawCover(
+                        float(+renderIndex), rectTransform, 0_u8, renderable.filledPath.col, 1.0f,
+                        BGFX_STATE_WRITE_RGB |
+                            BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+                        BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+                    _pop_nowarn_clang();
+                    _pop_nowarn_gcc();
+                }
+                // (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), renderData->tf);
+                // (void)ShapeRenderer::submitDrawCover(float(+renderIndex), rectTransform, ~0_u8, renderable.filledPath.col);
                 break;
             case ScalableVectorGraphic::RenderableType::NoOp:;
             }
