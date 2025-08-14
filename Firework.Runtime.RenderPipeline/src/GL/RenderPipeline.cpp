@@ -20,7 +20,7 @@ void (*RenderPipeline::renderFrame)() = RenderPipeline::defaultRenderFrame;
 
 bool RenderPipeline::renderInitialize(void* ndt, void* nwh, u32 w, u32 h, RendererBackend be)
 {
-    if (!Renderer::initialize(ndt, nwh, w, h, be, BGFX_RESET_MSAA_X16))
+    if (!Renderer::initialize(ndt, nwh, w, h, be, BGFX_RESET_NONE))
         return false;
 
     RenderPipeline::resetViewArea(u16(w), u16(h));
@@ -35,7 +35,7 @@ void RenderPipeline::renderShutdown()
 
 void RenderPipeline::defaultClearViewArea()
 {
-    for (ViewIndex i = 0; i <= 1; i++) Renderer::setViewClear(i, 0x00000000, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL);
+    for (ViewIndex i = 0; i <= 1; i++) Renderer::setViewClear(i, 0x000000ff, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH | BGFX_CLEAR_STENCIL);
 }
 void RenderPipeline::defaultResetViewArea(u16 w, u16 h)
 {
@@ -45,7 +45,7 @@ void RenderPipeline::defaultResetViewArea(u16 w, u16 h)
 }
 void RenderPipeline::defaultResetBackbuffer(u32 w, u32 h)
 {
-    Renderer::resetBackbuffer(w, h, BGFX_RESET_MSAA_X16);
+    Renderer::resetBackbuffer(w, h, BGFX_RESET_NONE);
 }
 void RenderPipeline::defaultRenderFrame()
 {

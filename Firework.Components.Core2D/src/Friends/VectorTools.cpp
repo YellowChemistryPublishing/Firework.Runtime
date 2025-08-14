@@ -232,7 +232,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
         AnyMoveTo:
             pathBegin = ssz(out.size());
             _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
-            out.emplace_back(PathCommand(PathCommandMoveTo { .to = to }));
+            out.emplace_back(to);
             readNextSetInjectedCommandIfNeeded(command == 'M' ? 'L' : 'l');
             break;
 
@@ -243,7 +243,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             to = cur;
         AnyLineTo:
             _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
-            out.emplace_back(PathCommand(PathCommandLineTo { .from = cur, .to = to }));
+            out.emplace_back(cur, to);
             readNextSetInjectedCommandIfNeeded(command);
             break;
 
@@ -264,7 +264,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
             horizReadTo = &to.y;
         AnyHorizTo:
             _fence_value_return(false, !readAddNextFloat(*horizReadTo));
-            out.emplace_back(PathCommand(PathCommandLineTo { .from = cur, .to = to }));
+            out.emplace_back(cur, to);
             readNextSetInjectedCommandIfNeeded(command);
             break;
 
@@ -286,7 +286,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
                 if (command == 'S' || command == 's')
                 {
                     if (!out.empty() && out.back().type == PathCommandType::CubicTo)
-                        c1 = cur - (out.back().cubicTo.ctrl2 - cur);
+                        c1 = cur - (out.back().dc.ctrl2 - cur);
                     else
                         c1 = cur;
                 }
@@ -300,7 +300,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
                 _fence_value_return(false, !readDelimiter());
                 _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
 
-                out.emplace_back(PathCommand(PathCommandCubicTo { .from = cur, .ctrl1 = c1, .ctrl2 = c2, .to = to }));
+                out.emplace_back(cur, c1, c2, to);
 
                 readNextSetInjectedCommandIfNeeded(command);
             }
@@ -322,7 +322,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
                 if (command == 'T' || command == 't')
                 {
                     if (!out.empty() && out.back().type == PathCommandType::QuadraticTo)
-                        c1 = cur - (out.back().quadraticTo.ctrl - cur);
+                        c1 = cur - (out.back().dc.ctrl1 - cur);
                     else
                         c1 = cur;
                 }
@@ -333,7 +333,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
                 }
 
                 _fence_value_return(false, !readAddNextFloatPair(to.x, to.y));
-                out.emplace_back(PathCommand(PathCommandQuadraticTo { .from = cur, .ctrl = c1, .to = to }));
+                out.emplace_back(cur, c1, to);
                 readNextSetInjectedCommandIfNeeded(command);
             }
             break;
@@ -344,7 +344,7 @@ bool VectorTools::parsePath(std::string_view attrVal, std::vector<PathCommand>& 
 
         case 'Z':
         case 'z':
-            out.emplace_back(PathCommand(PathCommandClose { .begin = pathBegin, .end = ssz(out.size()) }));
+            out.emplace_back(pathBegin, ssz(out.size()));
             pathBegin = ssz(out.size());
             break;
         }

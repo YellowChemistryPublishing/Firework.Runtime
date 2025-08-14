@@ -60,37 +60,33 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                 return glm::vec2(ret.x, ret.y);
             };
 
+            glm::vec2 windAround(0.0f, 0.0f);
+            sz windCount = 0;
             for (VectorTools::PathCommand& pc : pathCommands)
             {
                 switch (pc.type)
                 {
-                case VectorTools::PathCommandType::MoveTo:
-                    pc.moveTo.to = transformByMatrix(pc.moveTo.to, childTransform);
-                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.moveTo.to.x, .y = pc.moveTo.to.y, .isCtrl = false });
-                    break;
-                case VectorTools::PathCommandType::LineTo:
-                    pc.lineTo.to = transformByMatrix(pc.lineTo.to, childTransform);
-                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.lineTo.to.x, .y = pc.lineTo.to.y, .isCtrl = false });
-                    break;
                 case VectorTools::PathCommandType::CubicTo:
-                    pc.cubicTo.ctrl1 = transformByMatrix(pc.cubicTo.ctrl1, childTransform);
-                    pc.cubicTo.ctrl2 = transformByMatrix(pc.cubicTo.ctrl2, childTransform);
-                    pc.cubicTo.to = transformByMatrix(pc.cubicTo.to, childTransform);
-                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.cubicTo.ctrl1.x, .y = pc.cubicTo.ctrl1.y, .isCtrl = true });
-                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.cubicTo.ctrl2.x, .y = pc.cubicTo.ctrl2.y, .isCtrl = true });
-                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.cubicTo.to.x, .y = pc.cubicTo.to.y, .isCtrl = false });
-                    break;
+                    pc.dc.ctrl1 = transformByMatrix(pc.dc.ctrl1, childTransform);
+                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.dc.ctrl1.x, .y = pc.dc.ctrl1.y, .isCtrl = true });
+                    [[fallthrough]];
                 case VectorTools::PathCommandType::QuadraticTo:
-                    pc.quadraticTo.ctrl = transformByMatrix(pc.quadraticTo.ctrl, childTransform);
-                    pc.quadraticTo.to = transformByMatrix(pc.quadraticTo.to, childTransform);
-                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.quadraticTo.ctrl.x, .y = pc.quadraticTo.ctrl.y, .isCtrl = true });
-                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.quadraticTo.to.x, .y = pc.quadraticTo.to.y, .isCtrl = false });
+                    pc.dc.ctrl2 = transformByMatrix(pc.dc.ctrl2, childTransform);
+                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.dc.ctrl2.x, .y = pc.dc.ctrl2.y, .isCtrl = true });
+                    [[fallthrough]];
+                case VectorTools::PathCommandType::MoveTo:
+                case VectorTools::PathCommandType::LineTo:
+                    pc.to = transformByMatrix(pc.to, childTransform);
+                    currentPath.emplace_back(ShapeOutlinePoint { .x = pc.to.x, .y = pc.to.y, .isCtrl = false });
+                    windAround += pc.to;
+                    ++windCount;
                     break;
                 case VectorTools::PathCommandType::ClosePath:
                     if (currentPath.empty())
                         break;
 
-                    (void)VectorTools::shapeTrianglesFromOutline(currentPath, shapePoints, shapeInds);
+                    windAround /= float(+windCount);
+                    (void)VectorTools::shapeTrianglesFromOutline(currentPath, shapePoints, shapeInds, windAround);
                     (void)VectorTools::shapeProcessCurvesFromOutline(currentPath, shapePoints, shapeInds);
                     currentPath.clear();
                     break;

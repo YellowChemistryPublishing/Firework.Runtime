@@ -37,34 +37,9 @@ namespace Firework
 
         [[nodiscard]] static sys::result<glm::mat3x3> parseTransform(std::string_view attrVal);
 
-        struct PathCommandMoveTo
-        {
-            glm::vec2 to;
-        };
-        struct PathCommandLineTo
-        {
-            glm::vec2 from;
-            glm::vec2 to;
-        };
-        struct PathCommandQuadraticTo
-        {
-            glm::vec2 from;
-            glm::vec2 ctrl;
-            glm::vec2 to;
-        };
-        struct PathCommandCubicTo
-        {
-            glm::vec2 from;
-            glm::vec2 ctrl1;
-            glm::vec2 ctrl2;
-            glm::vec2 to;
-        };
         struct PathCommandArcTo
         {
             glm::vec2 from;
-            glm::vec2 radius;
-            float angleDeg;
-            bool largeArcFlag, sweepFlag;
             glm::vec2 to;
         };
         struct PathCommandClose
@@ -83,28 +58,53 @@ namespace Firework
         };
         struct PathCommand
         {
+            struct ControlPointData
+            {
+                glm::vec2 ctrl1, ctrl2;
+            };
+            struct ArcData
+            {
+                glm::vec2 radius;
+                float angleDeg;
+                bool largeArcFlag, sweepFlag;
+            };
+            struct IndexData
+            {
+                ssz begin, end;
+            };
+
+            _push_nowarn_gcc(_clWarn_gcc_pedantic);
+            _push_nowarn_clang(_clWarn_clang_anon_union_struct);
+            _push_nowarn_clang(_clWarn_clang_nameless_struct_union);
+            _push_nowarn_msvc(_clWarn_msvc_nameless_struct_union);
+
+            glm::vec2 from;
             union
             {
-                PathCommandMoveTo moveTo;
-                PathCommandLineTo lineTo;
-                PathCommandQuadraticTo quadraticTo;
-                PathCommandCubicTo cubicTo;
-                PathCommandArcTo arcTo;
-                PathCommandClose closePath;
+                ControlPointData dc;
+                ArcData da;
+                IndexData di;
             };
+            glm::vec2 to;
             PathCommandType type;
 
-            PathCommand(PathCommandMoveTo moveTo) : moveTo(std::move(moveTo)), type(PathCommandType::MoveTo)
+            _pop_nowarn_msvc();
+            _pop_nowarn_clang();
+            _pop_nowarn_clang();
+            _pop_nowarn_gcc();
+
+            PathCommand(glm::vec2 to) : to(to), type(PathCommandType::MoveTo)
             { }
-            PathCommand(PathCommandLineTo lineTo) : lineTo(std::move(lineTo)), type(PathCommandType::LineTo)
+            PathCommand(glm::vec2 from, glm::vec2 to) : from(from), to(to), type(PathCommandType::LineTo)
             { }
-            PathCommand(PathCommandQuadraticTo quadraticTo) : quadraticTo(std::move(quadraticTo)), type(PathCommandType::QuadraticTo)
+            PathCommand(glm::vec2 from, glm::vec2 ctrl, glm::vec2 to) : from(from), dc { .ctrl1 = glm::vec2(), .ctrl2 = ctrl }, to(to), type(PathCommandType::QuadraticTo)
             { }
-            PathCommand(PathCommandCubicTo cubicTo) : cubicTo(std::move(cubicTo)), type(PathCommandType::CubicTo)
+            PathCommand(glm::vec2 from, glm::vec2 ctrl1, glm::vec2 ctrl2, glm::vec2 to) : from(from), dc { .ctrl1 = ctrl1, .ctrl2 = ctrl2 }, to(to), type(PathCommandType::CubicTo)
             { }
-            PathCommand(PathCommandArcTo arcTo) : arcTo(std::move(arcTo)), type(PathCommandType::ArcTo)
+            PathCommand(glm::vec2 from, glm::vec2 to, glm::vec2 radius, float angleDeg, bool largeArcFlag, bool sweepFlag) :
+                from(from), da { .radius = radius, .angleDeg = angleDeg, .largeArcFlag = largeArcFlag, .sweepFlag = sweepFlag }, to(to), type(PathCommandType::ArcTo)
             { }
-            PathCommand(PathCommandClose closePath) : closePath(std::move(closePath)), type(PathCommandType::ClosePath)
+            PathCommand(ssz begin, ssz end) : di { .begin = begin, .end = end }, type(PathCommandType::ClosePath)
             { }
         };
 
