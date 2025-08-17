@@ -35,9 +35,10 @@ namespace Firework
         struct FilledPathRenderable
         {
             ShapeRenderer rend = nullptr;
+            glm::mat4 tf = glm::mat4(1.0f);
             Color col = Color::unknown;
 
-            FilledPathRenderable(ShapeRenderer rend, Color col) : rend(std::move(rend)), col(col)
+            FilledPathRenderable(ShapeRenderer rend, const glm::mat4 tf, Color col = Color::unknown) : rend(std::move(rend)), tf(tf), col(col)
             { }
             FilledPathRenderable(FilledPathRenderable&& other)
             {
@@ -49,6 +50,7 @@ namespace Firework
                 using std::swap;
 
                 swap(a.rend, b.rend);
+                swap(a.tf, b.tf);
                 swap(a.col, b.col);
             }
         };
@@ -74,7 +76,8 @@ namespace Firework
                 case RenderableType::FilledPath:
                     this->filledPath.~FilledPathRenderable();
                     break;
-                case RenderableType::NoOp:;
+                case RenderableType::NoOp:
+                default:;
                 }
             }
 
@@ -111,7 +114,7 @@ namespace Firework
         //                           v Never null, but also may be invalid, so passed by ptr, not ref.
         void buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile* svg);
 
-        void renderOffload(ssz renderIndex);
+        void lateRenderOffload(ssz renderIndex);
     public:
         Property<std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile>, std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile>> svgFile {
             [this]() -> std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile> { return this->_svgFile; },

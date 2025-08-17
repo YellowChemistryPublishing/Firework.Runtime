@@ -18,7 +18,7 @@ Property<const RuntimeInitializationOptions&, RuntimeInitializationOptions> Appl
     Application::_initializationOptions = std::move(value);
 } };
 
-float Application::secondsPerFrame = 1.0f / 60.0f;
+float Application::secondsPerFrame = 1.0f / 160.0f;
 
 int Application::run(int argc, char* argv[])
 {

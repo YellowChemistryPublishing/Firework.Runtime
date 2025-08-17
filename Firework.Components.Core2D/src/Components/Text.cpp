@@ -5,6 +5,7 @@
 
 #include <Components/RectTransform.h>
 #include <Font/Font.h>
+#include <Friends/Multisample.h>
 #include <Friends/ParagraphIterator.h>
 #include <Friends/VectorTools.h>
 #include <PackageSystem/TrueTypeFontFile.h>
@@ -208,26 +209,19 @@ void Text::renderOffload(ssz renderIndex)
             _push_nowarn_gcc(_clWarn_gcc_c_cast);
             _push_nowarn_clang(_clWarn_clang_c_cast);
             (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, Color(0, 0, 0, 0), 1.0f,
-                                                 BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+                                                 BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO) | BGFX_STATE_DEPTH_TEST_LESS,
                                                  BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-            const std::initializer_list<glm::vec2> sampleOffsets { { -0.5f + 1.0f / 8.0f, -0.5f + 7.0f / 8.0f }, // | . o . . . . . .
-                                                                   { -0.5f + 6.0f / 8.0f, -0.5f + 6.0f / 8.0f }, // | . . . . . . o .
-                                                                   { -0.5f + 3.0f / 8.0f, -0.5f + 5.0f / 8.0f }, // | . . . o . . . .
-                                                                   { -0.5f + 5.0f / 8.0f, 0.0f },                // | . . . . . o . .
-                                                                   { -0.5f + 2.0f / 8.0f, -0.5f + 3.0f / 8.0f }, // | . . o . . . . .
-                                                                   { -0.5f + 4.0f / 8.0f, -0.5f + 2.0f / 8.0f }, // | . . . . o . . .
-                                                                   { -0.5f + 7.0f / 8.0f, -0.5f + 1.0f / 8.0f }, // | . . . . . . . o
-                                                                   { -0.5f + 0.0f / 8.0f, -0.5f } };             // | o . . . . . . .
-            for (const glm::vec2& off : sampleOffsets)
+            for (const auto& [xOff, yOff] : multisampleOffsets)
             {
-                (void)shape->submitDrawStencil(float(+renderIndex), glm::translate(glm::mat4(1.0f), glm::vec3(off.x, off.y, 0.0f)) * glTf, WindingRule::NonZero);
-                (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, color, std::ceil(255.0f / float(sampleOffsets.size())) / 255.0f,
-                                                     BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD | BGFX_STATE_DEPTH_TEST_ALWAYS,
+                (void)shape->submitDrawStencil(float(+renderIndex), glm::translate(glm::mat4(1.0f), glm::vec3(xOff, yOff, 0.0f)) * glTf, WindingRule::NonZero);
+                (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, color, std::ceil(255.0f / float(multisampleOffsets.size())) / 255.0f,
+                                                     BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA,
                                                      BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
             }
             (void)ShapeRenderer::submitDrawCover(
                 float(+renderIndex), clipTf, 0_u8, color, 1.0f,
-                BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+                BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO) |
+                    BGFX_STATE_DEPTH_TEST_LESS,
                 BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
             _pop_nowarn_clang();
             _pop_nowarn_gcc();

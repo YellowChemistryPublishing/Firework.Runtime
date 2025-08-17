@@ -119,6 +119,7 @@ namespace Firework::Internal
         /// @internal
         /// @brief Low-level API. Event raised immediately before the render thread exits.
         /// @note Render thread only.
+        static FuncPtrEvent<std::type_index, Entity&, std::shared_ptr<void>, ssz> OnLateRenderOffloadForComponent;
         static FuncPtrEvent<> OnRenderShutdown;
     };
 } // namespace Firework::Internal

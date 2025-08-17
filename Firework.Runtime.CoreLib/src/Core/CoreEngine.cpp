@@ -61,10 +61,12 @@ const SDL_DisplayMode* CoreEngine::displMd;
 moodycamel::ConcurrentQueue<func::function<void()>> CoreEngine::pendingPreTickQueue;
 moodycamel::ConcurrentQueue<func::function<void()>> CoreEngine::pendingPostTickQueue;
 
-moodycamel::ConcurrentQueue<RenderJob> CoreEngine::renderQueue;
 std::vector<RenderJob> CoreEngine::frameRenderJobs;
-std::atomic_flag frameInProgress = ATOMIC_FLAG_INIT;
-std::mutex renderResizeLock;
+
+std::deque<RenderJob> CoreEngine::renderQueue;
+std::mutex CoreEngine::renderQueueLock;
+
+static std::mutex renderResizeLock;
 
 int CoreEngine::execute(int argc, char* argv[])
 {
@@ -290,28 +292,28 @@ void CoreEngine::internalLoop()
                         userFunctionInvoker([&] { InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, entity, componentIt->second, renderIndex++); });
                 }
             });
-
-            CoreEngine::frameRenderJobs.push_back(RenderJob([]
+            Entities::forEachEntityReversed([&](Entity& entity)
             {
-                RenderPipeline::renderFrame();
-                frameInProgress.clear(std::memory_order_relaxed);
-            }, false));
+                for (auto& [typeIndex, componentSet] : Entities::table)
+                {
+                    auto componentIt = componentSet.find(&entity);
+                    if (componentIt != componentSet.end())
+                        userFunctionInvoker([&] { InternalEngineEvent::OnLateRenderOffloadForComponent(typeIndex, entity, componentIt->second, --renderIndex); });
+                }
+            });
 
-            if (frameInProgress.test(std::memory_order_relaxed))
-            {
-                std::erase_if(CoreEngine::frameRenderJobs, [](const RenderJob& job) { return !job.required(); });
-            }
-            else
-                frameInProgress.test_and_set(std::memory_order_relaxed);
+            CoreEngine::frameRenderJobs.push_back(RenderJob([] { RenderPipeline::renderFrame(); }, false));
 
             if (!CoreEngine::frameRenderJobs.empty())
             {
-                CoreEngine::renderQueue.enqueue(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
                 {
-                    renderResizeLock.lock();
-                    for (const RenderJob& job : jobs) job();
-                    renderResizeLock.unlock();
-                }));
+                    std::lock_guard guard(CoreEngine::renderQueueLock);
+                    CoreEngine::renderQueue.emplace_back(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
+                    {
+                        std::lock_guard guard(renderResizeLock);
+                        for (const RenderJob& job : jobs) job();
+                    }));
+                }
                 CoreEngine::frameRenderJobs.clear();
             }
 #pragma endregion
@@ -347,14 +349,17 @@ void CoreEngine::internalLoop()
     Entities::front.reset();
 
     // Render finalise.
-    CoreEngine::renderQueue.enqueue(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
     {
-        for (const RenderJob& job : jobs)
+        std::lock_guard guard(CoreEngine::renderQueueLock);
+        CoreEngine::renderQueue.emplace_back(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
         {
-            if (job.required())
-                job();
-        }
-    }));
+            for (const RenderJob& job : jobs)
+            {
+                if (job.required())
+                    job();
+            }
+        }));
+    }
     CoreEngine::frameRenderJobs.clear();
 
     CoreEngine::state.store(EngineState::MainThreadDone, std::memory_order_seq_cst);
@@ -646,12 +651,19 @@ BreakAll:
         RenderJob job;
         while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::MainThreadDone)
         {
-            while (renderQueue.try_dequeue(job))
+        WhileLoop:
             {
-                if (renderQueue.size_approx() > GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required())
-                    Debug::logInfo("Render queue overburdened, skipping render job id ", static_cast<const void*>(&job.function()), ".\n");
-                else
-                    job();
+                std::lock_guard guard(CoreEngine::renderQueueLock);
+                if (!CoreEngine::renderQueue.empty())
+                {
+                    job = std::move(CoreEngine::renderQueue.front());
+                    CoreEngine::renderQueue.pop_front();
+                    if (CoreEngine::renderQueue.size() >= GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required())
+                        Debug::logInfo("Render queue overburdened, skipping render job id ", static_cast<const void*>(&job.function()), ".\n");
+                    else
+                        job();
+                    goto WhileLoop;
+                }
             }
 
 #if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
@@ -662,8 +674,10 @@ BreakAll:
         }
 
         // Cleanup.
-        while (renderQueue.try_dequeue(job))
+        while (!CoreEngine::renderQueue.empty())
         {
+            job = std::move(CoreEngine::renderQueue.front());
+            CoreEngine::renderQueue.pop_front();
             if (job.required())
                 job();
         }

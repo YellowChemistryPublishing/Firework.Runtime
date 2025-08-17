@@ -9,7 +9,7 @@ project(Firework.Runtime)
 
 # Configuration options...
 option(FIREWORK_WINDOWS_COMPATIBILITY "Enable compatibility with Windows versions up to Windows XP. This option only has effect when compiling with MinGW." ON)
-option(FIREWORK_NO_CONSOLE "Build as a standalone program." ON)
+option(FIREWORK_NO_CONSOLE "Build as a standalone program." OFF)
 option(FIREWORK_BUILD_EXAMPLES "Build various examples." ON)
 option(FIREWORK_LOCAL_DBGINFO_PATHS "Use local paths embedded in program for debug information." OFF)
 option(FIREWORK_SANITIZE "Enable supported sanitizers." OFF)
@@ -149,6 +149,9 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELWITHDEBINFO ${FIREWORK_LTO})
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL ${FIREWORK_LTO})
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ${FIREWORK_LTO})
 
+# libcxxext
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/libcxxext")
+
 # concurrentqueue
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/concurrentqueue")
 
@@ -166,8 +169,14 @@ if (FIREWORK_BUILD_PLATFORM STREQUAL "Win32" OR FIREWORK_BUILD_PLATFORM STREQUAL
     set_target_properties(cpptrace-lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
-# libcxxext
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/libcxxext")
+# glm
+set(GLM_ENABLE_CXX_20 ON CACHE INTERNAL "" FORCE)
+set(GLM_ENABLE_LANG_EXTENSIONS ON CACHE INTERNAL "" FORCE)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/glm")
+target_compile_definitions(glm PUBLIC GLM_FORCE_LEFT_HANDED GLM_FORCE_SIZE_T_LENGTH)
+
+# pugixml
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
 
 # SDL3
 set(SDL_STATIC_PIC ON CACHE INTERNAL "" FORCE)
@@ -179,21 +188,12 @@ set(SDL_RENDER_METAL OFF CACHE INTERNAL "" FORCE)
 set(HAVE_SHELLSCALINGAPI_H OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/SDL")
 
-# glm
-set(GLM_ENABLE_CXX_20 ON CACHE INTERNAL "" FORCE)
-set(GLM_ENABLE_LANG_EXTENSIONS ON CACHE INTERNAL "" FORCE)
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/dependencies/glm")
-target_compile_definitions(glm PUBLIC GLM_FORCE_LEFT_HANDED GLM_FORCE_SIZE_T_LENGTH)
-
 # bgfx
 
 set(BGFX_LIBRARY_TYPE "STATIC" CACHE INTERNAL "" FORCE)
 set(BGFX_BUILD_EXAMPLES ON CACHE INTERNAL "" FORCE)
 set(BGFX_CONFIG_MULTITHREADED OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/bgfx.cmake")
-
-# pugixml
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/external/pugixml")
 
 # assimp
 

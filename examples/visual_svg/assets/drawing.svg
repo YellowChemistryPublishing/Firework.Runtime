@@ -37,10 +37,11 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     fill="#ff00ff">
     <path
        id="rect1"
-       style="font-variation-settings:'wght' 600;fill:#ff00ff;stroke:#ffffff;stroke-width:1.32292;stroke-linejoin:round;stroke-opacity:0.0313725"
+       style="font-variation-settings:'wght' 600;stroke:#ffffff;stroke-width:1.32292;stroke-linejoin:round;stroke-opacity:0.0313725"
        d="M 0,0 H 39.6875 V 26.458332 H 0 Z" />
   </g>
 </svg>

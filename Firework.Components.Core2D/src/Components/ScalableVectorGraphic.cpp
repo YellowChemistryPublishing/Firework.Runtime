@@ -4,6 +4,7 @@
 #include <Core/CoreEngine.h>
 #include <Core/Debug.h>
 #include <EntityComponentSystem/Entity.h>
+#include <Friends/Multisample.h>
 #include <Friends/VectorTools.h>
 #include <GL/Renderer.h>
 #include <Library/Math.h>
@@ -62,6 +63,7 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
 
             glm::vec2 windAround(0.0f, 0.0f);
             sz windCount = 0;
+            glm::vec2 min(std::numeric_limits<float>::infinity()), max(-std::numeric_limits<float>::infinity());
             for (VectorTools::PathCommand& pc : pathCommands)
             {
                 switch (pc.type)
@@ -69,15 +71,21 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                 case VectorTools::PathCommandType::CubicTo:
                     pc.dc.ctrl1 = transformByMatrix(pc.dc.ctrl1, childTransform);
                     currentPath.emplace_back(ShapeOutlinePoint { .x = pc.dc.ctrl1.x, .y = pc.dc.ctrl1.y, .isCtrl = true });
+                    min = glm::min(min, pc.dc.ctrl1);
+                    max = glm::max(max, pc.dc.ctrl1);
                     [[fallthrough]];
                 case VectorTools::PathCommandType::QuadraticTo:
                     pc.dc.ctrl2 = transformByMatrix(pc.dc.ctrl2, childTransform);
                     currentPath.emplace_back(ShapeOutlinePoint { .x = pc.dc.ctrl2.x, .y = pc.dc.ctrl2.y, .isCtrl = true });
+                    min = glm::min(min, pc.dc.ctrl2);
+                    max = glm::max(max, pc.dc.ctrl2);
                     [[fallthrough]];
                 case VectorTools::PathCommandType::MoveTo:
                 case VectorTools::PathCommandType::LineTo:
                     pc.to = transformByMatrix(pc.to, childTransform);
                     currentPath.emplace_back(ShapeOutlinePoint { .x = pc.to.x, .y = pc.to.y, .isCtrl = false });
+                    min = glm::min(min, pc.to);
+                    max = glm::max(max, pc.to);
                     windAround += pc.to;
                     ++windCount;
                     break;
@@ -88,14 +96,23 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                     windAround /= float(+windCount);
                     (void)VectorTools::shapeTrianglesFromOutline(currentPath, shapePoints, shapeInds, windAround);
                     (void)VectorTools::shapeProcessCurvesFromOutline(currentPath, shapePoints, shapeInds);
+
                     currentPath.clear();
+                    windAround = glm::vec2(0.0f, 0.0f);
+                    windCount = 0;
                     break;
                 case VectorTools::PathCommandType::ArcTo: /* TODO */;
                 }
             }
 
             if (ShapeRenderer pr = ShapeRenderer(shapePoints, shapeInds))
-                ret.emplace_back(FilledPathRenderable(std::move(pr), childFill));
+            {
+                // Add `1.0f` on either side to not clip out AA.
+                glm::mat4 clipTf = glm::translate(glm::mat4(1.0f), glm::vec3(min.x - 1.0f, min.y - 1.0f, 0.0f));
+                clipTf = glm::scale(clipTf, glm::vec3(max.x - min.x + 2.0f, -(max.y - min.y + 2.0f), 1.0f));
+                clipTf = glm::translate(clipTf, glm::vec3(0.5f, -0.5f, 0.0f));
+                ret.emplace_back(FilledPathRenderable(std::move(pr), clipTf, childFill));
+            }
         }
         // Otherwise, do nothing.
     };
@@ -116,7 +133,7 @@ void ScalableVectorGraphic::buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMar
         ScalableVectorGraphic::loadedSvgs.erase(svgIt);
 }
 
-void ScalableVectorGraphic::renderOffload(ssz renderIndex)
+void ScalableVectorGraphic::lateRenderOffload(ssz renderIndex)
 {
     // Don't forget to lock the render data!
     auto setViewboxTransform = [&]
@@ -170,52 +187,45 @@ void ScalableVectorGraphic::renderOffload(ssz renderIndex)
         setViewboxTransform();
     }
 
-    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData, rectTransform = rectTransform->matrix()]
+    CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData]
     {
         std::lock_guard guard(renderData->lock);
         _fence_value_return(void(), !renderData->toRender);
 
-        for (auto it = renderData->toRender->begin(); it != renderData->toRender->end(); ++it)
+        for (const ScalableVectorGraphic::Renderable& renderable : *renderData->toRender)
         {
-            const ScalableVectorGraphic::Renderable& renderable = *it;
             switch (renderable.type)
             {
             case ScalableVectorGraphic::RenderableType::FilledPath:
                 {
                     _push_nowarn_gcc(_clWarn_gcc_c_cast);
                     _push_nowarn_clang(_clWarn_clang_c_cast);
-                    (void)ShapeRenderer::submitDrawCover(float(+renderIndex), rectTransform, 0_u8, Color(0, 0, 0, 0), 1.0f,
-                                                         BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+
+                    const glm::mat4 clipTf = renderData->tf * renderable.filledPath.tf;
+                    (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, Color(0, 0, 0, 0), 1.0f,
+                                                         BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
                                                          BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-                    const std::initializer_list<glm::vec2> sampleOffsets { { -0.5f + 1.0f / 8.0f, -0.5f + 7.0f / 8.0f }, // | . o . . . . . .
-                                                                           { -0.5f + 6.0f / 8.0f, -0.5f + 6.0f / 8.0f }, // | . . . . . . o .
-                                                                           { -0.5f + 3.0f / 8.0f, -0.5f + 5.0f / 8.0f }, // | . . . o . . . .
-                                                                           { -0.5f + 5.0f / 8.0f, 0.0f },                // | . . . . . o . .
-                                                                           { -0.5f + 2.0f / 8.0f, -0.5f + 3.0f / 8.0f }, // | . . o . . . . .
-                                                                           { -0.5f + 4.0f / 8.0f, -0.5f + 2.0f / 8.0f }, // | . . . . o . . .
-                                                                           { -0.5f + 7.0f / 8.0f, -0.5f + 1.0f / 8.0f }, // | . . . . . . . o
-                                                                           { -0.5f + 0.0f / 8.0f, -0.5f } };             // | o . . . . . . .
-                    for (const glm::vec2& off : sampleOffsets)
+                    for (const auto& [xOff, yOff] : multisampleOffsets)
                     {
-                        (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), glm::translate(glm::mat4(1.0f), glm::vec3(off.x, off.y, 0.0f)) * renderData->tf,
-                                                                           WindingRule::EvenOdd);
-                        (void)ShapeRenderer::submitDrawCover(float(+renderIndex), rectTransform, 0_u8, renderable.filledPath.col,
-                                                             std::ceil(255.0f / float(sampleOffsets.size())) / 255.0f,
-                                                             BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD | BGFX_STATE_DEPTH_TEST_ALWAYS,
+                        (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), glm::translate(glm::mat4(1.0f), glm::vec3(xOff, yOff, 0.0f)) * renderData->tf,
+                                                                           WindingRule::NonZero);
+                        (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, renderable.filledPath.col,
+                                                             std::ceil(255.0f / float(multisampleOffsets.size())) / 255.0f,
+                                                             BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ADD,
                                                              BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
                     }
                     (void)ShapeRenderer::submitDrawCover(
-                        float(+renderIndex), rectTransform, 0_u8, renderable.filledPath.col, 1.0f,
-                        BGFX_STATE_WRITE_RGB |
+                        float(+renderIndex), clipTf, 0_u8, renderable.filledPath.col, 1.0f,
+                        BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS |
                             BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
                         BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+
                     _pop_nowarn_clang();
                     _pop_nowarn_gcc();
                 }
-                // (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), renderData->tf);
-                // (void)ShapeRenderer::submitDrawCover(float(+renderIndex), rectTransform, ~0_u8, renderable.filledPath.col);
                 break;
-            case ScalableVectorGraphic::RenderableType::NoOp:;
+            case ScalableVectorGraphic::RenderableType::NoOp:
+            default:;
             }
         }
     }, false);

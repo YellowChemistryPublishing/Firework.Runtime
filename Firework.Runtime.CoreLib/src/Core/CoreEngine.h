@@ -9,6 +9,7 @@ _push_nowarn_clang(_clWarn_clang_c_cast);
 #include <atomic>
 #include <concepts>
 #include <concurrentqueue.h>
+#include <deque>
 #include <function.h>
 #include <list>
 #include <vector>
@@ -68,8 +69,11 @@ namespace Firework::Internal
 
         static moodycamel::ConcurrentQueue<func::function<void()>> pendingPreTickQueue;
         static moodycamel::ConcurrentQueue<func::function<void()>> pendingPostTickQueue;
-        static moodycamel::ConcurrentQueue<RenderJob> renderQueue;
+
         static std::vector<RenderJob> frameRenderJobs;
+
+        static std::deque<RenderJob> renderQueue;
+        static std::mutex renderQueueLock;
 
         /// @internal
         /// @brief Internal API. The main thread loop. Blocks.

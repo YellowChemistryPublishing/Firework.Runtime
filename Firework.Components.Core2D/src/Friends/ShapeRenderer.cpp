@@ -31,10 +31,10 @@ bool ShapeRenderer::renderInitialize()
                                 std::array { ShaderUniform { .name = "u_params", .type = UniformType::Vec4 }, ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
 
     float unitSquareVerts[] {
-        -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, // [0]
-        -0.5f, 0.5f,  0.5f, 0.0f, 0.0f, // [1]
-        0.5f,  0.5f,  0.5f, 0.0f, 0.0f, // [2]
-        0.5f,  -0.5f, 0.5f, 0.0f, 0.0f  // [3]
+        -0.5f, -0.5f, 0.5f, 0.0f, 1.0f, // [0]
+        -0.5f, 0.5f,  0.5f, 0.0f, 1.0f, // [1]
+        0.5f,  0.5f,  0.5f, 0.0f, 1.0f, // [2]
+        0.5f,  -0.5f, 0.5f, 0.0f, 1.0f  // [3]
     };
     uint16_t unitSquareInds[] { 2, 1, 0, 3, 2, 0 };
     ShapeRenderer::unitSquare =
@@ -78,7 +78,7 @@ bool ShapeRenderer::submitDrawStencil(const float renderIndex, const glm::mat4 s
     else
         Renderer::setDrawStencil(BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_REF(0) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP |
                                  BGFX_STENCIL_OP_PASS_Z_INVERT);
-    (void)Renderer::submitDraw(1, this->fill, ShapeRenderer::drawProgram, BGFX_STATE_DEPTH_TEST_ALWAYS);
+    (void)Renderer::submitDraw(1, this->fill, ShapeRenderer::drawProgram, BGFX_STATE_DEPTH_TEST_LESS);
     _pop_nowarn_clang();
     _pop_nowarn_gcc();
 
@@ -102,9 +102,7 @@ bool ShapeRenderer::submitDrawCover(const float renderIndex, const glm::mat4 cli
     _push_nowarn_gcc(_clWarn_gcc_c_cast);
     _push_nowarn_clang(_clWarn_clang_c_cast);
     Renderer::setDrawStencil(+stencilTest | BGFX_STENCIL_FUNC_REF(+refZero) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_Z_KEEP);
-    // Renderer::setDrawStencil(BGFX_STENCIL_TEST_GREATER | BGFX_STENCIL_FUNC_REF(+~whenStencil) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_S_KEEP |
-    //                          BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
-    (void)Renderer::submitDraw(1, ShapeRenderer::unitSquare, ShapeRenderer::drawProgram, BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_MSAA | blendState);
+    (void)Renderer::submitDraw(1, ShapeRenderer::unitSquare, ShapeRenderer::drawProgram, BGFX_STATE_NONE | BGFX_STATE_CULL_CW | +blendState);
     _pop_nowarn_clang();
     _pop_nowarn_gcc();
 

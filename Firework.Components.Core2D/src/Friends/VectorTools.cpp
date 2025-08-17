@@ -413,6 +413,9 @@ bool VectorTools::shapeTrianglesFromOutline(std::span<const ShapeOutlinePoint> p
         outInds.emplace_back(+i);
         outInds.emplace_back(+(i + 1_u16));
     }
+    outInds.emplace_back(+outPointsBeg);
+    outInds.emplace_back(+(outPointsEnd - 1_u16));
+    outInds.emplace_back(+(outPointsBeg + 1_u16));
 
     return true;
 }

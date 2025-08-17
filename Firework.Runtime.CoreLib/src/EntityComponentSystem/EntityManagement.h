@@ -34,6 +34,16 @@ namespace Firework
         };
         for (Entity& entity : Entities::range()) recurse(recurse, entity);
     }
+    inline void Entities::forEachEntityReversed(auto&& func)
+    requires requires(Entity& entity) { func(entity); }
+    {
+        auto recurse = [&](auto&& recurse, Entity& entity) -> void
+        {
+            func(entity);
+            for (std::shared_ptr<Entity> child = entity._childrenBack; child; child = child->prev) recurse(recurse, *child);
+        };
+        for (std::shared_ptr<Entity> entity = Entities::back; entity; entity = entity->prev) recurse(recurse, *entity);
+    }
     template <typename... Ts>
     inline void Entities::forEach(auto&& func)
     requires requires(Entity& entity, Ts&... components) { func(entity, components...); }

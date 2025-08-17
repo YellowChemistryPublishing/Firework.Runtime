@@ -35,6 +35,8 @@ namespace Firework
 
         inline static void forEachEntity(auto&& func)
         requires requires(Entity& entity) { func(entity); };
+        inline static void forEachEntityReversed(auto&& func)
+        requires requires(Entity& entity) { func(entity); };
         template <typename... Ts>
         inline static void forEach(auto&& func)
         requires requires(Entity& entity, Ts&... components) { func(entity, components...); };

@@ -130,6 +130,8 @@ namespace Firework
         inline bool removeComponent();
 
         friend struct Firework::EntityIterator;
+        friend class Firework::Entities;
+
         friend class Firework::Internal::CoreEngine;
     };
 
