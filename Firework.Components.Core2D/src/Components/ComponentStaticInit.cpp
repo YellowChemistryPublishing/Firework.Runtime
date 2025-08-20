@@ -61,6 +61,8 @@ namespace
             {
                 if (typeIndex == typeid(Text))
                     std::static_pointer_cast<Text>(component)->renderOffload(renderIndex);
+                else if (typeIndex == typeid(ScalableVectorGraphic))
+                    std::static_pointer_cast<ScalableVectorGraphic>(component)->renderOffload(renderIndex);
             };
             InternalEngineEvent::OnLateRenderOffloadForComponent += [](std::type_index typeIndex, Entity&, std::shared_ptr<void> component, ssz renderIndex)
             {

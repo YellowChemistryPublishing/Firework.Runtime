@@ -31,10 +31,10 @@ bool ShapeRenderer::renderInitialize()
                                 std::array { ShaderUniform { .name = "u_params", .type = UniformType::Vec4 }, ShaderUniform { .name = "u_color", .type = UniformType::Vec4 } });
 
     float unitSquareVerts[] {
-        -0.5f, -0.5f, 0.5f, 0.0f, 1.0f, // [0]
-        -0.5f, 0.5f,  0.5f, 0.0f, 1.0f, // [1]
-        0.5f,  0.5f,  0.5f, 0.0f, 1.0f, // [2]
-        0.5f,  -0.5f, 0.5f, 0.0f, 1.0f  // [3]
+        -0.5f, -0.5f, 1.0f, 0.0f, 1.0f, // [0]
+        -0.5f, 0.5f,  1.0f, 0.0f, 1.0f, // [1]
+        0.5f,  0.5f,  1.0f, 0.0f, 1.0f, // [2]
+        0.5f,  -0.5f, 1.0f, 0.0f, 1.0f  // [3]
     };
     uint16_t unitSquareInds[] { 2, 1, 0, 3, 2, 0 };
     ShapeRenderer::unitSquare =
@@ -97,7 +97,7 @@ bool ShapeRenderer::submitDrawCover(const float renderIndex, const glm::mat4 cli
 
     glm::mat4 clipTransform = glm::translate(glm::mat4(1.0f), LinAlgConstants::forward * renderIndex);
     clipTransform *= clip;
-    Renderer::setDrawTransform(clip);
+    Renderer::setDrawTransform(clipTransform);
 
     _push_nowarn_gcc(_clWarn_gcc_c_cast);
     _push_nowarn_clang(_clWarn_clang_c_cast);

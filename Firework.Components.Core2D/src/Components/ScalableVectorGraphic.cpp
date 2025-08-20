@@ -107,9 +107,9 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
 
             if (ShapeRenderer pr = ShapeRenderer(shapePoints, shapeInds))
             {
-                // Add `1.0f` on either side to not clip out AA.
-                glm::mat4 clipTf = glm::translate(glm::mat4(1.0f), glm::vec3(min.x - 1.0f, min.y - 1.0f, 0.0f));
-                clipTf = glm::scale(clipTf, glm::vec3(max.x - min.x + 2.0f, -(max.y - min.y + 2.0f), 1.0f));
+                // Add `2.0f` on either side to not clip out AA.
+                glm::mat4 clipTf = glm::translate(glm::mat4(1.0f), glm::vec3(min.x - 2.0f, min.y - 2.0f, 0.0f));
+                clipTf = glm::scale(clipTf, glm::vec3(max.x - min.x + 4.0f, -(max.y - min.y + 4.0f), 1.0f));
                 clipTf = glm::translate(clipTf, glm::vec3(0.5f, -0.5f, 0.0f));
                 ret.emplace_back(FilledPathRenderable(std::move(pr), clipTf, childFill));
             }
@@ -133,7 +133,7 @@ void ScalableVectorGraphic::buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMar
         ScalableVectorGraphic::loadedSvgs.erase(svgIt);
 }
 
-void ScalableVectorGraphic::lateRenderOffload(ssz renderIndex)
+void ScalableVectorGraphic::renderOffload(const ssz)
 {
     // Don't forget to lock the render data!
     auto setViewboxTransform = [&]
@@ -187,11 +187,58 @@ void ScalableVectorGraphic::lateRenderOffload(ssz renderIndex)
         setViewboxTransform();
     }
 
+    // CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData]
+    // {
+    //     std::lock_guard guard(renderData->lock);
+    //     _fence_value_return(void(), !renderData->toRender);
+
+    //     float ri = float(+renderIndex);
+    //     float riIncr = 1.0f;
+    //     for (auto it = renderData->toRender->crbegin(); it != renderData->toRender->crend(); ++it, ri += riIncr)
+    //     {
+    //         const ScalableVectorGraphic::Renderable& renderable = *it;
+    //         switch (renderable.type)
+    //         {
+    //         case ScalableVectorGraphic::RenderableType::FilledPath:
+    //             {
+    //                 _push_nowarn_gcc(_clWarn_gcc_c_cast);
+    //                 _push_nowarn_clang(_clWarn_clang_c_cast);
+
+    //                 const glm::mat4 clipTf = renderData->tf * renderable.filledPath.tf;
+    //                 (void)ShapeRenderer::submitDrawCover(ri, clipTf, 128_u8, Color(0, 0, 0, 0), 1.0f,
+    //                                                      BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+    //                                                      BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+    //                 for (const auto& [xOff, yOff] : solidIntersectionOffsets)
+    //                     (void)renderable.filledPath.rend.submitDrawStencil(ri, glm::translate(glm::mat4(1.0f), glm::vec3(xOff, yOff, 0.0f)) * renderData->tf,
+    //                     WindingRule::NonZero);
+    //                 (void)ShapeRenderer::submitDrawCover(ri, clipTf, 128_u8 + u8(solidIntersectionOffsets.size()), renderable.filledPath.col, 1.0f,
+    //                                                      BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS |
+    //                                                          BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+    //                                                      BGFX_STENCIL_TEST_LEQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+    //                 (void)ShapeRenderer::submitDrawCover(ri, clipTf, 128_u8 - u8(solidIntersectionOffsets.size()), renderable.filledPath.col, 1.0f,
+    //                                                      BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS |
+    //                                                          BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
+    //                                                      BGFX_STENCIL_TEST_GEQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+
+    //                 _pop_nowarn_clang();
+    //                 _pop_nowarn_gcc();
+    //             }
+    //             break;
+    //         case ScalableVectorGraphic::RenderableType::NoOp:
+    //         default:;
+    //         }
+    //     }
+    // }, false);
+}
+void ScalableVectorGraphic::lateRenderOffload(const ssz renderIndex)
+{
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData]
     {
         std::lock_guard guard(renderData->lock);
         _fence_value_return(void(), !renderData->toRender);
 
+        float riIncr = 1.0f;
+        float ri = float(+renderIndex) + float(renderData->toRender->size()) - riIncr;
         for (const ScalableVectorGraphic::Renderable& renderable : *renderData->toRender)
         {
             switch (renderable.type)
@@ -202,20 +249,19 @@ void ScalableVectorGraphic::lateRenderOffload(ssz renderIndex)
                     _push_nowarn_clang(_clWarn_clang_c_cast);
 
                     const glm::mat4 clipTf = renderData->tf * renderable.filledPath.tf;
-                    (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, Color(0, 0, 0, 0), 1.0f,
+                    (void)ShapeRenderer::submitDrawCover(ri, clipTf, 0_u8, Color(0, 0, 0, 0), 1.0f,
                                                          BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
                                                          BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-                    for (const auto& [xOff, yOff] : multisampleOffsets)
-                    {
-                        (void)renderable.filledPath.rend.submitDrawStencil(float(+renderIndex), glm::translate(glm::mat4(1.0f), glm::vec3(xOff, yOff, 0.0f)) * renderData->tf,
-                                                                           WindingRule::NonZero);
-                        (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, renderable.filledPath.col,
-                                                             std::ceil(255.0f / float(multisampleOffsets.size())) / 255.0f,
-                                                             BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ADD,
-                                                             BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-                    }
+                    // for (const auto& [xOff, yOff] : multisampleOffsets)
+                    // {
+                    (void)renderable.filledPath.rend.submitDrawStencil(ri, /* glm::translate(glm::mat4(1.0f), glm::vec3(xOff, yOff, 0.0f)) *  */ renderData->tf,
+                                                                       WindingRule::NonZero);
+                    (void)ShapeRenderer::submitDrawCover(ri, clipTf, 0_u8, renderable.filledPath.col, 1.0f /* std::ceil(255.0f / float(multisampleOffsets.size())) / 255.0f */,
+                                                         BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ADD,
+                                                         BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+                    // }
                     (void)ShapeRenderer::submitDrawCover(
-                        float(+renderIndex), clipTf, 0_u8, renderable.filledPath.col, 1.0f,
+                        ri, clipTf, 0_u8, renderable.filledPath.col, 1.0f,
                         BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS |
                             BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
                         BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
@@ -227,6 +273,7 @@ void ScalableVectorGraphic::lateRenderOffload(ssz renderIndex)
             case ScalableVectorGraphic::RenderableType::NoOp:
             default:;
             }
+            ri -= riIncr;
         }
     }, false);
 }

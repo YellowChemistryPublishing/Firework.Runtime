@@ -114,6 +114,7 @@ namespace Firework
         //                           v Never null, but also may be invalid, so passed by ptr, not ref.
         void buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile* svg);
 
+        void renderOffload(ssz renderIndex);
         void lateRenderOffload(ssz renderIndex);
     public:
         Property<std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile>, std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile>> svgFile {

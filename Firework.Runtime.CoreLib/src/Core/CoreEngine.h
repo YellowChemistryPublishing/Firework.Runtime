@@ -109,7 +109,8 @@ namespace Firework::Internal
         template <std::invocable<> Func>
         inline static void queueRenderJobForFrame(Func&& job, bool required = true)
         {
-            CoreEngine::frameRenderJobs.push_back(RenderJob(job, required));
+            std::lock_guard guard(CoreEngine::renderQueueLock);
+            CoreEngine::renderQueue.push_back(RenderJob(job, required));
         }
 
         friend class Firework::Application;

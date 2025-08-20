@@ -123,7 +123,7 @@ jobs:
                   pkg-config cmake${{env.archext}} ninja-build gnome-desktop-testing${{env.archext}} libasound2-dev${{env.archext}} libpulse-dev${{env.archext}} \
                   libaudio-dev${{env.archext}} libjack-dev${{env.archext}} libsndio-dev${{env.archext}} libx11-dev${{env.archext}} libxext-dev${{env.archext}} \
                   libxrandr-dev${{env.archext}} libxcursor-dev${{env.archext}} libxfixes-dev${{env.archext}} libxi-dev${{env.archext}} libxss-dev${{env.archext}} libxtst-dev${{env.archext}} \
-                  libxkbcommon-dev${{env.archext}} libdrm-dev${{env.archext}} libgbm-dev${{env.archext}} libgl1-mesa-dev${{env.archext}} libgles2-mesa-dev${{env.archext}} \
+                  libxkbcommon-dev${{env.archext}} libdrm-dev${{env.archext}} libgbm-dev${{env.archext}} libgl1-mesa-dev${{env.archext}} libgles2-mesa-dev${{env.archext}} libvulkan-dev${{env.archext}} \
                   libegl1-mesa-dev${{env.archext}} libdbus-1-dev${{env.archext}} libibus-1.0-dev${{env.archext}} libudev-dev${{env.archext}} \
                   libpipewire-0.3-dev${{env.archext}} libwayland-dev${{env.archext}} libdecor-0-dev${{env.archext}}
               if: matrix.os == 'ubuntu-latest'

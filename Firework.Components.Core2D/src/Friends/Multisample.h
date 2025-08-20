@@ -5,6 +5,8 @@
 
 namespace Firework::Internal
 {
+    constexpr std::initializer_list<std::pair<float, float>> solidIntersectionOffsets { { -1.0f, -1.0f }, { -1.0f, 1.0f }, { 1.0f, -1.0f }, { 1.0f, 1.0f } };
+
     constexpr std::initializer_list<std::pair<float, float>> multisampleOffsets8 { { -0.5f + 1.0f / 8.0f, -0.5f + 7.0f / 8.0f }, // | . o . . . . . .
                                                                                    { -0.5f + 6.0f / 8.0f, -0.5f + 6.0f / 8.0f }, // | . . . . . . o .
                                                                                    { -0.5f + 3.0f / 8.0f, -0.5f + 5.0f / 8.0f }, // | . . . o . . . .
