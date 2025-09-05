@@ -67,11 +67,6 @@ namespace Firework::Internal
         /// @note Window thread only.
         static void resetDisplayData();
 
-        static moodycamel::ConcurrentQueue<func::function<void()>> pendingPreTickQueue;
-        static moodycamel::ConcurrentQueue<func::function<void()>> pendingPostTickQueue;
-
-        static std::vector<RenderJob> frameRenderJobs;
-
         static std::deque<RenderJob> renderQueue;
         static std::mutex renderQueueLock;
 
@@ -94,7 +89,7 @@ namespace Firework::Internal
         /// @param argv Forwarded from int main(...).
         /// @return Whether the runtime was able to successfully initialize.
         /// @retval - EXIT_SUCCESS: The runtime initialized successfully.
-        /// @retval - EXIT_FAILIURE: The runtime failed to initialize.
+        /// @retval - EXIT_FAILURE: The runtime failed to initialize.
         /// @note Thread-safe.
         static int execute(int argc, char* argv[]);
     public:
@@ -110,7 +105,7 @@ namespace Firework::Internal
         inline static void queueRenderJobForFrame(Func&& job, bool required = true)
         {
             std::lock_guard guard(CoreEngine::renderQueueLock);
-            CoreEngine::renderQueue.push_back(RenderJob(job, required));
+            CoreEngine::renderQueue.emplace_back(std::forward<Func>(job), required);
         }
 
         friend class Firework::Application;

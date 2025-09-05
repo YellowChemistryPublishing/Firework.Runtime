@@ -419,7 +419,8 @@ bool VectorTools::shapeTrianglesFromOutline(std::span<const ShapeOutlinePoint> p
 
     return true;
 }
-bool VectorTools::shapeProcessCurvesFromOutline(const std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints, std::vector<uint16_t>& outInds)
+bool VectorTools::shapeProcessCurvesFromOutline(const std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints, std::vector<uint16_t>& outInds,
+                                                std::vector<struct ShapePoint>& outTriPoints, std::vector<uint16_t>& outTriInds)
 {
     _fence_value_return(false, points.size() < 3);
 
@@ -446,12 +447,15 @@ bool VectorTools::shapeProcessCurvesFromOutline(const std::span<const ShapeOutli
             outPoints.emplace_back(ShapePoint { .x = converted.c2.x, .y = converted.c2.y, .xCtrl = 0.0f, .yCtrl = -1.0f });
             outPoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = -1.0f, .yCtrl = 1.0f });
 
-            outPoints.emplace_back(ShapePoint { .x = converted.p1.x, .y = converted.p1.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
-            outPoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
-            outPoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
+            outTriPoints.emplace_back(ShapePoint { .x = converted.p1.x, .y = converted.p1.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
+            outTriPoints.emplace_back(ShapePoint { .x = converted.p2.x, .y = converted.p2.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
+            outTriPoints.emplace_back(ShapePoint { .x = converted.p3.x, .y = converted.p3.y, .xCtrl = 0.0f, .yCtrl = 1.0f });
 
             u16 i = outPoints.size();
-            for (const u16 sub : { 8_u16, 7_u16, 6_u16, 6_u16, 5_u16, 4_u16, 3_u16, 2_u16, 1_u16 }) outInds.emplace_back(+(i - sub));
+            for (const u16 sub : { 5_u16, 4_u16, 3_u16, 3_u16, 2_u16, 1_u16 }) outInds.emplace_back(+(i - sub));
+
+            i = outTriPoints.size();
+            for (const u16 sub : { 3_u16, 2_u16, 1_u16 }) outTriInds.emplace_back(+(i - sub));
         }
         else // Quadratic bezier.
         {

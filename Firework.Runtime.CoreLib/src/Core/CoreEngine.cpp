@@ -58,15 +58,8 @@ SDL_Window* CoreEngine::wind = nullptr;
 SDL_Renderer* CoreEngine::rend = nullptr;
 const SDL_DisplayMode* CoreEngine::displMd;
 
-moodycamel::ConcurrentQueue<func::function<void()>> CoreEngine::pendingPreTickQueue;
-moodycamel::ConcurrentQueue<func::function<void()>> CoreEngine::pendingPostTickQueue;
-
-std::vector<RenderJob> CoreEngine::frameRenderJobs;
-
 std::deque<RenderJob> CoreEngine::renderQueue;
 std::mutex CoreEngine::renderQueueLock;
-
-static std::mutex renderResizeLock;
 
 int CoreEngine::execute(int argc, char* argv[])
 {
@@ -251,8 +244,6 @@ void CoreEngine::internalLoop()
         else if (deltaTime >= targetDeltaTime)
         {
 #pragma region Pre-Tick
-            while (CoreEngine::pendingPreTickQueue.try_dequeue(job)) job();
-
             for (uint_fast16_t i = 0; i < uint_fast16_t(MouseButton::Count); i++)
             {
                 if (Input::heldMouseInputs[i])
@@ -272,15 +263,15 @@ void CoreEngine::internalLoop()
             // My code is held together with glue and duct tape. And not the good stuff either.
             if (Window::width != prevw || Window::height != prevh)
             {
-                CoreEngine::frameRenderJobs.push_back(RenderJob([w = Window::width, h = Window::height]
+                CoreEngine::queueRenderJobForFrame([w = Window::width, h = Window::height]
                 {
                     RenderPipeline::resetBackbuffer(+u32(w), +u32(h));
                     RenderPipeline::resetViewArea(+u16(w), +u16(h));
-                }));
+                });
                 prevw = float(+Window::width);
                 prevh = float(+Window::height);
             }
-            CoreEngine::frameRenderJobs.push_back(RenderJob([] { RenderPipeline::clearViewArea(); }, false));
+            CoreEngine::queueRenderJobForFrame([] { RenderPipeline::clearViewArea(); });
 
             ssz renderIndex = 0;
             Entities::forEachEntity([&](Entity& entity)
@@ -302,26 +293,23 @@ void CoreEngine::internalLoop()
                 }
             });
 
-            CoreEngine::frameRenderJobs.push_back(RenderJob([] { RenderPipeline::renderFrame(); }, false));
+            CoreEngine::queueRenderJobForFrame([] { RenderPipeline::renderFrame(); });
 
-            if (!CoreEngine::frameRenderJobs.empty())
-            {
-                {
-                    std::lock_guard guard(CoreEngine::renderQueueLock);
-                    CoreEngine::renderQueue.emplace_back(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
-                    {
-                        std::lock_guard guard(renderResizeLock);
-                        for (const RenderJob& job : jobs) job();
-                    }));
-                }
-                CoreEngine::frameRenderJobs.clear();
-            }
+            // if (!CoreEngine::frameRenderJobs.empty())
+            // {
+            //     {
+            //         std::lock_guard guard(CoreEngine::renderQueueLock);
+            //         CoreEngine::renderQueue.emplace_back(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
+            //         {
+            //             for (const RenderJob& job : jobs) job();
+            //         }));
+            //     }
+            //     CoreEngine::frameRenderJobs.clear();
+            // }
 #pragma endregion
 
 #pragma region Post-Tick
             Input::internalMouseMotion = glm::vec2(0.0f);
-
-            while (CoreEngine::pendingPostTickQueue.try_dequeue(job)) job();
 #pragma endregion
 
             frameBegin = SDL_GetPerformanceCounter();
@@ -342,25 +330,23 @@ void CoreEngine::internalLoop()
     EngineEvent::OnQuit();
 
     while (Application::mainThreadQueue.try_dequeue(job));
-    while (CoreEngine::pendingPreTickQueue.try_dequeue(job));
-    while (CoreEngine::pendingPostTickQueue.try_dequeue(job));
 
     Entities::front->clear();
     Entities::front.reset();
 
     // Render finalise.
-    {
-        std::lock_guard guard(CoreEngine::renderQueueLock);
-        CoreEngine::renderQueue.emplace_back(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
-        {
-            for (const RenderJob& job : jobs)
-            {
-                if (job.required())
-                    job();
-            }
-        }));
-    }
-    CoreEngine::frameRenderJobs.clear();
+    // {
+    //     std::lock_guard guard(CoreEngine::renderQueueLock);
+    //     CoreEngine::renderQueue.emplace_back(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
+    //     {
+    //         for (const RenderJob& job : jobs)
+    //         {
+    //             if (job.required())
+    //                 job();
+    //         }
+    //     }));
+    // }
+    // CoreEngine::frameRenderJobs.clear();
 
     CoreEngine::state = EngineState::MainThreadDone;
 }
@@ -401,8 +387,8 @@ void CoreEngine::internalWindowLoop()
         struct
         {
             int32_t w = 0, h = 0;
-            bool shouldUnlock = false;
-            std::mutex shouldUnlockLock {};
+            std::atomic_flag shouldUnlock = ATOMIC_FLAG_INIT;
+            const std::thread::id mustBe = std::this_thread::get_id();
             func::function<void()>& job;
         } resizeData { .job = job };
 
@@ -412,17 +398,16 @@ void CoreEngine::internalWindowLoop()
 
             while (Application::windowThreadQueue.try_dequeue(windowSizeData.job)) windowSizeData.job();
 
-            if (std::lock_guard guard(windowSizeData.shouldUnlockLock); windowSizeData.shouldUnlock)
+            if (windowSizeData.mustBe == std::this_thread::get_id() && windowSizeData.shouldUnlock.test())
             {
-                renderResizeLock.unlock();
-                windowSizeData.shouldUnlock = false;
+                CoreEngine::renderQueueLock.unlock();
+                windowSizeData.shouldUnlock.clear();
             }
             if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
             {
-                {
-                    std::lock_guard guard(windowSizeData.shouldUnlockLock);
-                    windowSizeData.shouldUnlock = true;
-                }
+                assert(windowSizeData.mustBe == std::this_thread::get_id());
+
+                windowSizeData.shouldUnlock.test_and_set();
 
                 int32_t w = event->window.data1, h = event->window.data2;
                 Application::mainThreadQueue.enqueue([w, h]
@@ -435,7 +420,7 @@ void CoreEngine::internalWindowLoop()
                     userFunctionInvoker([&] { EngineEvent::OnWindowResize(glm::i32vec2 { prevw, prevh }); });
                 });
 
-                renderResizeLock.lock();
+                CoreEngine::renderQueueLock.lock();
             }
 
             return 0;
@@ -456,13 +441,13 @@ void CoreEngine::internalWindowLoop()
             {
                 assert(ev.type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED);
 
-                if (std::lock_guard guard(resizeData.shouldUnlockLock); resizeData.shouldUnlock)
+                if (resizeData.shouldUnlock.test())
                 {
-                    renderResizeLock.unlock();
-                    resizeData.shouldUnlock = false;
+                    CoreEngine::renderQueueLock.unlock();
+                    resizeData.shouldUnlock.clear();
                 }
 
-                std::lock_guard guard(renderResizeLock);
+                std::lock_guard guard(CoreEngine::renderQueueLock);
                 SDL_PollEvent(&ev);
             }
             else if (SDL_PollEvent(&ev))
@@ -582,7 +567,7 @@ void CoreEngine::internalRenderLoop()
     RendererBackend initBackend = RendererBackend::Default;
     RendererBackend backendPriorityOrder[] {
 #if _WIN32
-        RendererBackend::OpenGL, RendererBackend::Vulkan, RendererBackend::Direct3D12, RendererBackend::Direct3D11,
+        RendererBackend::Vulkan, RendererBackend::Direct3D12, RendererBackend::Direct3D11, RendererBackend::OpenGL,
 #else
         RendererBackend::Vulkan, RendererBackend::OpenGL,
 #endif

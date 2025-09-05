@@ -124,6 +124,6 @@ namespace Firework
         [[nodiscard]] static bool shapeTrianglesFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints, std::vector<uint16_t>& outInds,
                                                             glm::vec2 windAround = glm::vec2(0.0f));
         [[nodiscard]] static bool shapeProcessCurvesFromOutline(std::span<const ShapeOutlinePoint> points, std::vector<struct ShapePoint>& outPoints,
-                                                                std::vector<uint16_t>& outInds);
+                                                                std::vector<uint16_t>& outInds, std::vector<struct ShapePoint>& outTriPoints, std::vector<uint16_t>& outTriInds);
     };
 } // namespace Firework

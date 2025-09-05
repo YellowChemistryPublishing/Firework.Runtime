@@ -53,6 +53,8 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
 
             std::vector<ShapePoint> shapePoints;
             std::vector<uint16_t> shapeInds;
+            std::vector<ShapePoint> shapeCurvePoints;
+            std::vector<uint16_t> shapeCurveInds;
             std::vector<ShapeOutlinePoint> currentPath;
 
             constexpr auto transformByMatrix = [](glm::vec2 point, glm::mat3x3 transform) -> glm::vec2
@@ -95,7 +97,7 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
 
                     windAround /= float(+windCount);
                     (void)VectorTools::shapeTrianglesFromOutline(currentPath, shapePoints, shapeInds, windAround);
-                    (void)VectorTools::shapeProcessCurvesFromOutline(currentPath, shapePoints, shapeInds);
+                    (void)VectorTools::shapeProcessCurvesFromOutline(currentPath, shapeCurvePoints, shapeCurveInds, shapePoints, shapeInds);
 
                     currentPath.clear();
                     windAround = glm::vec2(0.0f, 0.0f);
@@ -105,7 +107,12 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                 }
             }
 
-            if (ShapeRenderer pr = ShapeRenderer(shapePoints, shapeInds))
+            u32 curvePointsBegin = shapePoints.size();
+            u32 curveIndsBegin = shapeInds.size();
+            shapePoints.insert(shapePoints.end(), shapeCurvePoints.begin(), shapeCurvePoints.end());
+            std::transform(shapeCurveInds.begin(), shapeCurveInds.end(), std::back_inserter(shapeInds),
+                           [curvePointsBegin](const uint16_t i) { return +(i + u16(curvePointsBegin)); });
+            if (ShapeRenderer pr = ShapeRenderer(shapePoints, shapeInds, curveIndsBegin))
             {
                 // Add `2.0f` on either side to not clip out AA.
                 glm::mat4 clipTf = glm::translate(glm::mat4(1.0f), glm::vec3(min.x - 2.0f, min.y - 2.0f, 0.0f));
@@ -249,22 +256,14 @@ void ScalableVectorGraphic::lateRenderOffload(const ssz renderIndex)
                     _push_nowarn_clang(_clWarn_clang_c_cast);
 
                     const glm::mat4 clipTf = renderData->tf * renderable.filledPath.tf;
-                    (void)ShapeRenderer::submitDrawCover(ri, clipTf, 0_u8, Color(0, 0, 0, 0), 1.0f,
-                                                         BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
-                                                         BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-                    // for (const auto& [xOff, yOff] : multisampleOffsets)
-                    // {
-                    (void)renderable.filledPath.rend.submitDrawStencil(ri, /* glm::translate(glm::mat4(1.0f), glm::vec3(xOff, yOff, 0.0f)) *  */ renderData->tf,
-                                                                       WindingRule::NonZero);
-                    (void)ShapeRenderer::submitDrawCover(ri, clipTf, 0_u8, renderable.filledPath.col, 1.0f /* std::ceil(255.0f / float(multisampleOffsets.size())) / 255.0f */,
-                                                         BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_ADD,
-                                                         BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-                    // }
+                    (void)ShapeRenderer::submitDrawCover(ri, clipTf, 0_u8, Color(0, 0, 0, 0),
+                                                         BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ZERO, BGFX_STATE_BLEND_ZERO), 0);
+                    (void)renderable.filledPath.rend.submitDrawStencil(ri, renderData->tf, FillRule::NonZero);
                     (void)ShapeRenderer::submitDrawCover(
-                        ri, clipTf, 0_u8, renderable.filledPath.col, 1.0f,
-                        BGFX_STATE_WRITE_RGB | BGFX_STATE_DEPTH_TEST_LESS |
-                            BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
-                        BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+                        ri, clipTf, 0_u8, renderable.filledPath.col,
+                        BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS |
+                            BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ZERO, BGFX_STATE_BLEND_ONE),
+                        BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
 
                     _pop_nowarn_clang();
                     _pop_nowarn_gcc();

@@ -562,7 +562,9 @@ if (FIREWORK_BUILD_EXAMPLES)
         endif()
 
         add_executable(example_${EXAMPLE_NAME} "${CMAKE_CURRENT_LIST_DIR}/examples/${EXAMPLE_NAME}/main.cpp")
-        add_dependencies(example_${EXAMPLE_NAME} package_${EXAMPLE_NAME})
+        if (TARGET package_${EXAMPLE_NAME})
+            add_dependencies(example_${EXAMPLE_NAME} package_${EXAMPLE_NAME})
+        endif()
 
         target_link_libraries(example_${EXAMPLE_NAME} PUBLIC Firework.Components.Core2D)
         if (FIREWORK_DEVELOPMENT_MODE)

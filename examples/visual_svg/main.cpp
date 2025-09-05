@@ -41,9 +41,9 @@ int main(int, char*[])
     };
     EngineEvent::OnMouseScroll += [](glm::vec2 scroll)
     {
-        Entities::forEach<EntityAttributes, Text>([&](Entity& entity, EntityAttributes& attributes, Text&) -> void
+        Entities::forEach<EntityAttributes, ScalableVectorGraphic>([&](Entity& entity, EntityAttributes& attributes, ScalableVectorGraphic&) -> void
         {
-            _fence_value_return(void(), attributes.name != "Test Entity (Left-Align)");
+            _fence_value_return(void(), attributes.name != "Test Entity");
             inputScaleEntity(entity, scroll);
         });
     };

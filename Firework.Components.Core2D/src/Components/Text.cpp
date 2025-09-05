@@ -34,12 +34,14 @@ std::shared_ptr<ShapeRenderer> Text::findOrCreateGlyphPath(char32_t c)
 
     std::vector<ShapePoint> shapePoints;
     std::vector<uint16_t> shapeInds;
+    std::vector<ShapePoint> shapeCurvePoints;
+    std::vector<uint16_t> shapeCurveInds;
     std::vector<ShapeOutlinePoint> currentPath;
 
     const auto pushShapeData = [&]
     {
         (void)VectorTools::shapeTrianglesFromOutline(currentPath, shapePoints, shapeInds);
-        (void)VectorTools::shapeProcessCurvesFromOutline(currentPath, shapePoints, shapeInds);
+        (void)VectorTools::shapeProcessCurvesFromOutline(currentPath, shapeCurvePoints, shapeCurveInds, shapePoints, shapeInds);
     };
 
     for (sys::integer<int> i = 0; i < go.vertsSize; i++)
@@ -69,7 +71,11 @@ std::shared_ptr<ShapeRenderer> Text::findOrCreateGlyphPath(char32_t c)
     _fence_value_return(nullptr, shapePoints.size() < 3);
     _fence_value_return(nullptr, shapeInds.size() < 3);
 
-    std::shared_ptr<ShapeRenderer> pathRenderers = std::make_shared<ShapeRenderer>(shapePoints, shapeInds);
+    u32 curvePointsBegin = shapePoints.size();
+    u32 curveIndsBegin = shapeInds.size();
+    shapePoints.insert(shapePoints.end(), shapeCurvePoints.begin(), shapeCurvePoints.end());
+    std::transform(shapeCurveInds.begin(), shapeCurveInds.end(), std::back_inserter(shapeInds), [curvePointsBegin](const uint16_t i) { return +(i + u16(curvePointsBegin)); });
+    std::shared_ptr<ShapeRenderer> pathRenderers = std::make_shared<ShapeRenderer>(shapePoints, shapeInds, curveIndsBegin);
 
     Text::characterPaths.emplace(FontCharacterQuery { .file = this->_font.get(), .c = c }, pathRenderers);
 
@@ -205,24 +211,20 @@ void Text::renderOffload(ssz renderIndex)
 
         for (const auto& [shape, transforms] : renderData->toRender)
         {
-            const auto& [glTf, clipTf] = transforms;
             _push_nowarn_gcc(_clWarn_gcc_c_cast);
             _push_nowarn_clang(_clWarn_clang_c_cast);
-            (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, Color(0, 0, 0, 0), 1.0f,
-                                                 BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO) | BGFX_STATE_DEPTH_TEST_LESS,
-                                                 BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-            for (const auto& [xOff, yOff] : multisampleOffsets)
-            {
-                (void)shape->submitDrawStencil(float(+renderIndex), glm::translate(glm::mat4(1.0f), glm::vec3(xOff, yOff, 0.0f)) * glTf, WindingRule::NonZero);
-                (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, color, std::ceil(255.0f / float(multisampleOffsets.size())) / 255.0f,
-                                                     BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ADD | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA,
-                                                     BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-            }
+
+            const auto& [glTf, clipTf] = transforms;
+            (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, Color(0, 0, 0, 0),
+                                                 BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ZERO, BGFX_STATE_BLEND_ZERO) | BGFX_STATE_DEPTH_TEST_LESS, 0);
+            (void)shape->submitDrawStencil(float(+renderIndex), glTf, FillRule::NonZero);
             (void)ShapeRenderer::submitDrawCover(
-                float(+renderIndex), clipTf, 0_u8, color, 1.0f,
-                BGFX_STATE_WRITE_RGB | BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO) |
+                float(+renderIndex), clipTf, 0_u8, color,
+                BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A |
+                    BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO) |
                     BGFX_STATE_DEPTH_TEST_LESS,
-                BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
+                BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
+
             _pop_nowarn_clang();
             _pop_nowarn_gcc();
         }

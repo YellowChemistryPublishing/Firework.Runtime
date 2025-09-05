@@ -25,7 +25,7 @@ int main(int, char*[])
 
         auto paragraph = entity->addComponent<Text>();
         paragraph->font = std::dynamic_pointer_cast<TrueTypeFontPackageFile>(PackageManager::lookupFileByPath(L"assets/Roboto-Regular.ttf"));
-        paragraph->fontSize = 24.0f;
+        paragraph->fontSize = 64.0f;
         paragraph->text = U"It is not the duty of the typographer to consciously display or emulate the style of current trends, not to reflect the spirit of the times.";
         paragraph->color = Color(0, 255, 255);
 

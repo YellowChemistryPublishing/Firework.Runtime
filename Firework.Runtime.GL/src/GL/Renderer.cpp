@@ -79,29 +79,12 @@ void Renderer::shutdown()
 static u32 debugFlags = BGFX_DEBUG_NONE;
 void Renderer::showDebugInformation(const bool visible)
 {
-    if (visible)
-    {
-        debugFlags |= u32(BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT);
-        bgfx::setDebug(+debugFlags);
-    }
-    else
-    {
-        debugFlags &= ~u32(BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT);
-        bgfx::setDebug(+debugFlags);
-    }
+    bgfx::setDebug(visible ? +(debugFlags |= u32(BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT))
+                           : +(debugFlags &= ~u32(BGFX_DEBUG_PROFILER | BGFX_DEBUG_STATS | BGFX_DEBUG_TEXT)));
 }
 void Renderer::showDebugWireframes(const bool visible)
 {
-    if (visible)
-    {
-        debugFlags |= u32(BGFX_DEBUG_WIREFRAME);
-        bgfx::setDebug(+debugFlags);
-    }
-    else
-    {
-        debugFlags &= ~u32(BGFX_DEBUG_WIREFRAME);
-        bgfx::setDebug(+debugFlags);
-    }
+    bgfx::setDebug(visible ? +(debugFlags |= u32(BGFX_DEBUG_WIREFRAME)) : +(debugFlags &= ~u32(BGFX_DEBUG_WIREFRAME)));
 }
 
 RendererBackend Renderer::rendererBackend()
@@ -277,6 +260,5 @@ void Renderer::debugDrawCube(glm::vec3 position, float sideLength)
 
 void Renderer::drawFrame()
 {
-    bgfx::touch(0);
     bgfx::frame();
 }

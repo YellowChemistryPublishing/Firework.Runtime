@@ -26,11 +26,12 @@ namespace Firework
 {
     class FringeRenderer;
 
-    enum class WindingRule : uint_least8_t
+    enum class FillRule : uint_least8_t
     {
         EvenOdd,
         NonZero
     };
+
     struct alignas(float) ShapePoint
     {
         float x, y, z = 1.0f; // Leave `z` as 1.0f unless you're really confident in what you're doing.
@@ -48,10 +49,13 @@ namespace Firework
         [[nodiscard]] static bool renderInitialize();
 
         GL::StaticMesh fill = nullptr;
+        u32 curvePointsSize = 0_u32;
+        u32 curveIndsBegin = 0_u32;
+        u32 curveIndsEnd = 0_u32;
     public:
         ShapeRenderer(std::nullptr_t)
         { }
-        ShapeRenderer(std::span<const ShapePoint> points, std::span<const uint16_t> inds);
+        ShapeRenderer(std::span<const ShapePoint> points, std::span<const uint16_t> inds, u32 curveIndsBegin);
         ShapeRenderer(const ShapeRenderer&) = delete;
         ShapeRenderer(ShapeRenderer&& other)
         {
@@ -70,10 +74,10 @@ namespace Firework
             return *this;
         }
 
-        [[nodiscard]] bool submitDrawStencil(float renderIndex, glm::mat4 shape, WindingRule fillRule = WindingRule::EvenOdd) const;
+        [[nodiscard]] bool submitDrawStencil(float renderIndex, glm::mat4 shape, FillRule fillRule = FillRule::EvenOdd) const;
         _push_nowarn_gcc(_clWarn_gcc_c_cast);
         _push_nowarn_clang(_clWarn_clang_c_cast);
-        [[nodiscard]] static bool submitDrawCover(float renderIndex, glm::mat4 clip, u8 refZero = 0_u8, Color color = Color::unknown, float alphaFract = 1.0f,
+        [[nodiscard]] static bool submitDrawCover(float renderIndex, glm::mat4 clip, u8 refZero = 0_u8, Color color = Color::unknown,
                                                   u64 blendState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_ALWAYS |
                                                       BGFX_STATE_BLEND_ALPHA,
                                                   u32 stencilTest = BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
@@ -84,6 +88,9 @@ namespace Firework
         {
             using std::swap;
 
+            swap(a.curvePointsSize, b.curvePointsSize);
+            swap(a.curveIndsBegin, b.curveIndsBegin);
+            swap(a.curveIndsEnd, b.curveIndsEnd);
             swap(a.fill, b.fill);
         }
 

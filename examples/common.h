@@ -73,7 +73,7 @@ static void inputScaleEntity(Firework::Entity& entity, glm::vec2 byLinear)
     auto sc = rectTransform->scale();
 
     float w = sc.x * rectTransform->rect().width();
-    float scFact = (w + (byLinear.y > 0.0f ? 1024.0f : -1024.0f) * Time::deltaTime()) / w;
+    float scFact = (w + (byLinear.y > 0.0f ? 2048.0f : -2048.0f) * Time::deltaTime()) / w;
     rectTransform->scale = sc * scFact;
 }
 static void inputMoveEntity(Firework::Entity& entity, glm::vec2 from)
