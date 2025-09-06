@@ -53,16 +53,14 @@ namespace Firework::GL
     {
         static std::vector<std::pair<void (*)(ViewIndex, void*), void*>> drawPassIntercepts;
 
-        _push_nowarn_gcc(_clWarn_gcc_c_cast);
-        _push_nowarn_clang(_clWarn_clang_c_cast);
+        _push_nowarn_c_cast();
         template <typename MeshType, typename... Ts>
         requires (std::same_as<MeshType, StaticMesh> || std::same_as<MeshType, DynamicMesh>)
         [[nodiscard]] static u32 submitDraw(ViewIndex id, const MeshType& mesh, const GeometryProgram& program, void* instances, u32 count, u16 stride,
                                             u64 state = BGFX_STATE_NONE | BGFX_STATE_CULL_CW | BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_ALPHA |
                                                 BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS,
                                             u32 blendFactor = 0);
-        _pop_nowarn_clang();
-        _pop_nowarn_gcc();
+        _pop_nowarn_c_cast();
     public:
         Renderer() = delete;
 
@@ -99,8 +97,7 @@ namespace Firework::GL
         static void addDrawPassIntercept(void (*intercept)(ViewIndex, void*), void* data = nullptr);
         static void removeDrawPassIntercept(void (*intercept)(ViewIndex, void*));
 
-        _push_nowarn_gcc(_clWarn_gcc_c_cast);
-        _push_nowarn_clang(_clWarn_clang_c_cast);
+        _push_nowarn_c_cast();
         template <typename MeshType>
         requires (std::same_as<MeshType, StaticMesh> || std::same_as<MeshType, DynamicMesh>)
         [[nodiscard]] static bool submitDraw(ViewIndex id, const MeshType& mesh, const GeometryProgram& program,
@@ -123,8 +120,7 @@ namespace Firework::GL
         {
             return (from + Renderer::submitDraw(id, mesh, program, instances.data() + +from, u32(instances.size()) - from, u16(sizeof(InstanceData<Ts...>)), state, blendFactor));
         }
-        _pop_nowarn_clang();
-        _pop_nowarn_gcc();
+        _pop_nowarn_c_cast();
 
 #if _DEBUG
         static void debugDrawCube(glm::vec3 position, float sideLength = 1.0f);

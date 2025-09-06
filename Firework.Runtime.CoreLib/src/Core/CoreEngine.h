@@ -2,8 +2,7 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
-_push_nowarn_gcc(_clWarn_gcc_c_cast);
-_push_nowarn_clang(_clWarn_clang_c_cast);
+_push_nowarn_c_cast();
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_version.h>
 #include <atomic>
@@ -13,8 +12,7 @@ _push_nowarn_clang(_clWarn_clang_c_cast);
 #include <function.h>
 #include <list>
 #include <vector>
-_pop_nowarn_clang();
-_pop_nowarn_gcc();
+_pop_nowarn_c_cast();
 
 #include <Core/RenderJob.h>
 

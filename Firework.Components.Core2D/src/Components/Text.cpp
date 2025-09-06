@@ -5,7 +5,6 @@
 
 #include <Components/RectTransform.h>
 #include <Font/Font.h>
-#include <Friends/Multisample.h>
 #include <Friends/ParagraphIterator.h>
 #include <Friends/VectorTools.h>
 #include <PackageSystem/TrueTypeFontFile.h>
@@ -211,8 +210,7 @@ void Text::renderOffload(ssz renderIndex)
 
         for (const auto& [shape, transforms] : renderData->toRender)
         {
-            _push_nowarn_gcc(_clWarn_gcc_c_cast);
-            _push_nowarn_clang(_clWarn_clang_c_cast);
+            _push_nowarn_c_cast();
 
             const auto& [glTf, clipTf] = transforms;
             (void)ShapeRenderer::submitDrawCover(float(+renderIndex), clipTf, 0_u8, Color(0, 0, 0, 0),
@@ -225,8 +223,7 @@ void Text::renderOffload(ssz renderIndex)
                     BGFX_STATE_DEPTH_TEST_LESS,
                 BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
 
-            _pop_nowarn_clang();
-            _pop_nowarn_gcc();
+            _pop_nowarn_c_cast();
         }
     }, false);
 }

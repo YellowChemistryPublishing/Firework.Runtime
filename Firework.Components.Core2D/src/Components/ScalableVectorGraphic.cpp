@@ -4,7 +4,7 @@
 #include <Core/CoreEngine.h>
 #include <Core/Debug.h>
 #include <EntityComponentSystem/Entity.h>
-#include <Friends/Multisample.h>
+#include <Friends/CascadingStyleParser.h>
 #include <Friends/VectorTools.h>
 #include <GL/Renderer.h>
 #include <Library/Math.h>
@@ -31,10 +31,14 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
 
     const auto traverse = [&](const auto& traverse, const pugi::xml_node& node, glm::mat3x3 transform = glm::mat3x3(1.0f), Color fill = Color::unknown) -> void
     {
-        sys::result<Color> cfRes = VectorTools::parseColor(node.attribute("fill").value());
+        std::map<std::string_view, std::string_view> style;
+        (void)CascadingStyleParser::parseBlock(node.attribute("style").value(), style);
+
+        const auto cfStyleIt = style.find("fill");
+        sys::result<Color> cfRes = cfStyleIt != style.end() ? VectorParser::parseColor(cfStyleIt->second) : VectorParser::parseColor(node.attribute("fill").value());
         Color childFill = cfRes ? cfRes.move() : fill;
 
-        sys::result<glm::mat3x3> ctRes = VectorTools::parseTransform(node.attribute("transform").value());
+        sys::result<glm::mat3x3> ctRes = VectorParser::parseTransform(node.attribute("transform").value());
         glm::mat3x3 childTransform = ctRes ? ctRes.move() * transform : transform;
 
         std::basic_string_view<pugi::char_t> tag = node.name();
@@ -48,8 +52,8 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
         }
         else if (tag == PUGIXML_TEXT("path"))
         {
-            std::vector<VectorTools::PathCommand> pathCommands;
-            _fence_value_return(void(), !VectorTools::parsePath(node.attribute("d").value(), pathCommands));
+            std::vector<VectorParser::PathCommand> pathCommands;
+            _fence_value_return(void(), !VectorParser::parsePath(node.attribute("d").value(), pathCommands));
 
             std::vector<ShapePoint> shapePoints;
             std::vector<uint16_t> shapeInds;
@@ -66,24 +70,24 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
             glm::vec2 windAround(0.0f, 0.0f);
             sz windCount = 0;
             glm::vec2 min(std::numeric_limits<float>::infinity()), max(-std::numeric_limits<float>::infinity());
-            for (VectorTools::PathCommand& pc : pathCommands)
+            for (VectorParser::PathCommand& pc : pathCommands)
             {
                 switch (pc.type)
                 {
-                case VectorTools::PathCommandType::CubicTo:
+                case VectorParser::PathCommandType::CubicTo:
                     pc.dc.ctrl1 = transformByMatrix(pc.dc.ctrl1, childTransform);
                     currentPath.emplace_back(ShapeOutlinePoint { .x = pc.dc.ctrl1.x, .y = pc.dc.ctrl1.y, .isCtrl = true });
                     min = glm::min(min, pc.dc.ctrl1);
                     max = glm::max(max, pc.dc.ctrl1);
                     [[fallthrough]];
-                case VectorTools::PathCommandType::QuadraticTo:
+                case VectorParser::PathCommandType::QuadraticTo:
                     pc.dc.ctrl2 = transformByMatrix(pc.dc.ctrl2, childTransform);
                     currentPath.emplace_back(ShapeOutlinePoint { .x = pc.dc.ctrl2.x, .y = pc.dc.ctrl2.y, .isCtrl = true });
                     min = glm::min(min, pc.dc.ctrl2);
                     max = glm::max(max, pc.dc.ctrl2);
                     [[fallthrough]];
-                case VectorTools::PathCommandType::MoveTo:
-                case VectorTools::PathCommandType::LineTo:
+                case VectorParser::PathCommandType::MoveTo:
+                case VectorParser::PathCommandType::LineTo:
                     pc.to = transformByMatrix(pc.to, childTransform);
                     currentPath.emplace_back(ShapeOutlinePoint { .x = pc.to.x, .y = pc.to.y, .isCtrl = false });
                     min = glm::min(min, pc.to);
@@ -91,7 +95,7 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                     windAround += pc.to;
                     ++windCount;
                     break;
-                case VectorTools::PathCommandType::ClosePath:
+                case VectorParser::PathCommandType::ClosePath:
                     if (currentPath.empty())
                         break;
 
@@ -103,7 +107,7 @@ std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> ScalableVectorGr
                     windAround = glm::vec2(0.0f, 0.0f);
                     windCount = 0;
                     break;
-                case VectorTools::PathCommandType::ArcTo: /* TODO */;
+                case VectorParser::PathCommandType::ArcTo: /* TODO */;
                 }
             }
 
@@ -140,13 +144,13 @@ void ScalableVectorGraphic::buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMar
         ScalableVectorGraphic::loadedSvgs.erase(svgIt);
 }
 
-void ScalableVectorGraphic::renderOffload(const ssz)
+void ScalableVectorGraphic::lateRenderOffload(const ssz renderIndex)
 {
     // Don't forget to lock the render data!
     auto setViewboxTransform = [&]
     {
         const RectTransform& transform = *this->rectTransform;
-        const VectorTools::Viewbox& vb = this->renderData->vb;
+        const VectorParser::Viewbox& vb = this->renderData->vb;
 
         glm::mat4 ret = glm::translate(glm::mat4(1.0f), glm::vec3(transform.position().x, transform.position().y, 0.0f));
         ret = glm::rotate(ret, -transform.rotation(), LinAlgConstants::forward);
@@ -166,14 +170,15 @@ void ScalableVectorGraphic::renderOffload(const ssz)
             std::shared_ptr<std::vector<ScalableVectorGraphic::Renderable>> swapToRender = this->findOrCreateRenderablePath(*this->_svgFile);
             if (swapToRender)
             {
-                sys::result<VectorTools::Viewbox> vb = VectorTools::parseViewbox(this->_svgFile->document().child(PUGIXML_TEXT("svg")).attribute(PUGIXML_TEXT("viewBox")).value());
+                sys::result<VectorParser::Viewbox> vb =
+                    VectorParser::parseViewbox(this->_svgFile->document().child(PUGIXML_TEXT("svg")).attribute(PUGIXML_TEXT("viewBox")).value());
 
                 std::lock_guard guard(this->renderData->lock);
                 this->renderData->toRender = std::move(swapToRender);
                 if (vb)
                     this->renderData->vb = vb.move();
                 else
-                    this->renderData->vb = VectorTools::Viewbox { 0.0f, 0.0f, 100.0f, 100.0f };
+                    this->renderData->vb = VectorParser::Viewbox { 0.0f, 0.0f, 100.0f, 100.0f };
                 setViewboxTransform();
             }
         }
@@ -194,51 +199,6 @@ void ScalableVectorGraphic::renderOffload(const ssz)
         setViewboxTransform();
     }
 
-    // CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData]
-    // {
-    //     std::lock_guard guard(renderData->lock);
-    //     _fence_value_return(void(), !renderData->toRender);
-
-    //     float ri = float(+renderIndex);
-    //     float riIncr = 1.0f;
-    //     for (auto it = renderData->toRender->crbegin(); it != renderData->toRender->crend(); ++it, ri += riIncr)
-    //     {
-    //         const ScalableVectorGraphic::Renderable& renderable = *it;
-    //         switch (renderable.type)
-    //         {
-    //         case ScalableVectorGraphic::RenderableType::FilledPath:
-    //             {
-    //                 _push_nowarn_gcc(_clWarn_gcc_c_cast);
-    //                 _push_nowarn_clang(_clWarn_clang_c_cast);
-
-    //                 const glm::mat4 clipTf = renderData->tf * renderable.filledPath.tf;
-    //                 (void)ShapeRenderer::submitDrawCover(ri, clipTf, 128_u8, Color(0, 0, 0, 0), 1.0f,
-    //                                                      BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
-    //                                                      BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
-    //                 for (const auto& [xOff, yOff] : solidIntersectionOffsets)
-    //                     (void)renderable.filledPath.rend.submitDrawStencil(ri, glm::translate(glm::mat4(1.0f), glm::vec3(xOff, yOff, 0.0f)) * renderData->tf,
-    //                     WindingRule::NonZero);
-    //                 (void)ShapeRenderer::submitDrawCover(ri, clipTf, 128_u8 + u8(solidIntersectionOffsets.size()), renderable.filledPath.col, 1.0f,
-    //                                                      BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS |
-    //                                                          BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
-    //                                                      BGFX_STENCIL_TEST_LEQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
-    //                 (void)ShapeRenderer::submitDrawCover(ri, clipTf, 128_u8 - u8(solidIntersectionOffsets.size()), renderable.filledPath.col, 1.0f,
-    //                                                      BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_LESS |
-    //                                                          BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ZERO),
-    //                                                      BGFX_STENCIL_TEST_GEQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
-
-    //                 _pop_nowarn_clang();
-    //                 _pop_nowarn_gcc();
-    //             }
-    //             break;
-    //         case ScalableVectorGraphic::RenderableType::NoOp:
-    //         default:;
-    //         }
-    //     }
-    // }, false);
-}
-void ScalableVectorGraphic::lateRenderOffload(const ssz renderIndex)
-{
     CoreEngine::queueRenderJobForFrame([renderIndex, renderData = this->renderData]
     {
         std::lock_guard guard(renderData->lock);
@@ -252,8 +212,7 @@ void ScalableVectorGraphic::lateRenderOffload(const ssz renderIndex)
             {
             case ScalableVectorGraphic::RenderableType::FilledPath:
                 {
-                    _push_nowarn_gcc(_clWarn_gcc_c_cast);
-                    _push_nowarn_clang(_clWarn_clang_c_cast);
+                    _push_nowarn_c_cast();
 
                     const glm::mat4 clipTf = renderData->tf * renderable.filledPath.tf;
                     (void)ShapeRenderer::submitDrawCover(ri, clipTf, 0_u8, Color(0, 0, 0, 0),
@@ -265,8 +224,7 @@ void ScalableVectorGraphic::lateRenderOffload(const ssz renderIndex)
                             BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ZERO, BGFX_STATE_BLEND_ONE),
                         BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
 
-                    _pop_nowarn_clang();
-                    _pop_nowarn_gcc();
+                    _pop_nowarn_c_cast();
                 }
                 break;
             case ScalableVectorGraphic::RenderableType::NoOp:

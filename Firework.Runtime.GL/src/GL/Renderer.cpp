@@ -1,7 +1,6 @@
 #include "Renderer.h"
 
-_push_nowarn_gcc(_clWarn_gcc_c_cast);
-_push_nowarn_clang(_clWarn_clang_c_cast);
+_push_nowarn_c_cast();
 _push_nowarn_clang(_clWarn_clang_variadic_macro_args);
 _push_nowarn_conv_comp();
 #include <array>
@@ -12,8 +11,7 @@ _push_nowarn_conv_comp();
 #include <module/sys>
 _pop_nowarn_conv_comp();
 _pop_nowarn_clang();
-_pop_nowarn_clang();
-_pop_nowarn_gcc();
+_pop_nowarn_c_cast();
 
 #include <GL/Framebuffer.h>
 #include <GL/Geometry.h>

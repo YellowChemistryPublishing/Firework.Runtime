@@ -2,16 +2,14 @@
 
 #include "Firework.Runtime.CoreLib.Exports.h"
 
-_push_nowarn_gcc(_clWarn_gcc_c_cast);
-_push_nowarn_clang(_clWarn_clang_c_cast);
+_push_nowarn_c_cast();
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_mouse.h>
 #include <glm/vec2.hpp>
 #include <queue>
 #include <robin_hood.h>
 #include <vector>
-_pop_nowarn_clang();
-_pop_nowarn_gcc();
+_pop_nowarn_c_cast();
 
 namespace Firework::Internal
 {

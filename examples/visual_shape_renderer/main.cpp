@@ -49,8 +49,7 @@ int main(int, char*[])
 
         CoreEngine::queueRenderJobForFrame([tf = entity.getOrAddComponent<RectTransform>()->matrix(), rend = sr->rend, ri = float(+ri)]
         {
-            _push_nowarn_gcc(_clWarn_gcc_c_cast);
-            _push_nowarn_clang(_clWarn_clang_c_cast);
+            _push_nowarn_c_cast();
 
             (void)rend->submitDrawCover(ri, tf, 0_u8, Color(0, 0, 0, 0),
                                         BGFX_STATE_WRITE_A | BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ZERO, BGFX_STATE_BLEND_ZERO), 0);
@@ -60,8 +59,7 @@ int main(int, char*[])
                                             BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_DST_ALPHA, BGFX_STATE_BLEND_INV_DST_ALPHA, BGFX_STATE_BLEND_ZERO, BGFX_STATE_BLEND_ONE),
                                         BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_OP_FAIL_S_REPLACE | BGFX_STENCIL_OP_PASS_Z_REPLACE);
 
-            _pop_nowarn_clang();
-            _pop_nowarn_gcc();
+            _pop_nowarn_c_cast();
         });
     };
     EngineEvent::OnKeyHeld += [](Key key)

@@ -69,8 +69,7 @@ bool ShapeRenderer::submitDrawStencil(const float renderIndex, const glm::mat4 s
 
     float paramsUniform[4] { 0.0f, 0.0f, 0.0f, 0.0f };
 
-    _push_nowarn_gcc(_clWarn_gcc_c_cast);
-    _push_nowarn_clang(_clWarn_clang_c_cast);
+    _push_nowarn_c_cast();
 
     (void)ShapeRenderer::drawProgram.setUniform("u_params", &paramsUniform);
     Renderer::setDrawTransform(shapeTransform);
@@ -104,8 +103,7 @@ bool ShapeRenderer::submitDrawStencil(const float renderIndex, const glm::mat4 s
                                BGFX_STATE_DEPTH_TEST_LESS | BGFX_STATE_MSAA | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_EQUATION(BGFX_STATE_BLEND_EQUATION_ADD) |
                                    BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_ONE));
 
-    _pop_nowarn_clang();
-    _pop_nowarn_gcc();
+    _pop_nowarn_c_cast();
 
     return true;
 }
@@ -123,13 +121,11 @@ bool ShapeRenderer::submitDrawCover(const float renderIndex, const glm::mat4 cli
     clipTransform *= clip;
     Renderer::setDrawTransform(clipTransform);
 
-    _push_nowarn_gcc(_clWarn_gcc_c_cast);
-    _push_nowarn_clang(_clWarn_clang_c_cast);
+    _push_nowarn_c_cast();
     if (stencilTest)
         Renderer::setDrawStencil(+stencilTest | BGFX_STENCIL_FUNC_REF(+refZero) | BGFX_STENCIL_FUNC_RMASK(0xFF) | BGFX_STENCIL_OP_FAIL_Z_KEEP);
     (void)Renderer::submitDraw(1, ShapeRenderer::unitSquare, ShapeRenderer::drawProgram, BGFX_STATE_CULL_CW | +blendState);
-    _pop_nowarn_clang();
-    _pop_nowarn_gcc();
+    _pop_nowarn_c_cast();
 
     return true;
 }

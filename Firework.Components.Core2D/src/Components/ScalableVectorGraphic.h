@@ -6,6 +6,7 @@
 #include <robin_hood.h>
 
 #include <Friends/ShapeRenderer.h>
+#include <Friends/VectorParser.h>
 #include <Friends/VectorTools.h>
 #include <Library/Property.h>
 
@@ -101,7 +102,7 @@ namespace Firework
         {
             std::shared_ptr<std::vector<Renderable>> toRender;
 
-            VectorTools::Viewbox vb;
+            VectorParser::Viewbox vb;
             glm::mat4 tf;
 
             std::mutex lock;
@@ -114,7 +115,6 @@ namespace Firework
         //                           v Never null, but also may be invalid, so passed by ptr, not ref.
         void buryLoadedSvgIfOrphaned(PackageSystem::ExtensibleMarkupPackageFile* svg);
 
-        void renderOffload(ssz renderIndex);
         void lateRenderOffload(ssz renderIndex);
     public:
         Property<std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile>, std::shared_ptr<PackageSystem::ExtensibleMarkupPackageFile>> svgFile {

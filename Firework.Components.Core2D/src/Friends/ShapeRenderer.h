@@ -75,14 +75,12 @@ namespace Firework
         }
 
         [[nodiscard]] bool submitDrawStencil(float renderIndex, glm::mat4 shape, FillRule fillRule = FillRule::EvenOdd) const;
-        _push_nowarn_gcc(_clWarn_gcc_c_cast);
-        _push_nowarn_clang(_clWarn_clang_c_cast);
+        _push_nowarn_c_cast();
         [[nodiscard]] static bool submitDrawCover(float renderIndex, glm::mat4 clip, u8 refZero = 0_u8, Color color = Color::unknown,
                                                   u64 blendState = BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_WRITE_Z | BGFX_STATE_DEPTH_TEST_ALWAYS |
                                                       BGFX_STATE_BLEND_ALPHA,
                                                   u32 stencilTest = BGFX_STENCIL_TEST_NOTEQUAL | BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP);
-        _pop_nowarn_clang();
-        _pop_nowarn_gcc();
+        _pop_nowarn_c_cast();
 
         friend void swap(ShapeRenderer& a, ShapeRenderer& b)
         {
