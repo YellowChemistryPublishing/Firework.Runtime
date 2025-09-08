@@ -4,6 +4,7 @@
 
 #include <glm/vec2.hpp>
 #include <module/sys>
+#include <string>
 
 #include <Library/Property.h>
 
@@ -19,10 +20,33 @@ namespace Firework
 
     class _fw_core_api Window final
     {
+        static std::string _name;
+        static bool _resizable;
+
+        static glm::ivec2 _minimumSize;
         static i32 width;
         static i32 height;
         static bool resizing;
+
+        static void setName(std::string&& value);
+        static void setMinimumSize(glm::ivec2 value);
+        static void setResizable(bool value);
     public:
+        Window() = delete;
+
+        inline static Property<const std::string&, std::string> name { []() -> const std::string& { return Window::_name; }, [](std::string value) -> void
+        {
+            Window::setName(std::move(value));
+        } };
+        inline static Property<glm::ivec2, glm::ivec2> minimumSize { []() -> glm::ivec2 { return Window::_minimumSize; }, [](const glm::ivec2 value) -> void
+        {
+            Window::setMinimumSize(value);
+        } };
+        inline static Property<bool, bool> resizable { []() -> bool { return Window::_resizable; }, [](const bool value) -> void
+        {
+            Window::setResizable(value);
+        } };
+
         /// @brief Retrieve whether the window is resizing this frame.
         /// @return Whether the window is resizing.
         /// @note Main thread only.
@@ -59,6 +83,8 @@ namespace Firework
         static i32 height;
         static i32 screenRefreshRate;
     public:
+        Screen() = delete;
+
         /// @brief Retrieve the width of the primary display.
         /// @return Width of the display in pixels.
         /// @note Main thread only.

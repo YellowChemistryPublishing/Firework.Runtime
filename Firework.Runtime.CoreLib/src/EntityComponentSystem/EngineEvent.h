@@ -107,7 +107,7 @@ namespace Firework::Internal
     class Component;
 
     /// @brief Static class containing functionality relevant to internal/low-level runtime handled events. You may add as many callbacks as you wish.
-    /// @warning You are **not** allowed to invoke any of this events yourself!
+    /// @warning You are **not** allowed to invoke any of this events yourself! Nor are you allowed to throw exceptions from these!
     class _fw_core_api InternalEngineEvent final
     {
     public:

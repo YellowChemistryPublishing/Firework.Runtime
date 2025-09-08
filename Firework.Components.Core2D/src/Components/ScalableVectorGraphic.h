@@ -5,6 +5,7 @@
 #include <mutex>
 #include <robin_hood.h>
 
+#include <Components/ComponentData.h>
 #include <Friends/ShapeRenderer.h>
 #include <Friends/VectorParser.h>
 #include <Friends/VectorTools.h>
@@ -26,7 +27,7 @@ namespace Firework
     class Entity;
     class RectTransform;
 
-    class _fw_cc2d_api ScalableVectorGraphic final
+    class _fw_cc2d_api ScalableVectorGraphic final : public ComponentData
     {
         enum class RenderableType
         {

@@ -24,20 +24,14 @@ namespace Firework
 {
     class Image;
 
-    struct RuntimeInitializationOptions
-    {
-        std::string windowName = "Program";
-        bool windowResizeable = true;
-    };
-
     /// @brief Static class containing functionality relevant to the currently running program.
     class _fw_core_api Application final
     {
         static moodycamel::ConcurrentQueue<func::function<void()>> mainThreadQueue;
-        static moodycamel::ConcurrentQueue<func::function<void()>> workerThreadQueue;
         static moodycamel::ConcurrentQueue<func::function<void()>> windowThreadQueue;
 
-        static RuntimeInitializationOptions _initializationOptions;
+        static std::atomic_flag workerThreadQueueNotif;
+        static moodycamel::ConcurrentQueue<func::function<void()>> workerThreadQueue;
 
         static float secondsPerFrame;
     public:
@@ -45,39 +39,36 @@ namespace Firework
 
         /// @internal
         /// @brief Low-level API [Internal]. Queues a function to be run on the main thread.
-        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>```
+        /// @tparam Func ```requires std::invocable<Func>```
         /// @param job Job to queue.
         /// @note Thread-safe.
-        template <typename Func>
-        requires std::constructible_from<func::function<void()>, Func&&>
+        template <std::invocable<> Func>
         inline static void queueJobForMainThread(Func&& job)
         {
             Application::mainThreadQueue.enqueue(job);
         }
         /// @internal
         /// @brief Low-level API [Internal]. Queues a function to be run on the background worker thread.
-        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>```
+        /// @tparam Func ```requires std::invocable<Func>```
         /// @param job Job to queue.
         /// @note Thread-safe.
-        template <typename Func>
-        requires std::constructible_from<func::function<void()>, Func&&>
+        template <std::invocable<> Func>
         inline static void queueJobForWorkerThread(Func&& job)
         {
             Application::workerThreadQueue.enqueue(job);
+            Application::workerThreadQueueNotif.test_and_set();
+            Application::workerThreadQueueNotif.notify_one();
         }
         /// @internal
         /// @brief Low-level API [Internal]. Queues a function to be run on the window thread.
-        /// @tparam Func ```requires std::constructible_from<func::function<void()>, Func&&>```
+        /// @tparam Func ```requires std::invocable<Func>```
         /// @param job Job to queue.
         /// @note Thread-safe.
-        template <typename Func>
-        requires std::constructible_from<func::function<void()>, Func&&>
+        template <std::invocable<> Func>
         inline static void queueJobForWindowThread(Func&& job)
         {
             Application::windowThreadQueue.enqueue(job);
         }
-
-        static Property<const RuntimeInitializationOptions&, RuntimeInitializationOptions> initializationOptions;
 
         /// @brief Sets the minimum frame time by frames-per-second.
         /// @param fps Framerate in frames per second.

@@ -16,7 +16,6 @@ _push_nowarn_msvc(_clWarn_msvc_export_interface);
 namespace Firework
 {
     class Entity;
-    class EntityManager;
 
     struct EntityIterator
     {

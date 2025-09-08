@@ -65,37 +65,37 @@ namespace Firework
 #pragma region Assignment
         inline GetterReturnType operator+=(SetterInputType rhs) const
         {
-            GetterReturnType type = this->getter();
+            std::remove_cvref_t<SetterInputType> type = _as(std::remove_cvref_t<SetterInputType>, this->getter());
             type += rhs;
-            this->setter(_as(SetterInputType, type));
+            this->setter(type);
             return this->getter();
         }
         inline GetterReturnType operator-=(SetterInputType rhs) const
         {
-            GetterReturnType type = this->getter();
+            std::remove_cvref_t<SetterInputType> type = _as(std::remove_cvref_t<SetterInputType>, this->getter());
             type -= rhs;
-            this->setter(_as(SetterInputType, type));
+            this->setter(type);
             return this->getter();
         }
         inline GetterReturnType operator*=(SetterInputType rhs) const
         {
-            GetterReturnType type = this->getter();
+            std::remove_cvref_t<SetterInputType> type = _as(std::remove_cvref_t<SetterInputType>, this->getter());
             type *= rhs;
-            this->setter(_as(SetterInputType, type));
+            this->setter(type);
             return this->getter();
         }
         inline GetterReturnType operator/=(SetterInputType rhs) const
         {
-            GetterReturnType type = this->getter();
+            std::remove_cvref_t<SetterInputType> type = _as(std::remove_cvref_t<SetterInputType>, this->getter());
             type /= rhs;
-            this->setter(_as(SetterInputType, type));
+            this->setter(type);
             return this->getter();
         }
         inline GetterReturnType operator%=(SetterInputType rhs) const
         {
-            GetterReturnType type = this->getter();
+            std::remove_cvref_t<SetterInputType> type = _as(std::remove_cvref_t<SetterInputType>, this->getter());
             type %= rhs;
-            this->setter(_as(SetterInputType, type));
+            this->setter(type);
             return this->getter();
         }
 #pragma endregion

@@ -4,6 +4,7 @@
 
 #include <glm/vec4.hpp>
 
+#include <Components/ComponentData.h>
 #include <Core/CoreEngine.h>
 #include <EntityComponentSystem/Entity.h>
 #include <Friends/Color.h>
@@ -26,7 +27,7 @@ namespace Firework
     class Entity;
     class RectTransform;
 
-    class _fw_cc2d_api Text final
+    class _fw_cc2d_api Text final : public ComponentData
     {
         struct FontCharacterQuery
         {

@@ -10,7 +10,7 @@ using namespace Firework;
 using namespace Firework::Internal;
 using namespace Firework::GL;
 
-inline static void rotatePointAround(glm::vec2& point, const glm::vec2& rotateAround, float angle)
+static void rotatePointAround(glm::vec2& point, const glm::vec2& rotateAround, float angle)
 {
     float s = std::sinf(-angle);
     float c = std::cosf(-angle);
@@ -21,7 +21,7 @@ inline static void rotatePointAround(glm::vec2& point, const glm::vec2& rotateAr
     point.x = x * c - y * s + rotateAround.x;
     point.y = x * s + y * c + rotateAround.y;
 };
-inline static void rotatePointAroundOrigin(glm::vec2& point, float angle)
+static void rotatePointAroundOrigin(glm::vec2& point, float angle)
 {
     return rotatePointAround(point, glm::vec2(0.0f), angle);
 };
@@ -43,7 +43,7 @@ void RectTransform::setRect(const RectFloat& value)
             {
                 rectTransform->_dirty = true;
                 rectTransform->matrixDirty = true;
-                localDelta = delta * rectTransform->_anchor;
+                localDelta *= rectTransform->_anchor;
                 rectTransform->_rect += localDelta;
                 if (rectTransform->_positionAnchor != RectFloat(0.0f))
                 {

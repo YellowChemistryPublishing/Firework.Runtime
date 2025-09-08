@@ -11,10 +11,6 @@
 #if __has_include(<cxxabi.h>)
 #include <cxxabi.h>
 #endif
-#if __EMSCRIPTEN__
-#include <emscripten/emscripten.h>
-#include <emscripten/threading.h>
-#endif
 #include <fcntl.h>
 #include <filesystem>
 #include <fstream>
@@ -22,6 +18,7 @@
 #if __linux__
 #include <pthread.h>
 #endif
+#include <set>
 #include <span>
 #if _WIN32
 #define NOMINMAX 1
@@ -52,21 +49,22 @@ using namespace Firework::Internal;
 using namespace Firework::GL;
 using namespace Firework::PackageSystem;
 
-std::atomic<EngineState> CoreEngine::state(EngineState::FirstInit);
-
 SDL_Window* CoreEngine::wind = nullptr;
 SDL_Renderer* CoreEngine::rend = nullptr;
-const SDL_DisplayMode* CoreEngine::displMd;
+const SDL_DisplayMode* CoreEngine::displMd = nullptr;
+
+std::atomic_flag CoreEngine::state[size_t(EngineState::Count)] {};
 
 std::deque<RenderJob> CoreEngine::renderQueue;
 std::mutex CoreEngine::renderQueueLock;
+std::atomic<uint_fast8_t> CoreEngine::framesInFlight = 0;
 
 int CoreEngine::execute(int argc, char* argv[])
 {
     (void)argc;
     (void)argv;
 
-#if _WIN32
+#if _WIN32 // Windows ANSI Escape Sequence Support
     if (IsWindowsVistaOrGreater())
     {
         HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -77,11 +75,7 @@ int CoreEngine::execute(int argc, char* argv[])
     }
 #endif
 
-    if (!SDL_Init(SDL_INIT_EVENTS | SDL_INIT_HAPTIC
-#if !__EMSCRIPTEN__
-                  | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK
-#endif
-                  ))
+    if (!SDL_Init(SDL_INIT_EVENTS | SDL_INIT_HAPTIC | SDL_INIT_GAMEPAD | SDL_INIT_JOYSTICK))
     {
         Debug::logError("Runtime failed to initialize! Error: ", SDL_GetError(), '.');
         return EXIT_FAILURE;
@@ -90,34 +84,22 @@ int CoreEngine::execute(int argc, char* argv[])
     std::thread workerThread([]
     {
         func::function<void()> event;
-        while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::WindowThreadDone)
+        while (!CoreEngine::state[size_t(EngineState::WindowThreadDone)].test())
         {
+            Application::workerThreadQueueNotif.wait(false);
             while (Application::workerThreadQueue.try_dequeue(event)) event();
-
-#if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
-            std::this_thread::yield();
-#elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-#endif
+            Application::workerThreadQueueNotif.clear();
         }
-        while (Application::workerThreadQueue.try_dequeue(event)) event();
     });
 
-    std::thread windowThread(internalWindowLoop);
+    {
+        std::jthread windowThread(internalWindowLoop);
+        std::jthread renderThread(internalRenderLoop);
+        std::jthread mainThread(internalLoop);
+    }
 
-    std::thread mainThread(internalLoop);
-
-#ifdef __EMSCRIPTEN__
-    internalRenderLoop();
-#else
-    std::thread renderThread(internalRenderLoop);
-#endif
-
-    mainThread.join();
-#ifndef __EMSCRIPTEN__
-    renderThread.join();
-#endif
-    windowThread.join();
+    Application::workerThreadQueueNotif.test_and_set();
+    Application::workerThreadQueueNotif.notify_one();
     workerThread.join();
 
     // Cleanup here is done for stuff created in CoreEngine::execute, thread-specific cleanup is done per-thread, at the end of their lifetime.
@@ -135,17 +117,19 @@ void CoreEngine::resetDisplayData()
         return;
     }
 
-    Application::mainThreadQueue.enqueue([w = CoreEngine::displMd->w, h = CoreEngine::displMd->h, rr = CoreEngine::displMd->refresh_rate]
+    if (CoreEngine::displMd) [[likely]]
     {
-        Screen::width = w;
-        Screen::height = h;
-        Screen::screenRefreshRate = rr;
-    });
+        Application::queueJobForMainThread([w = CoreEngine::displMd->w, h = CoreEngine::displMd->h, rr = CoreEngine::displMd->refresh_rate]
+        {
+            Screen::width = w;
+            Screen::height = h;
+            Screen::screenRefreshRate = rr;
+        });
+    }
 }
 
-constexpr static auto userFunctionInvoker = []<typename Func>(Func&& func)
+constexpr static auto userFunctionInvoker = [](auto&& func)
 {
-#if __has_include(<cpptrace/cpptrace.hpp>)
     auto fmtTrace = [](cpptrace::stacktrace ret) -> std::string
     {
         for (auto& frame : ret.frames)
@@ -157,7 +141,6 @@ constexpr static auto userFunctionInvoker = []<typename Func>(Func&& func)
         }
         return ret.to_string();
     };
-#endif
 
     __hwTry
     {
@@ -178,42 +161,22 @@ constexpr static auto userFunctionInvoker = []<typename Func>(Func&& func)
     __hwCatch(const Exception& ex)
     {
         std::string traceback = "std::exception (";
-        traceback.append(cpptrace::demangle(typeid(ex).name())).append("): ").append(ex.what()).append("\nUnhandled exception thrown, at:\n")
-            /*/.append(fmtTrace(ex.resolveStacktrace()))/*/;
+        traceback.append(cpptrace::demangle(typeid(ex).name())).append("): ").append(ex.what()).append("\nUnhandled exception thrown, at:\n");
         Debug::logError(traceback);
     }
     __hwCatch(const std::exception& ex)
     {
         std::string traceback = "std::exception (";
-        traceback
-            .append(
-#if __has_include(<cpptrace/cpptrace.hpp>)
-                cpptrace::demangle(
-#endif
-                    typeid(ex).name()
-#if __has_include(<cpptrace/cpptrace.hpp>)
-                        )
-#endif
-                    )
-            .append("): ")
-            .append(ex.what());
-#if __has_include(<cpptrace/cpptrace.hpp>)
+        traceback.append(cpptrace::demangle(typeid(ex).name())).append("): ").append(ex.what());
         traceback.append("\nUnhandled exception thrown, at:\n").append(fmtTrace(cpptrace::stacktrace::current()));
-#endif
         Debug::logError(traceback);
     }
     __hwCatch(...)
     {
-#if defined(_GLIBCXX_RELEASE) && __has_include(<cpptrace/cpptrace.hpp>)
         std::string traceback = cpptrace::demangle(std::current_exception().__cxa_exception_type()->name());
         traceback.append(": ");
-#else
-        std::string traceback;
-#endif
         traceback.append("[Unknown / JIT Compiled Code]");
-#if __has_include(<cpptrace/cpptrace.hpp>)
         traceback.append("\nUnhandled exception thrown, at:\n").append(fmtTrace(cpptrace::stacktrace::current()));
-#endif
         Debug::logError(traceback);
     }
     __hwEnd();
@@ -221,46 +184,85 @@ constexpr static auto userFunctionInvoker = []<typename Func>(Func&& func)
 
 void CoreEngine::internalLoop()
 {
-    CoreEngine::state = EngineState::WindowInit; // Spin off window handling thread.
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderThreadReady) std::this_thread::yield();
-    CoreEngine::state = EngineState::Playing;
+    CoreEngine::state[size_t(EngineState::WindowInit)].test_and_set(); // Spin off window handling thread.
+    CoreEngine::state[size_t(EngineState::WindowInit)].notify_all();
 
+    CoreEngine::state[size_t(EngineState::RenderThreadReady)].wait(false, std::memory_order_relaxed);
+
+    CoreEngine::state[size_t(EngineState::Running)].test_and_set();
+    CoreEngine::state[size_t(EngineState::Running)].notify_all();
+
+    // IMPORTANT: A userlevel function block needs to be guarded with `userFunctionInvoker(...)` to catch exceptions and prevent crashing the engine.
     userFunctionInvoker(EngineEvent::OnInitialize);
+    // IMPORTANT END
 
-    func::function<void()> job;
     u64 frameBegin = SDL_GetPerformanceCounter();
     u64 perfFreq = SDL_GetPerformanceFrequency();
+
     float targetDeltaTime = Application::secondsPerFrame;
-    float deltaTime = -1.0f;
+    float deltaTime = 0.0f;
+
     float prevw = float(+Window::width), prevh = float(+Window::height);
 
-    userFunctionInvoker([&] { EngineEvent::OnWindowResize(glm::i32vec2 { Window::width, Window::height }); });
+    // IMPORTANT: A userlevel function block needs to be guarded with `userFunctionInvoker(...)` to catch exceptions and prevent crashing the engine.
+    userFunctionInvoker([] { EngineEvent::OnWindowResize(glm::i32vec2 { Window::width, Window::height }); });
+    // IMPORTANT END
 
-    while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::ExitRequested)
+    func::function<void()> job;
+    while (!CoreEngine::state[size_t(EngineState::ExitRequested)].test())
     {
         deltaTime = float(SDL_GetPerformanceCounter() - frameBegin) / float(perfFreq);
         if (Application::mainThreadQueue.try_dequeue(job))
             job();
         else if (deltaTime >= targetDeltaTime)
         {
-#pragma region Pre-Tick
+#pragma region Input Events!
             for (uint_fast16_t i = 0; i < uint_fast16_t(MouseButton::Count); i++)
             {
                 if (Input::heldMouseInputs[i])
-                    userFunctionInvoker([&] { EngineEvent::OnMouseHeld(MouseButton(i)); });
+                {
+                    // IMPORTANT: A userlevel function block needs to be guarded with `userFunctionInvoker(...)` to catch exceptions and prevent crashing the engine.
+                    userFunctionInvoker([&i] { EngineEvent::OnMouseHeld(MouseButton(i)); });
+                    // IMPORTANT END
+                }
             }
             for (uint_fast16_t i = 0; i < uint_fast16_t(Key::Count); i++)
             {
                 if (Input::heldKeyInputs[i])
-                    userFunctionInvoker([&] { EngineEvent::OnKeyHeld(Key(i)); });
+                {
+                    // IMPORTANT: A userlevel function block needs to be guarded with `userFunctionInvoker(...)` to catch exceptions and prevent crashing the engine.
+                    userFunctionInvoker([&i] { EngineEvent::OnKeyHeld(Key(i)); });
+                    // IMPORTANT END
+                }
             }
 #pragma endregion
 
+#pragma region Update RectTransform Components with Anchors
+            for (Entity& entity : Entities::range())
+            {
+                if (std::shared_ptr<RectTransform> rectTransform = entity.getComponent<RectTransform>(); rectTransform && (Window::width != prevw || Window::height != prevh))
+                {
+                    RectFloat rectAnchor = rectTransform->rectAnchor();
+                    RectFloat delta((Window::height - prevh) * 0.5f, (Window::width - prevw) * 0.5f, (Window::height - prevh) * -0.5f, (Window::width - prevw) * -0.5f);
+                    if (rectAnchor != RectFloat(0.0f))
+                        rectTransform->rect += delta * rectAnchor;
+
+                    RectFloat positionAnchor = rectTransform->positionAnchor();
+                    if (positionAnchor != RectFloat(0.0f))
+                        rectTransform->position += glm::vec2(delta.right, delta.top) * glm::vec2(positionAnchor.right, positionAnchor.top) +
+                            glm::vec2(delta.left, delta.bottom) * glm::vec2(positionAnchor.left, positionAnchor.bottom);
+                }
+            }
+#pragma endregion
+
+            // IMPORTANT: A userlevel function block needs to be guarded with `userFunctionInvoker(...)` to catch exceptions and prevent crashing the engine.
             userFunctionInvoker(EngineEvent::OnTick);
             userFunctionInvoker(EngineEvent::OnLateTick);
+            // IMPORTANT END
 
 #pragma region Render Offload
             // My code is held together with glue and duct tape. And not the good stuff either.
+
             if (Window::width != prevw || Window::height != prevh)
             {
                 CoreEngine::queueRenderJobForFrame([w = Window::width, h = Window::height]
@@ -268,96 +270,91 @@ void CoreEngine::internalLoop()
                     RenderPipeline::resetBackbuffer(+u32(w), +u32(h));
                     RenderPipeline::resetViewArea(+u16(w), +u16(h));
                 });
-                prevw = float(+Window::width);
-                prevh = float(+Window::height);
             }
-            CoreEngine::queueRenderJobForFrame([] { RenderPipeline::clearViewArea(); });
 
-            ssz renderIndex = 0;
-            Entities::forEachEntity([&](Entity& entity)
+            // This is a trade-off between stutter and microstutter. Higher values reduce stutter but increase latency and microstutter, lower values do the opposite.
+            if (CoreEngine::framesInFlight < Config::MaxFramesInFlight) // Don't let the CPU get too far ahead of the GPU.
             {
-                for (auto& [typeIndex, componentSet] : Entities::table)
+                CoreEngine::queueRenderJobForFrame([]
                 {
-                    auto componentIt = componentSet.find(&entity);
-                    if (componentIt != componentSet.end())
-                        userFunctionInvoker([&] { InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, entity, componentIt->second, renderIndex++); });
-                }
-            });
-            Entities::forEachEntityReversed([&](Entity& entity)
-            {
-                for (auto& [typeIndex, componentSet] : Entities::table)
+                    CoreEngine::framesInFlight++;
+                    RenderPipeline::clearViewArea();
+                });
+
+                ssz renderIndex = 0;
+                Entities::forEachEntity([&](Entity& entity)
                 {
-                    auto componentIt = componentSet.find(&entity);
-                    if (componentIt != componentSet.end())
-                        userFunctionInvoker([&] { InternalEngineEvent::OnLateRenderOffloadForComponent(typeIndex, entity, componentIt->second, --renderIndex); });
-                }
-            });
+                    for (auto& [typeIndex, componentSet] : Entities::table)
+                    {
+                        auto componentIt = componentSet.find(&entity);
+                        if (componentIt != componentSet.end())
+                            userFunctionInvoker([&] { InternalEngineEvent::OnRenderOffloadForComponent(typeIndex, entity, componentIt->second, renderIndex++); });
+                    }
+                });
+                Entities::forEachEntityReversed([&](Entity& entity)
+                {
+                    for (auto& [typeIndex, componentSet] : Entities::table)
+                    {
+                        auto componentIt = componentSet.find(&entity);
+                        if (componentIt != componentSet.end())
+                            userFunctionInvoker([&] { InternalEngineEvent::OnLateRenderOffloadForComponent(typeIndex, entity, componentIt->second, --renderIndex); });
+                    }
+                });
 
-            CoreEngine::queueRenderJobForFrame([] { RenderPipeline::renderFrame(); });
-
-            // if (!CoreEngine::frameRenderJobs.empty())
-            // {
-            //     {
-            //         std::lock_guard guard(CoreEngine::renderQueueLock);
-            //         CoreEngine::renderQueue.emplace_back(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
-            //         {
-            //             for (const RenderJob& job : jobs) job();
-            //         }));
-            //     }
-            //     CoreEngine::frameRenderJobs.clear();
-            // }
+                CoreEngine::queueRenderJobForFrame([]
+                {
+                    RenderPipeline::renderFrame();
+                    CoreEngine::framesInFlight--;
+                });
+            }
 #pragma endregion
 
-#pragma region Post-Tick
             Input::internalMouseMotion = glm::vec2(0.0f);
-#pragma endregion
+
+            prevw = float(+Window::width);
+            prevh = float(+Window::height);
 
             frameBegin = SDL_GetPerformanceCounter();
             targetDeltaTime = std::max(Application::secondsPerFrame - (deltaTime - targetDeltaTime), 0.0f);
             Time::frameDeltaTime = deltaTime * Time::timeScale;
         }
         else
-        {
-#if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
-            std::this_thread::yield();
-#elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
-            std::this_thread::sleep_for(
-                std::chrono::nanoseconds(uint64_t((targetDeltaTime - (float(SDL_GetPerformanceCounter() - frameBegin) / float(perfFreq))) * 1000000000.0f)));
-#endif
-        }
+            CoreEngine::waitSome(std::chrono::nanoseconds(uint64_t((targetDeltaTime - (float(SDL_GetPerformanceCounter() - frameBegin) / float(perfFreq))) * 1000000000.0f)));
     }
 
-    EngineEvent::OnQuit();
-
     while (Application::mainThreadQueue.try_dequeue(job));
+
+    userFunctionInvoker(EngineEvent::OnQuit);
 
     Entities::front->clear();
     Entities::front.reset();
 
-    // Render finalise.
-    // {
-    //     std::lock_guard guard(CoreEngine::renderQueueLock);
-    //     CoreEngine::renderQueue.emplace_back(RenderJob([jobs = std::move(CoreEngine::frameRenderJobs)]
-    //     {
-    //         for (const RenderJob& job : jobs)
-    //         {
-    //             if (job.required())
-    //                 job();
-    //         }
-    //     }));
-    // }
-    // CoreEngine::frameRenderJobs.clear();
+    if (!Entities::table.empty()) [[unlikely]]
+    {
+        Debug::logError("Entities weren't fully cleaned up! This will cause problems!");
+        Entities::table.clear();
+    }
 
-    CoreEngine::state = EngineState::MainThreadDone;
+    CoreEngine::state[size_t(EngineState::MainThreadDone)].test_and_set();
+    CoreEngine::state[size_t(EngineState::MainThreadDone)].notify_all();
 }
 
 void CoreEngine::internalWindowLoop()
 {
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::WindowInit) std::this_thread::yield();
+    CoreEngine::state[size_t(EngineState::WindowInit)].wait(false, std::memory_order_relaxed);
+
+    constexpr auto notifyEarlyFailure = []
+    {
+        CoreEngine::state[size_t(EngineState::ExitRequested)].test_and_set();
+        CoreEngine::state[size_t(EngineState::ExitRequested)].notify_all();
+        CoreEngine::state[size_t(EngineState::RenderInit)].test_and_set();
+        CoreEngine::state[size_t(EngineState::RenderInit)].notify_all();
+    };
 
     if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) [[unlikely]]
     {
         Debug::logError("Display initialisation failed! Error: ", SDL_GetError(), ".\n");
+        notifyEarlyFailure();
         goto EarlyReturn;
     }
 
@@ -365,6 +362,7 @@ void CoreEngine::internalWindowLoop()
     {
         Debug::logError("Failed to get desktop display details: ", SDL_GetError());
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
+        notifyEarlyFailure();
         goto EarlyReturn;
     }
 
@@ -372,15 +370,16 @@ void CoreEngine::internalWindowLoop()
     Screen::height = CoreEngine::displMd->h;
     Screen::screenRefreshRate = CoreEngine::displMd->refresh_rate;
 
-    CoreEngine::wind = SDL_CreateWindow(Application::_initializationOptions.windowName.c_str(), +Window::width, +Window::height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
+    CoreEngine::wind = SDL_CreateWindow(Window::_name.c_str(), +Window::width, +Window::height, SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!CoreEngine::wind)
     {
         Debug::logError("Could not create window: ", SDL_GetError(), ".");
         SDL_QuitSubSystem(SDL_INIT_VIDEO);
+        notifyEarlyFailure();
         goto EarlyReturn;
     }
 
-    SDL_SetWindowMinimumSize(wind, 200, 200);
+    SDL_SetWindowMinimumSize(wind, Window::_minimumSize.x, Window::_minimumSize.y);
 
     {
         func::function<void()> job;
@@ -392,7 +391,7 @@ void CoreEngine::internalWindowLoop()
             func::function<void()>& job;
         } resizeData { .job = job };
 
-        auto eventWatcher = +[](void* data, SDL_Event* event) -> bool
+        bool (*eventWatcher)(void*, SDL_Event*) = [](void* data, SDL_Event* event) -> bool
         {
             decltype(resizeData)& windowSizeData = *_as(decltype(resizeData)*, data);
 
@@ -400,40 +399,40 @@ void CoreEngine::internalWindowLoop()
 
             if (windowSizeData.mustBe == std::this_thread::get_id() && windowSizeData.shouldUnlock.test())
             {
-                CoreEngine::renderQueueLock.unlock();
                 windowSizeData.shouldUnlock.clear();
+                CoreEngine::renderQueueLock.unlock();
             }
             if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED)
             {
                 assert(windowSizeData.mustBe == std::this_thread::get_id());
 
-                windowSizeData.shouldUnlock.test_and_set();
-
                 int32_t w = event->window.data1, h = event->window.data2;
-                Application::mainThreadQueue.enqueue([w, h]
+                Application::queueJobForMainThread([w, h]
                 {
                     Window::resizing = true;
                     i32 prevw = Window::width, prevh = Window::height;
                     Window::width = w;
                     Window::height = h;
 
-                    userFunctionInvoker([&] { EngineEvent::OnWindowResize(glm::i32vec2 { prevw, prevh }); });
+                    userFunctionInvoker([&prevw, &prevh] { EngineEvent::OnWindowResize(glm::i32vec2 { prevw, prevh }); });
                 });
 
                 CoreEngine::renderQueueLock.lock();
+                windowSizeData.shouldUnlock.test_and_set();
             }
 
             return 0;
         };
         SDL_AddEventWatch(eventWatcher, &resizeData);
 
-        if (Application::_initializationOptions.windowResizeable)
+        if (Window::_resizable)
             SDL_SetWindowResizable(CoreEngine::wind, true);
 
-        CoreEngine::state = EngineState::RenderInit; // Spin off rendering thread.
+        CoreEngine::state[size_t(EngineState::RenderInit)].test_and_set(); // Spin off rendering thread.
+        CoreEngine::state[size_t(EngineState::RenderInit)].notify_all();
 
         SDL_Event ev;
-        while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::RenderThreadDone)
+        while (!CoreEngine::state[size_t(EngineState::RenderThreadDone)].test())
         {
             while (Application::windowThreadQueue.try_dequeue(job)) job();
 
@@ -443,8 +442,8 @@ void CoreEngine::internalWindowLoop()
 
                 if (resizeData.shouldUnlock.test())
                 {
-                    CoreEngine::renderQueueLock.unlock();
                     resizeData.shouldUnlock.clear();
+                    CoreEngine::renderQueueLock.unlock();
                 }
 
                 std::lock_guard guard(CoreEngine::renderQueueLock);
@@ -456,56 +455,58 @@ void CoreEngine::internalWindowLoop()
                 {
 #pragma region Mouse Events
                 case SDL_EVENT_MOUSE_MOTION:
-                    Application::mainThreadQueue.enqueue([posX = ev.motion.x, posY = ev.motion.y, motX = ev.motion.xrel, motY = ev.motion.yrel]
+                    Application::queueJobForMainThread([xPos = ev.motion.x, yPos = ev.motion.y, xMot = ev.motion.xrel, yMot = ev.motion.yrel]
                     {
                         glm::vec2 from = Input::internalMousePosition;
-                        Input::internalMousePosition.x = posX - Window::width / 2_u32;
-                        Input::internalMousePosition.y = -posY + Window::height / 2_u32;
-                        Input::internalMouseMotion.x += motX;
-                        Input::internalMouseMotion.y -= motY;
-                        userFunctionInvoker([&] { EngineEvent::OnMouseMove(from); });
+                        Input::internalMousePosition.x = xPos - Window::width / 2_u32;
+                        Input::internalMousePosition.y = -yPos + Window::height / 2_u32;
+                        Input::internalMouseMotion.x += xMot;
+                        Input::internalMouseMotion.y -= yMot;
+                        userFunctionInvoker([&from] { EngineEvent::OnMouseMove(from); });
                     });
                     break;
                 case SDL_EVENT_MOUSE_WHEEL:
-                    Application::mainThreadQueue.enqueue([scrX = ev.wheel.x, scrY = ev.wheel.y]
-                    { userFunctionInvoker([&] { EngineEvent::OnMouseScroll(glm::vec2(scrX, scrY)); }); });
+                    Application::queueJobForMainThread([xScr = ev.wheel.x, yScr = ev.wheel.y]
+                    { userFunctionInvoker([&xScr, &yScr] { EngineEvent::OnMouseScroll(glm::vec2(xScr, yScr)); }); });
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
-                    Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
+                    Application::queueJobForMainThread([button = Input::convertFromSDLMouse(ev.button.button)]
                     {
                         Input::heldMouseInputs[size_t(button)] = true;
-                        userFunctionInvoker([&] { EngineEvent::OnMouseDown(button); });
+                        userFunctionInvoker([&button] { EngineEvent::OnMouseDown(button); });
                     });
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_UP:
-                    Application::mainThreadQueue.enqueue([button = Input::convertFromSDLMouse(ev.button.button)]
+                    Application::queueJobForMainThread([button = Input::convertFromSDLMouse(ev.button.button)]
                     {
                         Input::heldMouseInputs[size_t(button)] = false;
-                        userFunctionInvoker([&] { EngineEvent::OnMouseUp(button); });
+                        userFunctionInvoker([&button] { EngineEvent::OnMouseUp(button); });
                     });
                     break;
 #pragma endregion
+
 #pragma region Key Events
                 case SDL_EVENT_KEY_DOWN:
                     if (ev.key.repeat)
-                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)] { EngineEvent::OnKeyRepeat(key); });
+                        Application::queueJobForMainThread([key = Input::convertFromSDLKey(ev.key.key)] { userFunctionInvoker([&key] { EngineEvent::OnKeyRepeat(key); }); });
                     else
                     {
-                        Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
+                        Application::queueJobForMainThread([key = Input::convertFromSDLKey(ev.key.key)]
                         {
                             Input::heldKeyInputs[size_t(key)] = true;
-                            EngineEvent::OnKeyDown(key);
+                            userFunctionInvoker([&key] { EngineEvent::OnKeyDown(key); });
                         });
                     }
                     break;
                 case SDL_EVENT_KEY_UP:
-                    Application::mainThreadQueue.enqueue([key = Input::convertFromSDLKey(ev.key.key)]
+                    Application::queueJobForMainThread([key = Input::convertFromSDLKey(ev.key.key)]
                     {
                         Input::heldKeyInputs[size_t(key)] = false;
-                        EngineEvent::OnKeyUp(key);
+                        userFunctionInvoker([&key] { EngineEvent::OnKeyUp(key); });
                     });
                     break;
 #pragma endregion
+
                 case SDL_EVENT_TEXT_INPUT:
                     {
                         std::u32string input;
@@ -530,25 +531,22 @@ void CoreEngine::internalWindowLoop()
                             else
                                 input.push_back(char32_t(*it)); // 1 byte.
                         }
-                        Application::mainThreadQueue.enqueue([input = std::move(input)] { userFunctionInvoker([&] { EngineEvent::OnTextInput(input); }); });
+                        Application::queueJobForMainThread([input = std::move(input)] { userFunctionInvoker([&input] { EngineEvent::OnTextInput(input); }); });
                     }
                     break;
+
                 case SDL_EVENT_WINDOW_MOVED:
                     break;
+
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
                 case SDL_EVENT_QUIT:
-                    CoreEngine::state = EngineState::ExitRequested;
+                    CoreEngine::state[size_t(EngineState::ExitRequested)].test_and_set();
+                    CoreEngine::state[size_t(EngineState::ExitRequested)].notify_all();
                     break;
                 }
             }
             else
-            {
-#if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
-                std::this_thread::yield();
-#elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-#endif
-            }
+                CoreEngine::waitSome();
         }
 
         SDL_DestroyWindow(CoreEngine::wind);
@@ -557,84 +555,104 @@ void CoreEngine::internalWindowLoop()
         SDL_RemoveEventWatch(eventWatcher, &resizeData);
     }
 EarlyReturn:
-    CoreEngine::state = EngineState::WindowThreadDone; // Signal main thread.
+    CoreEngine::state[size_t(EngineState::WindowThreadDone)].test_and_set(); // Signal main thread.
+    CoreEngine::state[size_t(EngineState::WindowThreadDone)].notify_all();
 }
 
 void CoreEngine::internalRenderLoop()
 {
-    while (CoreEngine::state.load(std::memory_order_relaxed) != EngineState::RenderInit) std::this_thread::yield();
-
-    RendererBackend initBackend = RendererBackend::Default;
-    RendererBackend backendPriorityOrder[] {
-#if _WIN32
-        RendererBackend::Vulkan, RendererBackend::Direct3D12, RendererBackend::Direct3D11, RendererBackend::OpenGL,
-#else
-        RendererBackend::Vulkan, RendererBackend::OpenGL,
-#endif
-        RendererBackend::Default
-    };
-
-    std::vector<RendererBackend> backends = Renderer::platformBackends();
-    for (RendererBackend targetBackend : std::span(backendPriorityOrder, sizeof(backendPriorityOrder) / sizeof(*backendPriorityOrder)))
+    CoreEngine::state[size_t(EngineState::RenderInit)].wait(false, std::memory_order_relaxed);
+    if (CoreEngine::state[size_t(EngineState::ExitRequested)].test()) // Window thread failed to initialize.
     {
-        for (RendererBackend platformBackend : backends)
+        CoreEngine::state[size_t(EngineState::RenderThreadReady)].test_and_set();
+        CoreEngine::state[size_t(EngineState::RenderThreadReady)].notify_all();
+        goto EarlyReturn;
+    }
+
+    {
+        RendererBackend initBackend = RendererBackend::Default;
+        const RendererBackend backendPriorityOrder[] {
+#if _WIN32
+            RendererBackend::Vulkan, RendererBackend::Direct3D12, RendererBackend::Direct3D11, RendererBackend::OpenGL,
+#else
+            RendererBackend::Vulkan, RendererBackend::OpenGL,
+#endif
+            RendererBackend::Default
+        };
+
+        std::vector<RendererBackend> vecBackends = Renderer::platformBackends();
+        std::set<RendererBackend> backends(vecBackends.begin(), vecBackends.end());
+        for (RendererBackend targetBackend : backendPriorityOrder)
         {
-            if (targetBackend == platformBackend)
+            if (backends.contains(targetBackend))
             {
                 initBackend = targetBackend;
-                goto BreakAll;
+                break;
             }
         }
-    }
-BreakAll:
-    void *nwh = nullptr, *ndt = nullptr;
-#if defined(SDL_PLATFORM_WIN32)
-    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
-#elif defined(SDL_PLATFORM_MACOS)
-    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
-#elif defined(SDL_PLATFORM_LINUX)
-    if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0)
-    {
-        ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr);
-        nwh = _asr(void*, SDL_GetNumberProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0));
-    }
-    else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0)
-    {
-        ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr);
-        nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
-    }
-    else
-    {
-        Debug::logError("Invalid Linux video driver!");
-        goto EarlyReturn;
-    }
 
-    if (!ndt)
-    {
-        Debug::logError("Failed to get Linux display!");
-        goto EarlyReturn;
-    }
+        constexpr auto notifyEarlyFailure = []
+        {
+            CoreEngine::state[size_t(EngineState::ExitRequested)].test_and_set();
+            CoreEngine::state[size_t(EngineState::ExitRequested)].notify_all();
+            CoreEngine::state[size_t(EngineState::RenderThreadReady)].test_and_set();
+            CoreEngine::state[size_t(EngineState::RenderThreadReady)].notify_all();
+        };
+
+        void *nwh = nullptr, *ndt = nullptr;
+#if defined(SDL_PLATFORM_WIN32)
+        nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr);
+#elif defined(SDL_PLATFORM_MACOS)
+        nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, nullptr);
+#elif defined(SDL_PLATFORM_LINUX)
+        if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0)
+        {
+            ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr);
+            nwh = _asr(void*, SDL_GetNumberProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0));
+        }
+        else if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "wayland") == 0)
+        {
+            ndt = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, nullptr);
+            nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, nullptr);
+        }
+        else
+        {
+            Debug::logError("Invalid Linux video driver!");
+            notifyEarlyFailure();
+            goto EarlyReturn;
+        }
+
+        if (!ndt)
+        {
+            Debug::logError("Failed to get Linux display!");
+            notifyEarlyFailure();
+            goto EarlyReturn;
+        }
 #elif defined(SDL_PLATFORM_IOS)
-    nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, nullptr);
+        nwh = SDL_GetPointerProperty(SDL_GetWindowProperties(CoreEngine::wind), SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER, nullptr);
 #endif
 
-    if (!nwh)
-    {
-        Debug::logError("Failed to get window handle!");
-        goto EarlyReturn;
+        if (!nwh)
+        {
+            Debug::logError("Failed to get window handle!");
+            notifyEarlyFailure();
+            goto EarlyReturn;
+        }
+
+        if (!RenderPipeline::renderInitialize(ndt, nwh, u32(Window::width), u32(Window::height), initBackend))
+        {
+            Debug::logError("Failed to initialize renderer!");
+            notifyEarlyFailure();
+            goto EarlyReturn;
+        }
     }
 
-    if (!RenderPipeline::renderInitialize(ndt, nwh, u32(Window::width), u32(Window::height), initBackend))
-    {
-        Debug::logError("Failed to initialize renderer!");
-        goto EarlyReturn;
-    }
-
-    CoreEngine::state = EngineState::RenderThreadReady; // Signal main thread.
+    CoreEngine::state[size_t(EngineState::RenderThreadReady)].test_and_set(); // Signal main thread.
+    CoreEngine::state[size_t(EngineState::RenderThreadReady)].notify_all();
 
     {
         RenderJob job;
-        while (CoreEngine::state.load(std::memory_order_relaxed) < EngineState::MainThreadDone)
+        while (!CoreEngine::state[size_t(EngineState::MainThreadDone)].test())
         {
         WhileLoop:
             {
@@ -643,7 +661,7 @@ BreakAll:
                 {
                     job = std::move(CoreEngine::renderQueue.front());
                     CoreEngine::renderQueue.pop_front();
-                    if (CoreEngine::renderQueue.size() >= GL_QUEUE_OVERBURDENED_THRESHOLD && !job.required())
+                    if (CoreEngine::renderQueue.size() >= Config::GraphicsQueueOverburdenedThreshold && !job.required())
                         Debug::logInfo("Render queue overburdened, skipping render job id ", static_cast<const void*>(&job.function()), ".\n");
                     else
                         job();
@@ -651,11 +669,7 @@ BreakAll:
                 }
             }
 
-#if FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_YIELD
-            std::this_thread::yield();
-#elif FIREWORK_LATENCY_TRADE == FIREWORK_LATENCY_TRADE_THREAD_SLEEP
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-#endif
+            CoreEngine::waitSome();
         }
 
         // Cleanup.
@@ -671,5 +685,6 @@ BreakAll:
     InternalEngineEvent::OnRenderShutdown();
     RenderPipeline::renderShutdown();
 EarlyReturn:
-    CoreEngine::state = EngineState::RenderThreadDone; // Signal window thread.
+    CoreEngine::state[size_t(EngineState::RenderThreadDone)].test_and_set(); // Signal window thread.
+    CoreEngine::state[size_t(EngineState::RenderThreadDone)].notify_all();
 }

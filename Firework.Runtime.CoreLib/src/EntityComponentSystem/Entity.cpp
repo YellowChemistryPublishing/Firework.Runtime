@@ -17,6 +17,8 @@ Entity::~Entity()
 }
 void Entity::clear()
 {
+    this->_childrenFront = nullptr;
+    this->_childrenBack = nullptr;
     this->orphan();
     for (auto& [typeIndex, componentTable] : Entities::table) componentTable.erase(this);
 }

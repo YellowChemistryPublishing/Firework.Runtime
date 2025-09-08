@@ -47,22 +47,30 @@
 #define FIREWORK_COMPILER FIREWORK_COMPILER_UNKNOWN
 #endif
 
-#define FIREWORK_LATENCY_TRADE_NONE 0
-#define FIREWORK_LATENCY_TRADE_THREAD_YIELD 1
-#define FIREWORK_LATENCY_TRADE_THREAD_SLEEP 2
-
-#ifndef FIREWORK_LATENCY_TRADE
-#define FIREWORK_LATENCY_TRADE FIREWORK_LATENCY_TRADE_NONE
-#endif
-
-#ifndef GL_QUEUE_OVERBURDENED_THRESHOLD
-#define GL_QUEUE_OVERBURDENED_THRESHOLD 24
-#endif
-
-#ifndef FIREWORK_DEBUG_LOG_ASYNC
-#define FIREWORK_DEBUG_LOG_ASYNC 0
-#endif
-
 #ifndef FIREWORK_EXCEPTION_TRACE_DEPTH
 #define FIREWORK_EXCEPTION_TRACE_DEPTH 64
 #endif
+
+#include <chrono>
+
+namespace Firework
+{
+    struct Config
+    {
+        Config() = delete;
+
+        constexpr static bool AsyncDebugLogging = false;
+
+        constexpr static enum class LatencyTradeSetting : uint_least8_t
+        {
+            None,
+            ThreadYield,
+            ThreadSleep
+        } LatencyTrade = LatencyTradeSetting::ThreadSleep;
+        constexpr static auto UnspecifiedSleepDuration = std::chrono::microseconds(250);
+
+        constexpr static int MaxFramesInFlight = 2;
+
+        constexpr static int GraphicsQueueOverburdenedThreshold = 24;
+    };
+} // namespace Firework

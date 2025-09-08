@@ -21,10 +21,10 @@ namespace Firework
     class Application;
     class Debug;
 
-    class Window;
     class Cursor;
-
     class Input;
+    class Window;
+    class Display;
 } // namespace Firework
 
 _push_nowarn_msvc(_clWarn_msvc_export_interface);
@@ -34,18 +34,17 @@ namespace Firework::Internal
     /// @brief Internal API. what the ~~dog~~ engine doin'
     enum class EngineState : uint_fast8_t
     {
-        FirstInit,
         WindowInit,
         RenderInit,
         RenderThreadReady,
-        Playing,
+        Running,
         ExitRequested,
         MainThreadDone,
         RenderThreadDone,
-        WindowThreadDone
+        WindowThreadDone,
+        Count
     };
-
-    constexpr auto operator<=>(Firework::Internal::EngineState a, Firework::Internal::EngineState b)
+    constexpr auto operator<=>(EngineState a, EngineState b)
     {
         return std::to_underlying(a) <=> std::to_underlying(b);
     }
@@ -54,19 +53,32 @@ namespace Firework::Internal
     /// @brief Static class containing functionality relevant to the backend operations of the runtime.
     class _fw_core_api CoreEngine final
     {
-        static std::atomic<EngineState> state;
-
         static SDL_Window* wind;
         static SDL_Renderer* rend;
         static const SDL_DisplayMode* displMd;
+
+        static std::atomic_flag state[size_t(EngineState::Count)];
+
+        static std::deque<RenderJob> renderQueue;
+        static std::mutex renderQueueLock;
+        static std::atomic<uint_least8_t> framesInFlight;
+
+        inline static void waitSome(std::chrono::nanoseconds durationHint = Config::UnspecifiedSleepDuration)
+        {
+            if constexpr (Config::LatencyTrade == Config::LatencyTradeSetting::ThreadYield)
+                std::this_thread::yield();
+            else if constexpr (Config::LatencyTrade == Config::LatencyTradeSetting::ThreadSleep)
+                std::this_thread::sleep_for(Config::UnspecifiedSleepDuration);
+            else // if constexpr (Config::LatencyTrade == Config::LatencyTradeSetting::None)
+            {
+                // Busy wait.
+            }
+        }
 
         /// @internal
         /// @brief Internal API. Update the display information.
         /// @note Window thread only.
         static void resetDisplayData();
-
-        static std::deque<RenderJob> renderQueue;
-        static std::mutex renderQueueLock;
 
         /// @internal
         /// @brief Internal API. The main thread loop. Blocks.
@@ -109,9 +121,10 @@ namespace Firework::Internal
         friend class Firework::Application;
         friend class Firework::Debug;
 
+        friend class Firework::Cursor;
         friend class Firework::Input;
         friend class Firework::Window;
-        friend class Firework::Cursor;
+        friend class Firework::Display;
     };
 } // namespace Firework::Internal
 _pop_nowarn_msvc();

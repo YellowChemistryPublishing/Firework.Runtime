@@ -180,11 +180,10 @@ namespace Firework
 
             out << beginLogLevel << logText << endLogLevel << L'\n';
 
-#if FIREWORK_DEBUG_LOG_ASYNC
-            Application::queueJobForWorkerThread([out = std::move(out).str()]() -> void { std::wcout << out; });
-#else
-            std::wcout << out.rdbuf();
-#endif
+            if constexpr (Config::AsyncDebugLogging)
+                Application::queueJobForWorkerThread([out = std::move(out).str()]() -> void { std::wcout << out; });
+            else
+                std::wcout << out.rdbuf();
         }
         /// @brief Logs a message at the trace severity.
         /// @warning Whilst Debug::logTrace is thread-safe, it is synchronized by spinlock, so this will be slow if you run it in parallel!
@@ -311,7 +310,7 @@ namespace Firework
             for (Entity& entity : Entities::range()) recurse(recurse, entity);
 
             logStr.append("--------\n");
-            std::cout << logStr;
+            Debug::logTrace(logStr);
         }
 
         static void showF3Menu(bool visible = true);
